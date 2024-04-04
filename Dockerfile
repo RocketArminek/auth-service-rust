@@ -23,4 +23,4 @@ RUN chown appuser /usr/local/bin/auth-service
 USER appuser
 
 ENTRYPOINT ["auth-service"]
-EXPOSE 3000/tcp
+EXPOSE 8080/tcp
