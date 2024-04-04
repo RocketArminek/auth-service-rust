@@ -1,0 +1,81 @@
+name: Rust auth api deployment
+
+on:
+  workflow_dispatch: ~
+  push:
+    branches:
+      - "main"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: rocketarminek/auth-api-rust
+
+jobs:
+  plan:
+    runs-on: ubuntu-20.04
+    name: "Validate & plan cluster changes"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - run: |
+          mkdir ${HOME}/.kube
+          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
+          cd .ops/terraform
+          terraform init
+          terraform validate
+          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -lock=false
+
+  publish-production-image:
+    runs-on: ubuntu-20.04
+    name: "Publish production image"
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |-
+            type=sha,enable=true,priority=100,prefix=,suffix=,format=long
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          target: runner
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    name: "Deploy"
+    needs: [ "plan", "publish-production-image" ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - run: |
+          mkdir ${HOME}/.kube
+          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
+          cd .ops/terraform
+          terraform init
+          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -lock-timeout=10m
