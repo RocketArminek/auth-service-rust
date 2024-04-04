@@ -45,4 +45,5 @@ module "app" {
   }
   envs_from_secrets = []
   envs_from_value = []
+  container_port = 3000
 }
