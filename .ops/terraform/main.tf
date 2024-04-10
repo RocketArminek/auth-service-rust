@@ -1,5 +1,5 @@
 locals {
-  namespace = "4ecommerce"
+  namespace = "shared"
   app_name  = "auth-api-rust"
   app_env   = "prod"
 }
