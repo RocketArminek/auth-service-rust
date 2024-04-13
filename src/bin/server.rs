@@ -1,3 +1,6 @@
+mod domain;
+mod infrastructure;
+
 use axum::{
     routing::{get},
     http::StatusCode,
@@ -12,8 +15,16 @@ async fn main() {
     let app = Router::new()
         .route("/v1/health", get(health));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await;
+    match listener {
+        Ok(listener) => {
+            println!("Server started at http://localhost:8080");
+            axum::serve(listener, app).await.unwrap();
+        }
+        Err(e) => {
+            println!("Failed to bind to port 8080: {}", e);
+        }
+    }
 }
 
 async fn health() -> (StatusCode, Json<HealthResponse>) {
