@@ -14,10 +14,14 @@ pub fn routes() -> Router {
 
 #[derive(OpenApi)]
 #[openapi(
+    servers(
+        (description="dev", url="http://localhost:8080"),
+        (description="production", url="https://auth-api-rust.arminek.xyz"),
+    ),
     paths(
         open_api_docs_action,
         health_action,
     ),
-    components(responses(HealthResponse)
+    components(responses(HealthResponse),
 ))]
 pub struct ApiDoc;
