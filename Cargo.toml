@@ -1,5 +1,5 @@
 [package]
-name = "auth_service"
+name = "auth-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,3 +22,6 @@ features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
     "serde",             # Enable serialization/deserialization of UUIDs
 ]
+
+[dev-dependencies]
+axum-test = "14.8.0"
