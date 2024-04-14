@@ -27,9 +27,9 @@ jobs:
           terraform validate
           terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -lock=false
 
-  publish-production-image:
+  publish-server-image:
     runs-on: ubuntu-20.04
-    name: "Publish production image"
+    name: "Publish server image"
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
@@ -58,7 +58,7 @@ jobs:
         with:
           context: .
           push: true
-          target: runner
+          target: server
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -67,7 +67,7 @@ jobs:
   terraform-apply:
     runs-on: ubuntu-latest
     name: "Deploy"
-    needs: [ "plan", "publish-production-image" ]
+    needs: [ "plan", "publish-server-image" ]
     steps:
       - uses: actions/checkout@v3
       - uses: hashicorp/setup-terraform@v2

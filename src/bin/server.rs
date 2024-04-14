@@ -1,6 +1,3 @@
-mod domain;
-mod infrastructure;
-
 use axum::{
     routing::{get},
     http::StatusCode,
