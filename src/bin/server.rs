@@ -13,7 +13,7 @@ async fn main() {
             axum::serve(listener, routes()).await.unwrap();
         }
         Err(e) => {
-            println!("Failed to bind to port 8080: {}", e);
+            println!("Failed to bind to port {}: {}", port, e);
         }
     }
 }
