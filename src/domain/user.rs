@@ -8,15 +8,11 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String) -> Result<Self, Error> {
+    pub fn new(id: Uuid, email: String) -> Result<Self, Error> {
         if email.is_empty() {
             Err(Error::InvalidEmail)
         } else {
-            Ok(User {
-                id: Uuid::new_v4(),
-                email,
-                roles: vec![String::from("ROLE_USER")],
-            })
+            Ok(User { id, email, roles: vec![String::from("ROLE_USER")] })
         }
     }
 }
