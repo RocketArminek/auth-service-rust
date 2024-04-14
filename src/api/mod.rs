@@ -1,2 +1,2 @@
-pub mod health_controller;
+pub mod utils_controller;
 pub mod routes;
