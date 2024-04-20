@@ -34,11 +34,14 @@ fn main() {
                 }
                 Err(error) => {
                     match error {
-                        Error::InvalidEmail => {
-                            panic!("Invalid email, {}", email);
+                        Error::UserNotFound { id } => {
+                            panic!("User not found for {}", id);
                         }
-                        _ => {
-                            panic!("An error occurred: {:?}", error);
+                        Error::UserAlreadyExists { email } => {
+                            panic!("User already exists for {}", email);
+                        }
+                        Error::InvalidEmail { email } => {
+                            panic!("Invalid email: {}", email);
                         }
                     }
                 }

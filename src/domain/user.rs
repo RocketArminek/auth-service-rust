@@ -12,9 +12,9 @@ pub struct User {
 impl User {
     pub fn new(id: Uuid, email: String, created_at: DateTime<Utc>) -> Result<Self, Error> {
         if email.is_empty() {
-            Err(Error::InvalidEmail)
+            Err(Error::InvalidEmail{email})
         } else if !Regex::new(r"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$").unwrap().is_match(&email) {
-            Err(Error::InvalidEmail)
+            Err(Error::InvalidEmail{email})
         } else {
             Ok(User { id, email, created_at })
         }
