@@ -7,7 +7,6 @@ pub struct User {
     pub id: Uuid,
     pub email: String,
     pub created_at: DateTime<Utc>,
-    pub roles: Vec<String>,
 }
 
 impl User {
@@ -17,7 +16,7 @@ impl User {
         } else if !Regex::new(r"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$").unwrap().is_match(&email) {
             Err(Error::InvalidEmail)
         } else {
-            Ok(User { id, email, created_at, roles: vec![String::from("ROLE_USER")] })
+            Ok(User { id, email, created_at })
         }
     }
 

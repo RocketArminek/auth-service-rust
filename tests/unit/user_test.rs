@@ -6,7 +6,6 @@ fn it_can_be_created() {
     let user = create_user(Uuid::new_v4(), String::from("test@test.com"), Utc::now());
 
     assert_eq!(user.email, String::from("test@test.com"));
-    assert_eq!(user.roles, vec![String::from("ROLE_USER")]);
     assert_eq!(user.id.is_nil(), false);
 }
 

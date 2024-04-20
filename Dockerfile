@@ -11,7 +11,7 @@ RUN \
   cp ./target/release/server / && \
   cp ./target/release/cli /
 
-FROM debian:bookworm-slim AS server
+FROM debian:bookworm-slim AS base
 RUN adduser \
   --disabled-password \
   --gecos "" \
@@ -20,26 +20,22 @@ RUN adduser \
   --no-create-home \
   --uid "10001" \
   appuser
+
+FROM base AS server
+COPY --from=builder /app/migrations /migrations
+RUN chown -R appuser /migrations
 COPY --from=builder /server /usr/local/bin
-COPY --from=builder /cli /usr/local/bin
 RUN chown appuser /usr/local/bin/server
-RUN chown appuser /usr/local/bin/cli
+
 USER appuser
 
 ENTRYPOINT ["server"]
 EXPOSE 8080/tcp
 
-FROM debian:bookworm-slim AS cli
-RUN adduser \
-  --disabled-password \
-  --gecos "" \
-  --home "/nonexistent" \
-  --shell "/sbin/nologin" \
-  --no-create-home \
-  --uid "10001" \
-  appuser
+FROM base AS cli
 COPY --from=builder /cli /usr/local/bin
 RUN chown appuser /usr/local/bin/cli
+
 USER appuser
 
 ENTRYPOINT ["cli"]
