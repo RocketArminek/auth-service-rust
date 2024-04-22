@@ -1,3 +1,4 @@
+use std::env;
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
@@ -31,7 +32,8 @@ enum Commands {
 async fn main() {
     dotenv().ok();
     let cli = Cli::parse();
-    let pool = create_mysql_pool().await.unwrap();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = create_mysql_pool(&database_url).await.unwrap();
     let repository = MysqlUserRepository::new(pool.clone());
     migrate!("./migrations").run(&pool).await.unwrap();
 
