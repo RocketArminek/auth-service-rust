@@ -9,6 +9,8 @@ on:
       - ".ops/**"
       - "Dockerfile"
       - "tests/**"
+      - "migrations/**"
+      - ".github/workflows/**"
     branches:
       - "main"
 
@@ -50,6 +52,8 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features mysql
       - name: init database
         run: sqlx database create
       - name: Run tests
