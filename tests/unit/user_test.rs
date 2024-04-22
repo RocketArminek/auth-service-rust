@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use auth_service::domain::user::User;
+
 #[test]
 fn it_can_be_created() {
-    let user = create_user(Uuid::new_v4(), String::from("test@test.com"), Utc::now());
+    let user = create_user(Uuid::new_v4(), String::from("test@test.com"), String::from("pass"), Utc::now());
 
     assert_eq!(user.email, String::from("test@test.com"));
     assert_eq!(user.id.is_nil(), false);
@@ -11,7 +12,7 @@ fn it_can_be_created() {
 
 #[test]
 fn it_cannot_be_created_with_empty_email() {
-    match User::now_with_email(String::from("")) {
+    match User::now_with_email_and_password(String::from(""), String::from("password")) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
@@ -19,14 +20,14 @@ fn it_cannot_be_created_with_empty_email() {
 
 #[test]
 fn it_cannot_be_created_with_invalid_email() {
-    match User::now_with_email(String::from("invalid-email")) {
+    match User::now_with_email_and_password(String::from("invalid-email"), String::from("password")) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
 }
 
-fn create_user(id: Uuid, email: String, created_at: DateTime<Utc>) -> User {
-    let user = User::new(id, email, created_at);
+fn create_user(id: Uuid, email: String, password: String, created_at: DateTime<Utc>) -> User {
+    let user = User::new(id, email, password, created_at);
 
     match user {
         Ok(x) => x,

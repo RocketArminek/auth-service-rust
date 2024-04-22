@@ -6,7 +6,6 @@ COPY . .
 RUN \
   --mount=type=cache,target=/app/target/ \
   --mount=type=cache,target=/usr/local/cargo/registry/ \
-  cargo test && \
   cargo build --release && \
   cp ./target/release/server / && \
   cp ./target/release/cli /
