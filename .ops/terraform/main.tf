@@ -6,7 +6,7 @@ locals {
 
 module "app" {
   source           = "Arminek/app/k8s"
-  version          = "1.0.2"
+  version          = "1.1.0"
   app_name         = local.app_name
   namespace        = local.namespace
   app_docker_image = var.app_docker_image
