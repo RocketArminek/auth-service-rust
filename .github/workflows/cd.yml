@@ -50,6 +50,8 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: init database
+        run: sqlx database create
       - name: Run tests
         run: cargo test --all
 
