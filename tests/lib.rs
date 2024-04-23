@@ -1,5 +1,5 @@
-use axum_test::TestServer;
 use auth_service::api::routes::routes;
+use axum_test::TestServer;
 
 mod acceptance;
 mod integration;

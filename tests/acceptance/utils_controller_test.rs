@@ -1,6 +1,6 @@
-use axum::{http::StatusCode};
-use auth_service::api::utils_controller::HealthResponse;
 use crate::create_test_server;
+use auth_service::api::utils_controller::HealthResponse;
+use axum::http::StatusCode;
 
 #[tokio::test]
 async fn it_returns_health_check_result() {

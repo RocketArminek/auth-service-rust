@@ -1,17 +1,17 @@
-use std::env;
-use clap::{Parser, Subcommand};
-use dotenv::dotenv;
-use sqlx::sqlx_macros::migrate;
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
+use clap::{Parser, Subcommand};
+use dotenv::dotenv;
+use sqlx::sqlx_macros::migrate;
+use std::env;
 
 #[derive(Parser)]
 #[command(author, version, about)]
 struct Cli {
     #[command(subcommand)]
-    command: Commands
+    command: Commands,
 }
 
 #[derive(Subcommand)]
@@ -55,13 +55,11 @@ async fn main() {
                         user.created_at.format("%Y-%m-%d %H:%M:%S")
                     );
                 }
-                Err(error) => {
-                    match error {
-                        Error::InvalidEmail { email } => {
-                            panic!("Invalid email: {}", email);
-                        }
+                Err(error) => match error {
+                    Error::InvalidEmail { email } => {
+                        panic!("Invalid email: {}", email);
                     }
-                }
+                },
             }
         }
         Commands::GetUserByEmail { email } => {

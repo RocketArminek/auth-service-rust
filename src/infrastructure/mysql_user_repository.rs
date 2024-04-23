@@ -1,6 +1,6 @@
-use sqlx::{Error, MySql, Pool, query, query_as};
-use uuid::Uuid;
 use crate::domain::user::User;
+use sqlx::{query, query_as, Error, MySql, Pool};
+use uuid::Uuid;
 
 pub struct MysqlUserRepository {
     pool: Pool<MySql>,

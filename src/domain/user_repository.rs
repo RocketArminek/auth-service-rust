@@ -1,6 +1,6 @@
-use uuid::Uuid;
-use crate::domain::error::{StorageError};
+use crate::domain::error::StorageError;
 use crate::domain::user::User;
+use uuid::Uuid;
 
 trait UserRepository {
     fn add(&self, user: &User) -> Result<(), StorageError>;

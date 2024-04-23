@@ -1,7 +1,4 @@
-use axum::{
-    routing::{get},
-    Router,
-};
+use axum::{routing::get, Router};
 use utoipa::OpenApi;
 
 use crate::api::utils_controller::*;

@@ -1,8 +1,8 @@
+use crate::api::routes::ApiDoc;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToResponse};
-use crate::api::routes::ApiDoc;
 
 #[utoipa::path(get, path = "/v1/health",
     responses(
@@ -10,7 +10,12 @@ use crate::api::routes::ApiDoc;
     )
 )]
 pub async fn health_action() -> (StatusCode, Json<HealthResponse>) {
-    (StatusCode::OK, Json(HealthResponse { message: String::from("OK") }))
+    (
+        StatusCode::OK,
+        Json(HealthResponse {
+            message: String::from("OK"),
+        }),
+    )
 }
 
 #[utoipa::path(get, path = "/",
@@ -20,12 +25,11 @@ pub async fn health_action() -> (StatusCode, Json<HealthResponse>) {
 )]
 pub async fn open_api_docs_action() -> (StatusCode, String) {
     match ApiDoc::openapi().to_json() {
-        Ok(response) => {
-            (StatusCode::OK, response)
-        }
-        Err(_) => {
-            (StatusCode::INTERNAL_SERVER_ERROR, String::from("Internal Server Error"))
-        }
+        Ok(response) => (StatusCode::OK, response),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            String::from("Internal Server Error"),
+        ),
     }
 }
 
