@@ -38,4 +38,13 @@ impl MysqlUserRepository {
             .await
             .ok()
     }
+
+    pub async fn delete_by_email(&self, email: &String) -> Result<(), Error> {
+        query("DELETE FROM users WHERE email = ?")
+            .bind(email)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
 }

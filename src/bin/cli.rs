@@ -5,7 +5,7 @@ use sqlx::sqlx_macros::migrate;
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
-use auth_service::infrastructure::sqlx_user_repository::MysqlUserRepository;
+use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -26,6 +26,10 @@ enum Commands {
         #[arg(short, long)]
         email: String,
     },
+    DeleteUserByEmail {
+        #[arg(short, long)]
+        email: String,
+    },
 }
 
 #[tokio::main]
@@ -34,8 +38,8 @@ async fn main() {
     let cli = Cli::parse();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = create_mysql_pool(&database_url).await.unwrap();
-    let repository = MysqlUserRepository::new(pool.clone());
     migrate!("./migrations").run(&pool).await.unwrap();
+    let repository = MysqlUserRepository::new(pool);
 
     match &cli.command {
         Commands::CreateUser { email, password } => {
@@ -46,19 +50,13 @@ async fn main() {
 
                     println!(
                         "User created: {} {} at {}",
-                        user.id.to_string().chars().take(8).collect::<String>(),
+                        user.id,
                         user.email,
                         user.created_at.format("%Y-%m-%d %H:%M:%S")
                     );
                 }
                 Err(error) => {
                     match error {
-                        Error::UserNotFound { id } => {
-                            panic!("User not found for {}", id);
-                        }
-                        Error::UserAlreadyExists { email } => {
-                            panic!("User already exists for {}", email);
-                        }
                         Error::InvalidEmail { email } => {
                             panic!("Invalid email: {}", email);
                         }
@@ -67,14 +65,26 @@ async fn main() {
             }
         }
         Commands::GetUserByEmail { email } => {
-            let user = repository.get_by_email(email).await.unwrap();
+            let user = repository.get_by_email(email).await;
 
-            println!(
-                "User found: {} {} at {}",
-                user.id.to_string().chars().take(8).collect::<String>(),
-                user.email,
-                user.created_at.format("%Y-%m-%d %H:%M:%S")
-            );
+            match user {
+                None => {
+                    println!("User not found for {}", email);
+                }
+                Some(user) => {
+                    println!(
+                        "User found: {} {} at {}",
+                        user.id,
+                        user.email,
+                        user.created_at.format("%Y-%m-%d %H:%M:%S")
+                    );
+                }
+            }
+        }
+        Commands::DeleteUserByEmail { email } => {
+            repository.delete_by_email(email).await.unwrap();
+
+            println!("User deleted for {}", email);
         }
     }
 }

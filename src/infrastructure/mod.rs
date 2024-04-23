@@ -1,2 +1,2 @@
 pub mod database;
-pub mod sqlx_user_repository;
+pub mod mysql_user_repository;

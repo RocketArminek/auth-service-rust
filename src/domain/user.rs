@@ -4,7 +4,7 @@ use chrono::{DateTime, Timelike, Utc};
 use regex::Regex;
 use sqlx::FromRow;
 
-#[derive(FromRow)]
+#[derive(FromRow, Debug)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
