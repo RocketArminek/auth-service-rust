@@ -1,7 +1,7 @@
 use crate::domain::cryptography::{Argon2Hasher, Hasher};
 use crate::domain::error::Error;
 use chrono::{DateTime, Timelike, Utc};
-use regex::Regex;
+use lazy_regex::regex;
 use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
 
@@ -20,18 +20,31 @@ impl User {
         password: String,
         created_at: DateTime<Utc>,
     ) -> Result<Self, Error> {
-        let hasher = Argon2Hasher::new();
+        let email_regex = regex!(r#"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$"#);
+        let password_digit_check = regex!(r#"\d"#);
+        let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
+        let password_uppercase_check = regex!(r#"[A-Z]"#);
+        let password_lowercase_check = regex!(r#"[a-z]"#);
 
         if email.is_empty() {
             Err(Error::InvalidEmail { email })
         } else if password.is_empty() {
+            Err(Error::EmptyPassword)
+        } else if password.len() < 8 {
             Err(Error::InvalidPassword)
-        } else if !Regex::new(r"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$")
-            .unwrap()
-            .is_match(&email)
-        {
+        } else if !password_digit_check.is_match(&password) {
+            Err(Error::InvalidPassword)
+        } else if !password_special_character_check.is_match(&password) {
+            Err(Error::InvalidPassword)
+        } else if !password_uppercase_check.is_match(&password) {
+            Err(Error::InvalidPassword)
+        } else if !password_lowercase_check.is_match(&password) {
+            Err(Error::InvalidPassword)
+        } else if !email_regex.is_match(&email) {
             Err(Error::InvalidEmail { email })
         } else {
+            let hasher = Argon2Hasher::new();
+
             Ok(User {
                 id,
                 email,

@@ -12,7 +12,7 @@ async fn it_registers_new_user(pool: Pool<MySql>) {
         .post("/v1/users")
         .json(&json!({
             "email": &email,
-            "password": "password",
+            "password": "Iknow#othing1",
         }))
         .await;
 

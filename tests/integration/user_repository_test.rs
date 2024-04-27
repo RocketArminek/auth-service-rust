@@ -5,7 +5,7 @@ use sqlx::{MySql, Pool};
 #[sqlx::test]
 async fn it_can_add_user(pool: Pool<MySql>) {
     let user =
-        User::now_with_email_and_password("jon@snow.test".to_string(), "iknownothing".to_string())
+        User::now_with_email_and_password("jon@snow.test".to_string(), "Iknow#othing1".to_string())
             .unwrap();
     let repository = MysqlUserRepository::new(pool);
     repository.add(&user).await.unwrap();
@@ -17,7 +17,7 @@ async fn it_can_add_user(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_can_get_user_by_email(pool: Pool<MySql>) {
     let user =
-        User::now_with_email_and_password("jon@snow.test".to_string(), "iknownothing".to_string())
+        User::now_with_email_and_password("jon@snow.test".to_string(), "Iknow#othing1".to_string())
             .unwrap();
     let repository = MysqlUserRepository::new(pool);
     repository.add(&user).await.unwrap();
@@ -29,7 +29,7 @@ async fn it_can_get_user_by_email(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_deletes_user_by_email(pool: Pool<MySql>) {
     let user =
-        User::now_with_email_and_password("jon@snow.test".to_string(), "iknownothing".to_string())
+        User::now_with_email_and_password("jon@snow.test".to_string(), "Iknow#othing1".to_string())
             .unwrap();
     let repository = MysqlUserRepository::new(pool);
     repository.add(&user).await.unwrap();

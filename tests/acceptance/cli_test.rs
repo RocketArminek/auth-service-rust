@@ -15,7 +15,7 @@ fn it_creates_user() {
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("123456");
+        .arg("Iknow#othing1");
 
     create_cmd
         .assert()
@@ -43,7 +43,7 @@ fn it_logs_into_account() {
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("123456")
+        .arg("Iknow#othing1")
         .assert()
         .success();
 
@@ -52,7 +52,7 @@ fn it_logs_into_account() {
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("123456")
+        .arg("Iknow#othing1")
         .assert()
         .success()
         .stdout(predicate::str::contains("User logged in:"))
@@ -78,7 +78,7 @@ fn it_gets_user_by_email() {
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("123456")
+        .arg("Iknow#othing1")
         .assert()
         .success();
 
@@ -124,7 +124,7 @@ fn it_deletes_user_by_email() {
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("123456")
+        .arg("Iknow#othing1")
         .assert()
         .success();
 
@@ -151,7 +151,7 @@ fn it_does_not_create_user_with_invalid_email() {
         .arg("--email")
         .arg("test-user")
         .arg("--password")
-        .arg("123456");
+        .arg("Iknow#othing1");
 
     cmd.assert()
         .failure()

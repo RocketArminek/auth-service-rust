@@ -7,7 +7,7 @@ fn it_can_be_created() {
     let user = create_user(
         Uuid::new_v4(),
         String::from("test@test.com"),
-        String::from("pass"),
+        String::from("Iknow#othing1"),
         Utc::now(),
     );
 

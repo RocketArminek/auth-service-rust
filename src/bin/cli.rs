@@ -67,11 +67,14 @@ async fn main() {
                     Error::InvalidEmail { email } => {
                         panic!("Invalid email: {}", email);
                     }
-                    Error::InvalidPassword => {
-                        panic!("Invalid password");
+                    Error::EmptyPassword => {
+                        panic!("Empty password");
                     }
                     Error::EncryptionFailed => {
                         panic!("Encryption failed");
+                    }
+                    Error::InvalidPassword => {
+                        panic!("Invalid password format");
                     }
                 },
             }
