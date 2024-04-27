@@ -3,8 +3,8 @@ use axum::{routing::get, Router};
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 
-use crate::api::utils_controller::*;
 use crate::api::user_controller::*;
+use crate::api::utils_controller::*;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
 pub fn routes(repository: MysqlUserRepository) -> Router {
