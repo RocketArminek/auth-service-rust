@@ -16,6 +16,12 @@ pub async fn create_user(
     State(repository): State<MysqlUserRepository>,
     request: Json<CreateUserRequest>,
 ) -> StatusCode {
+    let existing = repository.get_by_email(&request.email).await;
+
+    if existing.is_some() {
+        return StatusCode::CONFLICT;
+    }
+
     let user = User::now_with_email_and_password(request.email.clone(), request.password.clone());
 
     match user {
