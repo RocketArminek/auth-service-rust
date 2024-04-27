@@ -35,7 +35,7 @@ pub async fn create_user(
             });
 
             StatusCode::OK
-        },
+        }
         Err(error) => {
             tracing::info!("Failed to create user {:?}", error);
 
