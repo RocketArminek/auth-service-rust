@@ -4,7 +4,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
+#[utoipa::path(post, path = "/v1/users",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "Create user"),
+    )
+)]
 pub async fn create_user(
     State(repository): State<MysqlUserRepository>,
     request: Json<CreateUserRequest>,
@@ -24,7 +31,7 @@ pub async fn create_user(
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,

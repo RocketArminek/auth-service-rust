@@ -1,10 +1,10 @@
-use crate::api::user_controller::create_user;
 use axum::routing::post;
 use axum::{routing::get, Router};
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 
 use crate::api::utils_controller::*;
+use crate::api::user_controller::*;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
 pub fn routes(repository: MysqlUserRepository) -> Router {
@@ -25,7 +25,11 @@ pub fn routes(repository: MysqlUserRepository) -> Router {
     paths(
         open_api_docs_action,
         health_action,
+        create_user,
     ),
-    components(responses(HealthResponse),
-))]
+    components(
+        responses(HealthResponse),
+        schemas(CreateUserRequest),
+    )
+)]
 pub struct ApiDoc;
