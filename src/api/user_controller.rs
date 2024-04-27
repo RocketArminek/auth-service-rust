@@ -21,9 +21,8 @@ pub async fn create_user(
     match user {
         Ok(mut user) => {
             tokio::spawn(async move {
-                let r = repository.clone();
                 user.hash_password();
-                match r.add(&user).await {
+                match repository.add(&user).await {
                     Ok(_) => tracing::info!("User created: {}", user.email),
                     Err(error) => tracing::warn!("Failed to create user {:?}", error),
                 }
