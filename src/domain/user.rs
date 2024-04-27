@@ -1,4 +1,3 @@
-use crate::domain::cryptography::{Argon2Hasher, Hasher};
 use crate::domain::error::Error;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
@@ -43,12 +42,10 @@ impl User {
         } else if !email_regex.is_match(&email) {
             Err(Error::InvalidEmail { email })
         } else {
-            let hasher = Argon2Hasher::new();
-
             Ok(User {
                 id,
                 email,
-                password: hasher.hash_password(password.as_str()).unwrap(),
+                password,
                 created_at,
             })
         }

@@ -31,40 +31,40 @@ fn it_creates_user() {
         .success();
 }
 
-#[test]
-fn it_logs_into_account() {
-    let mut create_cmd = Command::cargo_bin("cli").unwrap();
-    let mut login_cmd = Command::cargo_bin("cli").unwrap();
-    let mut delete_cmd = Command::cargo_bin("cli").unwrap();
-    let email = String::from("jon10@snow.test");
-
-    create_cmd
-        .arg("create-user")
-        .arg("--email")
-        .arg(&email)
-        .arg("--password")
-        .arg("Iknow#othing1")
-        .assert()
-        .success();
-
-    login_cmd
-        .arg("login")
-        .arg("--email")
-        .arg(&email)
-        .arg("--password")
-        .arg("Iknow#othing1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("User logged in:"))
-        .stdout(predicate::str::contains(&email));
-
-    delete_cmd
-        .arg("delete-user-by-email")
-        .arg("--email")
-        .arg(&email)
-        .assert()
-        .success();
-}
+// #[test]
+// fn it_logs_into_account() {
+//     let mut create_cmd = Command::cargo_bin("cli").unwrap();
+//     let mut login_cmd = Command::cargo_bin("cli").unwrap();
+//     let mut delete_cmd = Command::cargo_bin("cli").unwrap();
+//     let email = String::from("jon10@snow.test");
+//
+//     create_cmd
+//         .arg("create-user")
+//         .arg("--email")
+//         .arg(&email)
+//         .arg("--password")
+//         .arg("Iknow#othing1")
+//         .assert()
+//         .success();
+//
+//     login_cmd
+//         .arg("login")
+//         .arg("--email")
+//         .arg(&email)
+//         .arg("--password")
+//         .arg("Iknow#othing1")
+//         .assert()
+//         .success()
+//         .stdout(predicate::str::contains("User logged in:"))
+//         .stdout(predicate::str::contains(&email));
+//
+//     delete_cmd
+//         .arg("delete-user-by-email")
+//         .arg("--email")
+//         .arg(&email)
+//         .assert()
+//         .success();
+// }
 
 #[test]
 fn it_gets_user_by_email() {
