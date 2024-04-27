@@ -22,7 +22,7 @@ module "app" {
 
   resources_limits = {
     "cpu"    = "1"
-    "memory" = "512Mi"
+    "memory" = "4Gi"
   }
   resources_requests = {
     "cpu"    = "500m"
