@@ -1,3 +1,4 @@
+use crate::domain::cryptography::{Argon2Hasher, Hasher};
 use crate::domain::error::Error;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
@@ -61,5 +62,12 @@ impl User {
             password.clone(),
             now,
         )
+    }
+
+    pub fn hash_password(&mut self) {
+        let hasher = Argon2Hasher::new();
+        let hashed_password = hasher.hash_password(self.password.as_str());
+
+        self.password = hashed_password.unwrap();
     }
 }

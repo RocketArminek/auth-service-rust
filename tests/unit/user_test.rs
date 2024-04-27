@@ -40,6 +40,39 @@ fn it_cannot_be_created_with_invalid_email() {
     };
 }
 
+#[test]
+fn it_cannot_be_created_without_special_character() {
+    match User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Password1"),
+    ) {
+        Ok(_) => panic!("User creation should fail"),
+        Err(e) => e,
+    };
+}
+
+#[test]
+fn it_cannot_be_created_without_uppercase_character() {
+    match User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("password1#"),
+    ) {
+        Ok(_) => panic!("User creation should fail"),
+        Err(e) => e,
+    };
+}
+
+#[test]
+fn it_cannot_be_created_without_lowercase_character() {
+    match User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("PASSWORD1#"),
+    ) {
+        Ok(_) => panic!("User creation should fail"),
+        Err(e) => e,
+    };
+}
+
 fn create_user(id: Uuid, email: String, password: String, created_at: DateTime<Utc>) -> User {
     let user = User::new(id, email, password, created_at);
 

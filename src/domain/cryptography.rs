@@ -40,3 +40,21 @@ impl Hasher for Argon2Hasher {
             .is_ok()
     }
 }
+
+pub struct BcryptHasher {}
+
+impl BcryptHasher {
+    pub fn new() -> Self {
+        BcryptHasher {}
+    }
+}
+
+impl Hasher for BcryptHasher {
+    fn hash_password(&self, password: &str) -> Result<String, Error> {
+        bcrypt::hash(password, 4).map_err(|_| Error::EncryptionFailed)
+    }
+
+    fn verify_password(&self, password: &str, hash: &str) -> bool {
+        bcrypt::verify(password, hash).unwrap_or(false)
+    }
+}

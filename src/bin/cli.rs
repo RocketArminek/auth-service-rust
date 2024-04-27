@@ -50,7 +50,8 @@ async fn main() {
         Commands::CreateUser { email, password } => {
             let user = User::now_with_email_and_password(email.clone(), password.clone());
             match user {
-                Ok(user) => {
+                Ok(mut user) => {
+                    user.hash_password();
                     repository
                         .add(&user)
                         .await

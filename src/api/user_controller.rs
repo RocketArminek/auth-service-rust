@@ -19,15 +19,23 @@ pub async fn create_user(
     let user = User::now_with_email_and_password(request.email.clone(), request.password.clone());
 
     match user {
-        Ok(user) => {
-            let result = repository.add(&user).await;
-            if result.is_err() {
-                return StatusCode::UNPROCESSABLE_ENTITY;
-            }
+        Ok(mut user) => {
+            tokio::spawn(async move {
+                let r = repository.clone();
+                user.hash_password();
+                match r.add(&user).await {
+                    Ok(_) => tracing::info!("User created: {}", user.email),
+                    Err(error) => tracing::warn!("Failed to create user {:?}", error),
+                }
+            });
 
-            StatusCode::CREATED
+            StatusCode::OK
+        },
+        Err(error) => {
+            tracing::info!("Failed to create user {:?}", error);
+
+            StatusCode::BAD_REQUEST
         }
-        Err(_) => StatusCode::BAD_REQUEST,
     }
 }
 
