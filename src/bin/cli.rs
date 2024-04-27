@@ -1,3 +1,4 @@
+use auth_service::domain::cryptography::{Argon2Hasher, Hasher};
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
@@ -5,7 +6,6 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
-use std::env;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -30,14 +30,19 @@ enum Commands {
         #[arg(short, long)]
         email: String,
     },
+    Login {
+        #[arg(short, long)]
+        email: String,
+        #[arg(short, long)]
+        password: String,
+    },
 }
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
     let cli = Cli::parse();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = create_mysql_pool(&database_url).await.unwrap();
+    let pool = create_mysql_pool().await.unwrap();
     migrate!("./migrations").run(&pool).await.unwrap();
     let repository = MysqlUserRepository::new(pool);
 
@@ -46,7 +51,10 @@ async fn main() {
             let user = User::now_with_email_and_password(email.clone(), password.clone());
             match user {
                 Ok(user) => {
-                    repository.add(&user).await.unwrap();
+                    repository
+                        .add(&user)
+                        .await
+                        .expect("Failed to create user! Check if the email is already in use.");
 
                     println!(
                         "User created: {} {} at {}",
@@ -58,6 +66,12 @@ async fn main() {
                 Err(error) => match error {
                     Error::InvalidEmail { email } => {
                         panic!("Invalid email: {}", email);
+                    }
+                    Error::InvalidPassword => {
+                        panic!("Invalid password");
+                    }
+                    Error::EncryptionFailed => {
+                        panic!("Encryption failed");
                     }
                 },
             }
@@ -83,6 +97,29 @@ async fn main() {
             repository.delete_by_email(email).await.unwrap();
 
             println!("User deleted for {}", email);
+        }
+        Commands::Login { email, password } => {
+            let user = repository.get_by_email(email).await;
+
+            match user {
+                None => {
+                    println!("User not found for {}", email);
+                }
+                Some(user) => {
+                    let hasher = Argon2Hasher::new();
+
+                    if hasher.verify_password(password, &user.password) {
+                        println!(
+                            "User logged in: {} {} at {}",
+                            user.id,
+                            user.email,
+                            user.created_at.format("%Y-%m-%d %H:%M:%S")
+                        );
+                    } else {
+                        println!("Invalid password");
+                    }
+                }
+            }
         }
     }
 }

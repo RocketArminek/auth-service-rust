@@ -1,10 +1,11 @@
 use crate::create_test_server;
 use auth_service::api::utils_controller::HealthResponse;
 use axum::http::StatusCode;
+use sqlx::{MySql, Pool};
 
-#[tokio::test]
-async fn it_returns_health_check_result() {
-    let server = create_test_server();
+#[sqlx::test]
+async fn it_returns_health_check_result(pool: Pool<MySql>) {
+    let server = create_test_server(pool);
     let response = server.get("/v1/health").await;
     let body = response.json::<HealthResponse>();
 
@@ -12,9 +13,9 @@ async fn it_returns_health_check_result() {
     assert_eq!(body.message, "OK");
 }
 
-#[tokio::test]
-async fn it_returns_open_api_docs() {
-    let server = create_test_server();
+#[sqlx::test]
+async fn it_returns_open_api_docs(pool: Pool<MySql>) {
+    let server = create_test_server(pool);
     let response = server.get("/").await;
     let body = response.text();
 

@@ -24,6 +24,14 @@ fn it_cannot_be_created_with_empty_email() {
 }
 
 #[test]
+fn it_cannot_be_created_with_empty_password() {
+    match User::now_with_email_and_password(String::from("test@test.com"), String::from("")) {
+        Ok(_) => panic!("User creation should fail"),
+        Err(e) => e,
+    };
+}
+
+#[test]
 fn it_cannot_be_created_with_invalid_email() {
     match User::now_with_email_and_password(String::from("invalid-email"), String::from("password"))
     {

@@ -2,6 +2,7 @@ use crate::domain::user::User;
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct MysqlUserRepository {
     pool: Pool<MySql>,
 }

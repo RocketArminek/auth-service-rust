@@ -22,11 +22,11 @@ module "app" {
 
   resources_limits = {
     "cpu"    = "250m"
-    "memory" = "32Mi"
+    "memory" = "64Mi"
   }
   resources_requests = {
     "cpu"    = "100m"
-    "memory" = "16Mi"
+    "memory" = "32Mi"
   }
 
   liveness_probe_path                  = "/v1/health"
@@ -43,6 +43,30 @@ module "app" {
   node_selector = {
     "purpose" = "workload"
   }
-  envs_from_secrets = []
-  envs_from_value = []
+  envs_from_secrets = [
+    {
+      name        = "DATABASE_USER"
+      secret_name = "mysql-secret"
+      secret_key  = "user"
+    },
+    {
+      name        = "DATABASE_PASSWORD"
+      secret_name = "mysql-secret"
+      secret_key  = "password"
+    },
+  ]
+  envs_from_value = [
+    {
+      name  = "DATABASE_NAME"
+      value = "auth_service"
+    },
+    {
+      name  = "DATABASE_HOST"
+      value = "percona-mysql-cluster-haproxy.databases.svc.cluster.local"
+    },
+    {
+      name  = "DATABASE_PORT"
+      value = "3306"
+    }
+  ]
 }
