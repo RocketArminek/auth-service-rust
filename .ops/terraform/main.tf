@@ -21,12 +21,12 @@ module "app" {
   }
 
   resources_limits = {
-    "cpu"    = "250m"
-    "memory" = "64Mi"
+    "cpu"    = "1"
+    "memory" = "512Mi"
   }
   resources_requests = {
-    "cpu"    = "100m"
-    "memory" = "32Mi"
+    "cpu"    = "500m"
+    "memory" = "256Mi"
   }
 
   liveness_probe_path                  = "/v1/health"
