@@ -1,4 +1,4 @@
-use auth_service::domain::cryptography::{Argon2Hasher, Hasher};
+use auth_service::domain::cryptography::{BcryptHasher, Hasher};
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
@@ -110,7 +110,7 @@ async fn main() {
                     println!("User not found for {}", email);
                 }
                 Some(user) => {
-                    let hasher = Argon2Hasher::new();
+                    let hasher = BcryptHasher::new();
 
                     if hasher.verify_password(password, &user.password) {
                         println!(
