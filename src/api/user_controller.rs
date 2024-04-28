@@ -1,4 +1,4 @@
-use crate::domain::cryptography::SchemeAwareHasher;
+use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::User;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::extract::State;

@@ -1,4 +1,4 @@
-use crate::domain::cryptography::Hasher;
+use crate::domain::crypto::Hasher;
 use crate::domain::error::Error;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;

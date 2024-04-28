@@ -1,4 +1,4 @@
-use auth_service::domain::cryptography::{
+use auth_service::domain::crypto::{
     Argon2Hasher, BcryptHasher, Hasher, HashingScheme, SchemeAwareHasher,
 };
 

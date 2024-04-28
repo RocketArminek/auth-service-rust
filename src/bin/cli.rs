@@ -1,4 +1,4 @@
-use auth_service::domain::cryptography::SchemeAwareHasher;
+use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
