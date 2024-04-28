@@ -1,4 +1,4 @@
-use crate::domain::cryptography::{BcryptHasher, Hasher};
+use crate::domain::cryptography::Hasher;
 use crate::domain::error::Error;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
@@ -64,10 +64,13 @@ impl User {
         )
     }
 
-    pub fn hash_password(&mut self) {
-        let hasher = BcryptHasher::new();
+    pub fn hash_password(&mut self, hasher: &impl Hasher) {
         let hashed_password = hasher.hash_password(self.password.as_str());
 
         self.password = hashed_password.unwrap();
+    }
+
+    pub fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {
+        hasher.verify_password(password, self.password.as_str())
     }
 }

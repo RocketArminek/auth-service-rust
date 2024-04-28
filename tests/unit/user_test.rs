@@ -1,3 +1,4 @@
+use auth_service::domain::cryptography::SchemeAwareHasher;
 use auth_service::domain::user::User;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
@@ -71,6 +72,19 @@ fn it_cannot_be_created_without_lowercase_character() {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
+}
+
+#[test]
+fn it_can_verify_password_using_hasher() {
+    let mut user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+    )
+    .unwrap();
+    let hasher = SchemeAwareHasher::default();
+    user.hash_password(&hasher);
+
+    assert_eq!(user.verify_password(&hasher, "Iknow#othing1"), true);
 }
 
 fn create_user(id: Uuid, email: String, password: String, created_at: DateTime<Utc>) -> User {

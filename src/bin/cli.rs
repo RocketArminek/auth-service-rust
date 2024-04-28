@@ -1,4 +1,4 @@
-use auth_service::domain::cryptography::{BcryptHasher, Hasher};
+use auth_service::domain::cryptography::SchemeAwareHasher;
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
@@ -51,7 +51,7 @@ async fn main() {
             let user = User::now_with_email_and_password(email.clone(), password.clone());
             match user {
                 Ok(mut user) => {
-                    user.hash_password();
+                    user.hash_password(&SchemeAwareHasher::default());
                     repository
                         .add(&user)
                         .await
@@ -110,9 +110,9 @@ async fn main() {
                     println!("User not found for {}", email);
                 }
                 Some(user) => {
-                    let hasher = BcryptHasher::new();
+                    let hasher = SchemeAwareHasher::default();
 
-                    if hasher.verify_password(password, &user.password) {
+                    if user.verify_password(&hasher, password) {
                         println!(
                             "User logged in: {} {} at {}",
                             user.id,
