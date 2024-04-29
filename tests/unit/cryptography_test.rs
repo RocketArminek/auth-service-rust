@@ -50,8 +50,8 @@ fn it_can_check_if_hash_needs_rehash() {
     let scheme_02 = SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt);
 
     let hash = scheme_01.hash_password("password").unwrap();
-    let needs_rehash_01 = scheme_01.require_update(&hash);
-    let needs_rehash_02 = scheme_02.require_update(&hash);
+    let needs_rehash_01 = scheme_01.is_outdated(&hash);
+    let needs_rehash_02 = scheme_02.is_outdated(&hash);
 
     assert_eq!(needs_rehash_01, false);
     assert_eq!(needs_rehash_02, true);

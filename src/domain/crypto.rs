@@ -1,9 +1,9 @@
-use crate::domain::error::Error;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use bcrypt::DEFAULT_COST;
 use std::collections::HashMap;
+use crate::domain::error::Error;
 
 pub trait Hasher {
     fn hash_password(&self, password: &str) -> Result<String, Error>;
@@ -31,12 +31,12 @@ impl HashingScheme {
         }
     }
 
-    pub fn from_string(scheme: String) -> Self {
+    pub fn from_string(scheme: String) -> Result<Self, Error> {
         match scheme.as_str() {
-            "argon2" => HashingScheme::Argon2,
-            "bcrypt" => HashingScheme::Bcrypt,
-            "bcrypt_low" => HashingScheme::BcryptLow,
-            _ => HashingScheme::BcryptLow,
+            "argon2" => Ok(HashingScheme::Argon2),
+            "bcrypt" => Ok(HashingScheme::Bcrypt),
+            "bcrypt_low" => Ok(HashingScheme::BcryptLow),
+            _ => Err(Error::SchemeNotSupported),
         }
     }
 }
@@ -80,14 +80,15 @@ impl SchemeAwareHasher {
         self.algorithms.insert(name, Box::new(hasher));
     }
 
-    pub fn require_update(&self, hash: &str) -> bool {
+    pub fn is_outdated(&self, hash: &str) -> bool {
         let parts: Vec<&str> = hash.splitn(2, '.').collect();
         if parts.len() != 2 {
             return true;
         }
 
         let scheme = HashingScheme::from_string(parts[0].to_string());
-        scheme != self.current_scheme
+
+        scheme.is_ok_and(|scheme| scheme != self.current_scheme)
     }
 }
 
@@ -117,12 +118,14 @@ impl Hasher for SchemeAwareHasher {
         let scheme = HashingScheme::from_string(parts[0].to_string());
         let password_hash = parts[1];
 
-        let hasher = self.algorithms.get(&scheme);
+        scheme.is_ok_and(|scheme| {
+            let hasher = self.algorithms.get(&scheme);
 
-        match hasher {
-            Some(hasher) => hasher.verify_password(password, password_hash),
-            None => false,
-        }
+            match hasher {
+                Some(hasher) => hasher.verify_password(password, password_hash),
+                None => false,
+            }
+        })
     }
 }
 

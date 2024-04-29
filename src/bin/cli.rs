@@ -77,6 +77,9 @@ async fn main() {
                     Error::InvalidPassword => {
                         panic!("Invalid password format");
                     }
+                    Error::SchemeNotSupported => {
+                        panic!("Password hashing scheme not supported");
+                    }
                 },
             }
         }

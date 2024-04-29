@@ -4,6 +4,7 @@ pub enum Error {
     InvalidPassword,
     EmptyPassword,
     EncryptionFailed,
+    SchemeNotSupported,
 }
 
 #[derive(Debug)]

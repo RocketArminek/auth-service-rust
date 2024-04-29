@@ -5,7 +5,7 @@ use sqlx::{MySql, Pool};
 
 #[sqlx::test]
 async fn it_returns_health_check_result(pool: Pool<MySql>) {
-    let server = create_test_server(pool);
+    let server = create_test_server("secret".to_string(), pool);
     let response = server.get("/v1/health").await;
     let body = response.json::<HealthResponse>();
 
@@ -15,7 +15,7 @@ async fn it_returns_health_check_result(pool: Pool<MySql>) {
 
 #[sqlx::test]
 async fn it_returns_open_api_docs(pool: Pool<MySql>) {
-    let server = create_test_server(pool);
+    let server = create_test_server("secret".to_string(), pool);
     let response = server.get("/").await;
     let body = response.text();
 
