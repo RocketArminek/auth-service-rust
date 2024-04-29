@@ -1,4 +1,5 @@
-use auth_service::domain::crypto::SchemeAwareHasher;
+use std::env;
+use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
@@ -41,6 +42,10 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    let hashing_scheme =
+        env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
+    let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
+
     let cli = Cli::parse();
     let pool = create_mysql_pool().await.unwrap();
     migrate!("./migrations").run(&pool).await.unwrap();
@@ -51,7 +56,7 @@ async fn main() {
             let user = User::now_with_email_and_password(email.clone(), password.clone());
             match user {
                 Ok(mut user) => {
-                    user.hash_password(&SchemeAwareHasher::default());
+                    user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme));
                     repository
                         .add(&user)
                         .await
@@ -113,7 +118,7 @@ async fn main() {
                     println!("User not found for {}", email);
                 }
                 Some(user) => {
-                    let hasher = SchemeAwareHasher::default();
+                    let hasher = SchemeAwareHasher::with_scheme(hashing_scheme);
 
                     if user.verify_password(&hasher, password) {
                         println!(
