@@ -64,9 +64,9 @@ pub async fn create_user(
 #[utoipa::path(post, path = "/v1/users/login",
     request_body = LoginRequest,
     responses(
-        (status = 200, description = "Get token", content_type = "application/json", body = LoginResponse),
-        (status = 404, description = "User not found", content_type = "application/json", body = LoginResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = LoginResponse),
+        (status = 200, description = "Get token", content_type = "application/json", body = AuthResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = AuthResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = AuthResponse),
     )
 )]
 pub async fn login(
@@ -138,9 +138,9 @@ pub async fn login(
 
 #[utoipa::path(get, path = "/v1/users/verify",
     responses(
-        (status = 200, description = "Token verified"),
-        (status = 403, description = "Forbidden"),
-        (status = 401, description = "Unauthorized"),
+        (status = 200, description = "Token verified", content_type = "application/json", body = AuthResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = AuthResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = AuthResponse),
     )
 )]
 pub async fn verify(
