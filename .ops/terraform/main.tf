@@ -33,11 +33,11 @@ module "app" {
 
   liveness_probe_path                  = "/v1/health"
   liveness_probe_initial_delay_seconds = 60
-  liveness_probe_period_seconds        = 60
+  liveness_probe_period_seconds        = 120
 
   readiness_probe_path                  = "/v1/health"
   readiness_probe_initial_delay_seconds = 1
-  readiness_probe_period_seconds        = 10
+  readiness_probe_period_seconds        = 60
 
   pdb_enabled = true
 
