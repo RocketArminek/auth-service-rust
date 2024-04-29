@@ -6,8 +6,3 @@ pub enum Error {
     EncryptionFailed,
     SchemeNotSupported,
 }
-
-#[derive(Debug)]
-pub enum StorageError {
-    AlreadyExists { email: String },
-}
