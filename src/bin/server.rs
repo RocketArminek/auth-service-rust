@@ -13,7 +13,6 @@ async fn main() {
     let hashing_scheme =
         env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
-
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
@@ -25,15 +24,17 @@ async fn main() {
     migrate!("./migrations").run(&pool).await.unwrap();
     let repository = MysqlUserRepository::new(pool);
 
+    tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+
     match listener {
         Ok(listener) => {
-            println!("Server started at {}", addr);
+            tracing::info!("Server started at {}", addr);
             axum::serve(listener, routes(secret, hashing_scheme, repository.clone()))
                 .await
                 .unwrap();
         }
         Err(e) => {
-            println!("Failed to bind to port {}: {}", port, e);
+            tracing::error!("Failed to bind to port {}: {}", port, e);
         }
     }
 }
