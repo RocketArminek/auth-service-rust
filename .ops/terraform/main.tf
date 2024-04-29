@@ -5,6 +5,7 @@ locals {
 }
 
 module "app" {
+  depends_on = [kubernetes_secret.app]
   source           = "Arminek/app/k8s"
   version          = "1.1.0"
   app_name         = local.app_name
@@ -41,6 +42,7 @@ module "app" {
   pdb_enabled = true
 
   image_pull_secrets = "github-registry"
+  image_pull_policy = "Always"
   node_selector = {
     "purpose" = "workload"
   }
@@ -55,6 +57,11 @@ module "app" {
       secret_name = "mysql-secret"
       secret_key  = "password"
     },
+    {
+      name        = "SECRET"
+      secret_name = local.app_name
+      secret_key  = "secret"
+    }
   ]
   envs_from_value = [
     {
@@ -68,6 +75,27 @@ module "app" {
     {
       name  = "DATABASE_PORT"
       value = "3306"
+    },
+    {
+      name  = "PASSWORD_HASHING_SCHEME"
+      value = "bcrypt_low"
     }
   ]
+}
+
+resource "random_password" "secret" {
+  length = 24
+  special = true
+}
+
+resource "kubernetes_secret" "app" {
+  depends_on = [random_password.secret]
+  metadata {
+    name = local.app_name
+    namespace = local.namespace
+  }
+
+  data = {
+    secret = random_password.secret.result
+  }
 }

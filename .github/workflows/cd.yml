@@ -6,11 +6,9 @@ on:
     paths:
       - "src/**"
       - "Cargo.toml"
-      - ".ops/**"
       - "Dockerfile"
       - "tests/**"
       - "migrations/**"
-      - ".github/workflows/**"
     branches:
       - "main"
 
