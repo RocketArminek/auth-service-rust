@@ -11,7 +11,7 @@ module "app" {
   app_name         = local.app_name
   namespace        = local.namespace
   app_docker_image = var.app_docker_image
-  replicas         = 2
+  replicas         = 1
   env              = local.app_env
 
   hosts     = ["auth-api-rust.arminek.xyz"]
