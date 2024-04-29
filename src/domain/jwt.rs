@@ -5,7 +5,7 @@ pub struct Claims {
     pub sub: String,
     pub exp: usize,
     pub iss: String,
-    pub email: String
+    pub email: String,
 }
 
 impl Claims {
@@ -14,7 +14,7 @@ impl Claims {
             sub,
             exp,
             iss,
-            email
+            email,
         }
     }
 }

@@ -1,15 +1,15 @@
-use std::ops::Add;
 use crate::create_test_server;
 use ::serde_json::json;
-use auth_service::domain::user::User;
-use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use axum::http::StatusCode;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, DecodingKey, Validation};
-use sqlx::{MySql, Pool};
-use auth_service::api::user_controller::{LoginResponse};
+use auth_service::api::user_controller::AuthResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::jwt::Claims;
+use auth_service::domain::user::User;
+use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
+use axum::http::{header, HeaderName, HeaderValue, StatusCode};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use sqlx::{MySql, Pool};
+use std::ops::{Add, Sub};
 
 #[sqlx::test]
 async fn it_registers_new_user(pool: Pool<MySql>) {
@@ -83,7 +83,8 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
     let server = create_test_server("secret".to_string(), pool.clone());
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
-    let mut user = User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+    let mut user =
+        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -104,7 +105,8 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
     let server = create_test_server(secret.clone(), pool.clone());
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
-    let mut user = User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+    let mut user =
+        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -118,10 +120,10 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
-    let body = response.json::<LoginResponse>();
+    let body = response.json::<AuthResponse>();
     let exp = Utc::now().add(Duration::days(30));
     match body {
-        LoginResponse::OK(body) => {
+        AuthResponse::OK(body) => {
             assert_eq!(body.user_id, user.id.to_string());
             assert_eq!(body.email, user.email);
             assert_eq!(body.expires_at, exp.timestamp() as usize);
@@ -131,8 +133,9 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
             let token = decode::<Claims>(
                 &body.token,
                 &DecodingKey::from_secret(secret.as_ref()),
-                &Validation::default()
-            ).unwrap();
+                &Validation::default(),
+            )
+            .unwrap();
 
             assert_eq!(token.claims.sub, user.id.to_string());
             assert_eq!(token.claims.email, user.email);
@@ -141,6 +144,126 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
 
             println!("{:?}", body.token);
         }
-        _ => panic!("Unexpected response: {:?}", body)
+        _ => panic!("Unexpected response: {:?}", body),
+    }
+}
+
+#[sqlx::test]
+async fn it_verifies_token(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let server = create_test_server(secret.clone(), pool.clone());
+    let repository = MysqlUserRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user =
+        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/users/login")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+        }))
+        .await;
+    let body = response.json::<AuthResponse>();
+
+    match body {
+        AuthResponse::OK(body) => {
+            let response = server
+                .get("/v1/users/verify")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+        }
+        _ => panic!("Unexpected response: {:?}", body),
+    }
+}
+
+#[sqlx::test]
+async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let server = create_test_server(secret.clone(), pool.clone());
+    let repository = MysqlUserRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user =
+        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/users/login")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+        }))
+        .await;
+    let body = response.json::<AuthResponse>();
+
+    match body {
+        AuthResponse::OK(mut body) => {
+            body.token.push('1');
+
+            let response = server
+                .get("/v1/users/verify")
+                .add_header(
+                    header::AUTHORIZATION,
+                    HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+        }
+        _ => panic!("Unexpected response: {:?}", body),
+    }
+}
+
+#[sqlx::test]
+async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let server = create_test_server(secret.clone(), pool.clone());
+    let repository = MysqlUserRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user =
+        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    repository.add(&user).await.unwrap();
+
+    let now = Utc::now();
+    let exp = now.sub(Duration::days(2));
+
+    let claims = Claims::new(
+        user.id.to_string().clone(),
+        exp.timestamp() as usize,
+        "rocket-arminek".to_string(),
+        user.email.clone(),
+    );
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .unwrap();
+
+    let response = server
+        .get("/v1/users/verify")
+        .add_header(
+            header::AUTHORIZATION,
+            HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+        )
+        .await;
+
+    let body = response.json::<AuthResponse>();
+
+    assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+    match body {
+        AuthResponse::Unauthorized(resp) => {
+            assert_eq!(resp.message, "Expired token");
+        }
+        _ => panic!("Unexpected response: {:?}", body),
     }
 }

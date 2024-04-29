@@ -1,18 +1,20 @@
-use std::ops::Add;
+use crate::api::token_extractor::BearerToken;
+use crate::api::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
+use crate::domain::jwt::Claims;
 use crate::domain::user::User;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use chrono::{Duration, Timelike, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::errors::{ErrorKind};
+use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
+use std::ops::Add;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use utoipa::{ToResponse, ToSchema};
 use uuid::{NoContext, Timestamp, Uuid};
-use crate::api::ServerState;
-use crate::domain::jwt::Claims;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
@@ -70,26 +72,29 @@ pub async fn create_user(
 pub async fn login(
     State(state): State<ServerState>,
     request: Json<LoginRequest>,
-) -> (StatusCode, Json<LoginResponse>) {
+) -> (StatusCode, Json<AuthResponse>) {
     let email = request.email.clone();
     let password = request.password.clone();
     let user = state.repository.get_by_email(&email).await;
 
     match user {
         Some(user) => {
-            if !user.verify_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme), &password) {
-                return (StatusCode::UNAUTHORIZED, Json(
-                    LoginResponse::Unauthorized(
-                        ErrorResponse {
-                            message: String::from("Unauthorized"),
-                        }
-                    )
-                ))
+            if !user.verify_password(
+                &SchemeAwareHasher::with_scheme(state.hashing_scheme),
+                &password,
+            ) {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(AuthResponse::Unauthorized(ErrorResponse {
+                        message: String::from("Unauthorized"),
+                    })),
+                );
             }
 
             let now = Utc::now();
             let exp = now.add(Duration::days(30));
-            let timestamp = Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
+            let timestamp =
+                Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
 
             let claims = Claims::new(
                 user.id.to_string().clone(),
@@ -100,41 +105,77 @@ pub async fn login(
             let token = encode(
                 &Header::default(),
                 &claims,
-                &EncodingKey::from_secret(state.secret.as_ref())
+                &EncodingKey::from_secret(state.secret.as_ref()),
             );
 
             match token {
-                Ok(token) => {
-                    (StatusCode::OK, Json(
-                        LoginResponse::OK(
-                            SessionResponse {
-                                session_id: Uuid::new_v7(timestamp).to_string(),
-                                user_id: user.id.to_string(),
-                                email: user.email,
-                                token,
-                                expires_at: exp.timestamp() as usize,
-                            })
-                        )
-                    )
-                }
-                Err(_) => {
-                    (StatusCode::FORBIDDEN, Json(
-                        LoginResponse::Forbidden(
-                            ErrorResponse {
-                                message: String::from("Could not encode token"),
-                            }
-                        )
-                    ))
-                }
+                Ok(token) => (
+                    StatusCode::OK,
+                    Json(AuthResponse::OK(SessionResponse {
+                        session_id: Uuid::new_v7(timestamp).to_string(),
+                        user_id: user.id.to_string(),
+                        email: user.email,
+                        token,
+                        expires_at: exp.timestamp() as usize,
+                    })),
+                ),
+                Err(_) => (
+                    StatusCode::FORBIDDEN,
+                    Json(AuthResponse::Forbidden(ErrorResponse {
+                        message: String::from("Could not encode token"),
+                    })),
+                ),
             }
         }
-        None => (StatusCode::NOT_FOUND, Json(
-            LoginResponse::NotFound(
-                ErrorResponse {
-                    message: String::from("User not found"),
-                }
-            )
-        )),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(AuthResponse::NotFound(ErrorResponse {
+                message: String::from("User not found"),
+            })),
+        ),
+    }
+}
+
+#[utoipa::path(get, path = "/v1/users/verify",
+    responses(
+        (status = 200, description = "Token verified"),
+        (status = 403, description = "Forbidden"),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
+pub async fn verify(
+    BearerToken(token): BearerToken,
+    State(state): State<ServerState>,
+) -> (StatusCode, Json<AuthResponse>) {
+    let decoded = jsonwebtoken::decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(state.secret.as_ref()),
+        &Validation::default(),
+    );
+
+    match decoded {
+        Ok(_) => (StatusCode::OK, Json(AuthResponse::Empty)),
+        Err(error) => match error.kind() {
+            ErrorKind::InvalidToken => (
+                StatusCode::UNAUTHORIZED,
+                Json(AuthResponse::Unauthorized(ErrorResponse {
+                    message: String::from("Invalid token"),
+                })),
+            ),
+            ErrorKind::InvalidSignature => (
+                StatusCode::UNAUTHORIZED,
+                Json(AuthResponse::Unauthorized(ErrorResponse {
+                    message: String::from("Invalid signature"),
+                })),
+            ),
+            ErrorKind::ExpiredSignature => (
+                StatusCode::UNAUTHORIZED,
+                Json(AuthResponse::Unauthorized(ErrorResponse {
+                    message: String::from("Expired token"),
+                })),
+            ),
+            _ => (StatusCode::UNAUTHORIZED, Json(AuthResponse::Empty)),
+        },
     }
 }
 
@@ -151,12 +192,13 @@ pub struct LoginRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToResponse)]
-pub enum LoginResponse {
+pub enum AuthResponse {
     OK(SessionResponse),
     BadRequest(ErrorResponse),
     Unauthorized(ErrorResponse),
     NotFound(ErrorResponse),
     Forbidden(ErrorResponse),
+    Empty,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToResponse)]

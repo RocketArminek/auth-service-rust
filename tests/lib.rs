@@ -1,8 +1,8 @@
 use auth_service::api::routes::routes;
+use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum_test::TestServer;
 use sqlx::{MySql, Pool};
-use auth_service::domain::crypto::HashingScheme;
 
 mod acceptance;
 mod integration;

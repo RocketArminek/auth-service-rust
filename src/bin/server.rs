@@ -1,18 +1,17 @@
-use std::env;
 use auth_service::api::routes::*;
+use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::database::create_mysql_pool;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
-use auth_service::domain::crypto::HashingScheme;
+use std::env;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     dotenv().ok();
-    let secret =
-        env::var("SECRET").expect("SECRET is not set in envs");
-    let hashing_scheme = env::var("PASSWORD_HASHING_SCHEME")
-        .expect("PASSWORD_HASHING_SCHEME is not set in envs");
+    let secret = env::var("SECRET").expect("SECRET is not set in envs");
+    let hashing_scheme =
+        env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
 
     tracing_subscriber::fmt()

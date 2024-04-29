@@ -2,6 +2,7 @@ use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
 pub mod routes;
+mod token_extractor;
 pub mod user_controller;
 pub mod utils_controller;
 
