@@ -7,7 +7,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use chrono::{Duration, Timelike, Utc};
-use jsonwebtoken::errors::{ErrorKind};
+use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
@@ -85,7 +85,7 @@ pub async fn login(
             ) {
                 return (
                     StatusCode::UNAUTHORIZED,
-                    Json(AuthResponse::Unauthorized(ErrorResponse {
+                    Json(AuthResponse::Unauthorized(MessageResponse {
                         message: String::from("Unauthorized"),
                     })),
                 );
@@ -121,7 +121,7 @@ pub async fn login(
                 ),
                 Err(_) => (
                     StatusCode::FORBIDDEN,
-                    Json(AuthResponse::Forbidden(ErrorResponse {
+                    Json(AuthResponse::Forbidden(MessageResponse {
                         message: String::from("Could not encode token"),
                     })),
                 ),
@@ -129,7 +129,7 @@ pub async fn login(
         }
         None => (
             StatusCode::NOT_FOUND,
-            Json(AuthResponse::NotFound(ErrorResponse {
+            Json(AuthResponse::NotFound(MessageResponse {
                 message: String::from("User not found"),
             })),
         ),
@@ -154,27 +154,46 @@ pub async fn verify(
     );
 
     match decoded {
-        Ok(_) => (StatusCode::OK, Json(AuthResponse::Empty)),
+        Ok(decoded_token) => (
+            StatusCode::OK,
+            Json(AuthResponse::OK(SessionResponse {
+                session_id: Uuid::new_v7(Timestamp::from_unix(
+                    NoContext,
+                    Utc::now().timestamp() as u64,
+                    Utc::now().nanosecond(),
+                ))
+                .to_string(),
+                user_id: decoded_token.claims.sub,
+                email: decoded_token.claims.email,
+                token,
+                expires_at: decoded_token.claims.exp,
+            })),
+        ),
         Err(error) => match error.kind() {
             ErrorKind::InvalidToken => (
                 StatusCode::UNAUTHORIZED,
-                Json(AuthResponse::Unauthorized(ErrorResponse {
+                Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Invalid token"),
                 })),
             ),
             ErrorKind::InvalidSignature => (
                 StatusCode::UNAUTHORIZED,
-                Json(AuthResponse::Unauthorized(ErrorResponse {
+                Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Invalid signature"),
                 })),
             ),
             ErrorKind::ExpiredSignature => (
                 StatusCode::UNAUTHORIZED,
-                Json(AuthResponse::Unauthorized(ErrorResponse {
+                Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Expired token"),
                 })),
             ),
-            _ => (StatusCode::UNAUTHORIZED, Json(AuthResponse::Empty)),
+            _ => (
+                StatusCode::UNAUTHORIZED,
+                Json(AuthResponse::Unauthorized(MessageResponse {
+                    message: String::from("Unauthorized"),
+                })),
+            ),
         },
     }
 }
@@ -194,11 +213,10 @@ pub struct LoginRequest {
 #[derive(Debug, Deserialize, Serialize, ToResponse)]
 pub enum AuthResponse {
     OK(SessionResponse),
-    BadRequest(ErrorResponse),
-    Unauthorized(ErrorResponse),
-    NotFound(ErrorResponse),
-    Forbidden(ErrorResponse),
-    Empty,
+    BadRequest(MessageResponse),
+    Unauthorized(MessageResponse),
+    NotFound(MessageResponse),
+    Forbidden(MessageResponse),
 }
 
 #[derive(Debug, Deserialize, Serialize, ToResponse)]
@@ -212,6 +230,6 @@ pub struct SessionResponse {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToResponse)]
-pub struct ErrorResponse {
+pub struct MessageResponse {
     pub message: String,
 }

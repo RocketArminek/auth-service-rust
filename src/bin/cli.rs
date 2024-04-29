@@ -1,4 +1,3 @@
-use std::env;
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::error::Error;
 use auth_service::domain::user::User;
@@ -7,6 +6,7 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
+use std::env;
 
 #[derive(Parser)]
 #[command(author, version, about)]

@@ -42,7 +42,7 @@ pub fn routes(
         verify,
     ),
     components(
-        responses(HealthResponse, AuthResponse, SessionResponse, ErrorResponse),
+        responses(HealthResponse, AuthResponse, SessionResponse, MessageResponse),
         schemas(CreateUserRequest, LoginRequest),
     )
 )]
