@@ -67,7 +67,10 @@ impl User {
     pub fn hash_password(&mut self, hasher: &impl Hasher) {
         let hashed_password = hasher.hash_password(self.password.as_str());
 
-        self.password = hashed_password.unwrap();
+        match hashed_password {
+            Ok(hashed_password) => self.password = hashed_password,
+            Err(error) => tracing::error!("Error hashing password: {:?}", error),
+        }
     }
 
     pub fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {

@@ -16,10 +16,12 @@ where
         let headers = parts.headers.clone();
         match headers.get(header::AUTHORIZATION) {
             Some(value) => {
-                let value = value.to_str().unwrap();
+                let value = value.to_str().unwrap_or("");
                 if value.starts_with("Bearer ") {
                     Ok(BearerToken(value[7..].to_string()))
                 } else {
+                    tracing::warn!("Invalid Authorization header: {}", value);
+
                     Err(StatusCode::UNAUTHORIZED)
                 }
             }
