@@ -4,7 +4,7 @@ use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::jwt::Claims;
 use crate::domain::user::User;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{header, HeaderMap, StatusCode};
 use axum::Json;
 use chrono::{Duration, Timelike, Utc};
 use jsonwebtoken::errors::ErrorKind;
@@ -12,6 +12,7 @@ use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
 use std::sync::Arc;
+use axum::response::IntoResponse;
 use tokio::sync::Mutex;
 use utoipa::{ToResponse, ToSchema};
 use uuid::{NoContext, Timestamp, Uuid};
@@ -146,50 +147,64 @@ pub async fn login(
 pub async fn verify(
     BearerToken(token): BearerToken,
     State(state): State<ServerState>,
-) -> (StatusCode, Json<AuthResponse>) {
+) -> impl IntoResponse {
     let decoded = jsonwebtoken::decode::<Claims>(
         &token,
         &DecodingKey::from_secret(state.secret.as_ref()),
         &Validation::default(),
     );
+    let mut headers = HeaderMap::new();
 
     match decoded {
-        Ok(decoded_token) => (
-            StatusCode::OK,
-            Json(AuthResponse::OK(SessionResponse {
-                session_id: Uuid::new_v7(Timestamp::from_unix(
-                    NoContext,
-                    Utc::now().timestamp() as u64,
-                    Utc::now().nanosecond(),
-                ))
-                .to_string(),
-                user_id: decoded_token.claims.sub,
-                email: decoded_token.claims.email,
-                token,
-                expires_at: decoded_token.claims.exp,
-            })),
-        ),
+        Ok(decoded_token) => {
+            let user_id = decoded_token.claims.sub.clone();
+            headers.insert(
+                "X-User-Id",
+                header::HeaderValue::from_str(&user_id).unwrap(),
+            );
+
+            (
+                StatusCode::OK,
+                headers,
+                Json(AuthResponse::OK(SessionResponse {
+                    session_id: Uuid::new_v7(Timestamp::from_unix(
+                        NoContext,
+                        Utc::now().timestamp() as u64,
+                        Utc::now().nanosecond(),
+                    ))
+                        .to_string(),
+                    user_id,
+                    email: decoded_token.claims.email,
+                    token,
+                    expires_at: decoded_token.claims.exp,
+                }))
+            )
+        },
         Err(error) => match error.kind() {
             ErrorKind::InvalidToken => (
                 StatusCode::UNAUTHORIZED,
+                headers,
                 Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Invalid token"),
                 })),
             ),
             ErrorKind::InvalidSignature => (
                 StatusCode::UNAUTHORIZED,
+                headers,
                 Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Invalid signature"),
                 })),
             ),
             ErrorKind::ExpiredSignature => (
                 StatusCode::UNAUTHORIZED,
+                headers,
                 Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Expired token"),
                 })),
             ),
             _ => (
                 StatusCode::UNAUTHORIZED,
+                headers,
                 Json(AuthResponse::Unauthorized(MessageResponse {
                     message: String::from("Unauthorized"),
                 })),

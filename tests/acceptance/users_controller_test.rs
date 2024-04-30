@@ -178,7 +178,10 @@ async fn it_verifies_token(pool: Pool<MySql>) {
                 )
                 .await;
 
+            let user_id_from_header = response.headers().get("X-User-Id").unwrap().to_str().unwrap();
+
             assert_eq!(response.status_code(), StatusCode::OK);
+            assert_eq!(user_id_from_header, user.id.to_string());
         }
         _ => panic!("Unexpected response: {:?}", body),
     }
