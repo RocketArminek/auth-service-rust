@@ -34,22 +34,7 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |-
-            type=sha,enable=true,priority=100,prefix=,suffix=,format=long
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=test-latest
       - name: Test extracted metadata
         run: |
           echo ${{ steps.meta.outputs.tags }}
-
-#      - name: Build and push Docker image
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: .
-#          push: true
-#          target: server
-#          tags: ${{ steps.meta.outputs.tags }}
-#          labels: ${{ steps.meta.outputs.labels }}
-#          cache-from: type=gha
-#          cache-to: type=gha,mode=max
