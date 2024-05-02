@@ -90,8 +90,10 @@ jobs:
         ports:
           - 3306:3306
     steps:
-#      - name: Prepare db
-#        run: sqlx database reset
+      - name: Prepare db
+        run: |
+          cd /app
+          sqlx database reset
       - name: Run tests
         run: |
           cd /app
