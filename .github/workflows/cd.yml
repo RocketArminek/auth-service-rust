@@ -46,7 +46,6 @@ jobs:
           context: .
           push: true
           target: test-builder
-          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-latest
@@ -74,7 +73,7 @@ jobs:
     needs:
       - publish-test-image
     container:
-      image: ghcr.io/rocketarminek/auth-api-rust:187c826aa885e24766baf48ddaeeb4dd1a6d6421
+      image: ghcr.io/rocketarminek/auth-api-rust:test-latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.ARMINEK_READ_ONLY_TOKEN }}
@@ -128,7 +127,6 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64
           target: server
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
