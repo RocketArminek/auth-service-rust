@@ -22,12 +22,12 @@ module "app" {
   }
 
   resources_limits = {
-    "cpu"    = "250m"
+    "cpu"    = "350m"
     "memory" = "64Mi"
   }
 
   resources_requests = {
-    "cpu"    = "125m"
+    "cpu"    = "250m"
     "memory" = "32Mi"
   }
 
