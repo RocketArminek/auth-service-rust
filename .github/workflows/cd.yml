@@ -45,7 +45,7 @@ jobs:
         with:
           context: .
           push: true
-          target: builder
+          target: base-builder
           platforms: linux/amd64
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
@@ -93,10 +93,7 @@ jobs:
     steps:
       - name: Wait for MySQL
         run: |
-          while ! nc -z mysql 3306; do
-            echo "Waiting for MySQL to start..."
-            sleep 1
-          done
+          sleep 10
       - name: Prepare db
         run: |
           cd /app
