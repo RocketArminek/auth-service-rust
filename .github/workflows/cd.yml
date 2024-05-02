@@ -71,9 +71,10 @@ jobs:
     name: "Run tests"
     needs:
       - publish-test-image
-    container: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-latest
-    env:
-      DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+    container:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-latest
+      env:
+        DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
     services:
       mysql:
         image: mysql:8.0
