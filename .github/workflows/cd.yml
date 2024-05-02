@@ -9,6 +9,7 @@ on:
       - "Dockerfile"
       - "tests/**"
       - "migrations/**"
+      - ".github/workflows/cd.yml"
     branches:
       - "main"
 
