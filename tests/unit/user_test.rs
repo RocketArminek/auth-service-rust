@@ -1,16 +1,16 @@
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::user::User;
-use chrono::{DateTime, Utc};
+use chrono::{Utc};
 use uuid::Uuid;
 
 #[test]
 fn it_can_be_created() {
-    let user = create_user(
+    let user = User::new(
         Uuid::new_v4(),
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
         Utc::now(),
-    );
+    ).unwrap();
 
     assert_eq!(user.email, String::from("test@test.com"));
     assert_eq!(user.id.is_nil(), false);
@@ -85,13 +85,4 @@ fn it_can_verify_password_using_hasher() {
     user.hash_password(&hasher);
 
     assert_eq!(user.verify_password(&hasher, "Iknow#othing1"), true);
-}
-
-fn create_user(id: Uuid, email: String, password: String, created_at: DateTime<Utc>) -> User {
-    let user = User::new(id, email, password, created_at);
-
-    match user {
-        Ok(x) => x,
-        Err(_) => panic!("User creation failed"),
-    }
 }

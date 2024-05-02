@@ -1,7 +1,7 @@
-use crate::create_test_server;
 use auth_service::api::utils_controller::HealthResponse;
 use axum::http::StatusCode;
 use sqlx::{MySql, Pool};
+use crate::utils::create_test_server;
 
 #[sqlx::test]
 async fn it_returns_health_check_result(pool: Pool<MySql>) {

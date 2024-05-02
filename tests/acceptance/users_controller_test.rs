@@ -1,4 +1,3 @@
-use crate::create_test_server;
 use ::serde_json::json;
 use auth_service::api::user_controller::AuthResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
@@ -10,6 +9,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
+use crate::utils::create_test_server;
 
 #[sqlx::test]
 async fn it_registers_new_user(pool: Pool<MySql>) {
