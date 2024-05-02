@@ -86,13 +86,10 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: toor
+          MYSQL_DATABASE: auth_service_dev
         ports:
           - 3306:3306
     steps:
-      - name: check envs
-        run: echo $DATABASE_URL
-      - name: init database
-        run: sqlx database create
       - name: Run tests
         run: cargo test --all
 
