@@ -8,8 +8,12 @@ COPY --link Cargo.toml Cargo.toml
 COPY --link migrations migrations
 COPY --link tests tests
 COPY --link src src
-RUN cargo build --release
+
+FROM base-builder AS test
 RUN cargo test --no-run
+
+FROM base-builder AS dist
+RUN cargo build --release
 
 FROM debian:bookworm-slim AS base-runner
 RUN adduser \
@@ -22,10 +26,10 @@ RUN adduser \
   appuser
 
 FROM base-runner AS server
-COPY --from=base-builder /app/.env /app/.env
-COPY --from=base-builder /app/migrations /migrations
+COPY --from=dist /app/.env /app/.env
+COPY --from=dist /app/migrations /migrations
 RUN chown -R appuser /migrations
-COPY --from=base-builder /app/target/release/server /usr/local/bin
+COPY --from=dist /app/target/release/server /usr/local/bin
 RUN chown appuser /usr/local/bin/server
 
 USER appuser
@@ -34,8 +38,8 @@ ENTRYPOINT ["server"]
 EXPOSE 8080/tcp
 
 FROM base-runner AS cli
-COPY --from=base-builder /app/.env /app/.env
-COPY --from=base-builder /app/target/release/cli /usr/local/bin
+COPY --from=dist /app/.env /app/.env
+COPY --from=dist /app/target/release/cli /usr/local/bin
 RUN chown appuser /usr/local/bin/cli
 
 USER appuser
