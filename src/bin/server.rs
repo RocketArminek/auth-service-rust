@@ -7,7 +7,7 @@ use sqlx::sqlx_macros::migrate;
 use std::env;
 use tokio::signal;
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main(flavor = "multi_thread", worker_threads=4)]
 async fn main() {
     dotenv().ok();
     let secret = env::var("SECRET").expect("SECRET is not set in envs");

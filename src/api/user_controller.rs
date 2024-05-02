@@ -44,13 +44,15 @@ pub async fn create_user(
 
     match user {
         Ok(mut user) => {
-            tokio::spawn(async move {
-                user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
-                match thread_safe_repository.lock().await.add(&user).await {
-                    Ok(_) => tracing::info!("User created: {}", user.email),
-                    Err(error) => tracing::warn!("Failed to create user {:?}", error),
+            tokio::task::spawn(
+                async move {
+                    user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
+                    match thread_safe_repository.lock().await.add(&user).await {
+                        Ok(_) => tracing::info!("User created: {}", user.email),
+                        Err(error) => tracing::warn!("Failed to create user {:?}", error),
+                    }
                 }
-            });
+            );
 
             StatusCode::OK
         }
