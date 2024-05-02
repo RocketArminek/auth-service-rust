@@ -27,7 +27,7 @@ jobs:
           cd .ops/terraform
           terraform init
           terraform validate
-          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main" -lock=false
+          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" -lock=false
 
   terraform-apply:
     runs-on: ubuntu-latest
@@ -43,4 +43,4 @@ jobs:
           echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
           cd .ops/terraform
           terraform init
-          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main" -lock-timeout=10m
+          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" -lock-timeout=10m
