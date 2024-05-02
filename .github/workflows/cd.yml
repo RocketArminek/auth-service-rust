@@ -93,7 +93,7 @@ jobs:
     steps:
       - name: Wait for MySQL
         run: |
-          sleep 10
+          sleep 5
       - name: Prepare db
         run: |
           cd /app
