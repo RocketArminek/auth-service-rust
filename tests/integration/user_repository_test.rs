@@ -1,7 +1,6 @@
 use auth_service::domain::user::User;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use sqlx::{MySql, Pool, QueryBuilder};
-use auth_service::domain::crypto::SchemeAwareHasher;
+use sqlx::{MySql, Pool};
 
 #[sqlx::test]
 async fn it_can_add_user(pool: Pool<MySql>) {
