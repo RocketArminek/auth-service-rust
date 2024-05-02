@@ -14,6 +14,14 @@ services:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: toor
-      MYSQL_DATABASE: auth_service_dev
     ports:
       - "3306:3306"
+  test:
+    depends_on:
+      - mysql
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test-builder
+    environment:
+      DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev

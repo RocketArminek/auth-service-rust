@@ -89,6 +89,8 @@ jobs:
         ports:
           - 3306:3306
     steps:
+      - name: check envs
+        run: echo $DATABASE_URL
       - name: init database
         run: sqlx database create
       - name: Run tests
