@@ -5,6 +5,7 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
 use std::env;
+use tokio::signal;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -30,11 +31,33 @@ async fn main() {
         Ok(listener) => {
             tracing::info!("Server started at {}", addr);
             axum::serve(listener, routes(secret, hashing_scheme, repository.clone()))
+                .with_graceful_shutdown(shutdown_signal())
                 .await
                 .unwrap();
         }
         Err(e) => {
             tracing::error!("Failed to bind to port {}: {}", port, e);
         }
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to install CTRL+C signal handler");
+    };
+
+    #[cfg(unix)]
+        let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("Failed to install SIGTERM signal handler")
+            .recv()
+            .await;
+    };
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
     }
 }
