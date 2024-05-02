@@ -73,7 +73,10 @@ jobs:
     needs:
       - publish-test-image
     container:
-      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-latest
+      image: ghcr.io/rocketarminek/auth-api-rust:test-latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       env:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
     services:
