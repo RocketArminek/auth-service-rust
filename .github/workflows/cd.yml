@@ -75,7 +75,6 @@ jobs:
     container:
       image: ghcr.io/rocketarminek/auth-api-rust:test-latest
       credentials:
-        registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
       env:
