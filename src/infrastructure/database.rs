@@ -19,18 +19,16 @@ pub async fn create_mysql_pool() -> Result<Pool<MySql>, Error> {
             user, password, host, database_port, database_name
         );
 
-        let pool = MySqlPoolOptions::new()
-            .max_connections(5)
+        MySqlPoolOptions::new()
+            .max_connections(1)
+            .acquire_timeout(std::time::Duration::from_millis(500))
             .connect(&database_url)
-            .await?;
-
-        Ok(pool)
+            .await
     } else {
-        let pool = MySqlPoolOptions::new()
-            .max_connections(5)
+        MySqlPoolOptions::new()
+            .max_connections(1)
+            .acquire_timeout(std::time::Duration::from_millis(500))
             .connect(&database_url.unwrap())
-            .await?;
-
-        Ok(pool)
+            .await
     }
 }

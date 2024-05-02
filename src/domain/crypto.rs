@@ -4,6 +4,7 @@ use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use bcrypt::DEFAULT_COST;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 pub trait Hasher {
     fn hash_password(&self, password: &str) -> Result<String, Error>;
@@ -45,7 +46,7 @@ impl SchemeAwareHasher {
     pub fn default() -> Self {
         let mut hashers: HashMap<HashingScheme, Box<dyn Hasher>> = HashMap::new();
         hashers.insert(HashingScheme::Argon2, Box::new(Argon2Hasher::new()));
-        hashers.insert(HashingScheme::Bcrypt, Box::new(BcryptHasher::new()));
+        hashers.insert(HashingScheme::Bcrypt, Box::new(BcryptHasher::default()));
         hashers.insert(HashingScheme::BcryptLow, Box::new(BcryptHasher::low_cost()));
 
         SchemeAwareHasher {
@@ -57,7 +58,7 @@ impl SchemeAwareHasher {
     pub fn with_scheme(scheme: HashingScheme) -> Self {
         let mut hashers: HashMap<HashingScheme, Box<dyn Hasher>> = HashMap::new();
         hashers.insert(HashingScheme::Argon2, Box::new(Argon2Hasher::new()));
-        hashers.insert(HashingScheme::Bcrypt, Box::new(BcryptHasher::new()));
+        hashers.insert(HashingScheme::Bcrypt, Box::new(BcryptHasher::default()));
         hashers.insert(HashingScheme::BcryptLow, Box::new(BcryptHasher::low_cost()));
 
         SchemeAwareHasher {
@@ -129,20 +130,21 @@ impl Hasher for SchemeAwareHasher {
     }
 }
 
-pub struct Argon2Hasher {}
+pub struct Argon2Hasher {
+    argon2: Argon2<'static>,
+}
 
 impl Argon2Hasher {
     pub fn new() -> Self {
-        Argon2Hasher {}
+        Argon2Hasher { argon2: get_argon2().clone() }
     }
 }
 
 impl Hasher for Argon2Hasher {
     fn hash_password(&self, password: &str) -> Result<String, Error> {
-        let hasher = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::default());
         let salt = SaltString::generate(&mut OsRng);
 
-        hasher
+        self.argon2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|_| Error::EncryptionFailed)
             .map(|hash| hash.to_string())
@@ -154,9 +156,7 @@ impl Hasher for Argon2Hasher {
             Err(_) => return false,
         };
 
-        let hasher = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::default());
-
-        hasher
+        self.argon2
             .verify_password(password.as_bytes(), &parsed_hash)
             .is_ok()
     }
@@ -167,7 +167,11 @@ pub struct BcryptHasher {
 }
 
 impl BcryptHasher {
-    pub fn new() -> Self {
+    pub fn new(cost: u32) -> Self {
+        BcryptHasher { cost }
+    }
+
+    pub fn default() -> Self {
         BcryptHasher { cost: DEFAULT_COST }
     }
 
@@ -184,4 +188,9 @@ impl Hasher for BcryptHasher {
     fn verify_password(&self, password: &str, hash: &str) -> bool {
         bcrypt::verify(password, hash).unwrap_or(false)
     }
+}
+
+fn get_argon2() -> &'static Argon2<'static> {
+    static INSTANCE: OnceLock<Argon2> = OnceLock::new();
+    INSTANCE.get_or_init(|| Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::default()))
 }

@@ -13,7 +13,7 @@ fn it_can_hash_password_using_argon2() {
 
 #[test]
 fn it_can_hash_password_using_bcrypt() {
-    let bcrypt_hasher = BcryptHasher::new();
+    let bcrypt_hasher = BcryptHasher::default();
     let hash = bcrypt_hasher.hash_password("password").unwrap();
     let is_ok = bcrypt_hasher.verify_password("password", &hash);
 
