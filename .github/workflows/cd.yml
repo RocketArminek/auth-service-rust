@@ -90,12 +90,12 @@ jobs:
         ports:
           - 3306:3306
     steps:
-      - name: ls
-        run: ls -al
 #      - name: Prepare db
 #        run: sqlx database reset
-#      - name: Run tests
-#        run: cargo test --all
+      - name: Run tests
+        run: |
+          cd /app
+          cargo test --all
 
   publish-server-image:
     runs-on: ubuntu-20.04
