@@ -14,8 +14,6 @@ FROM base-builder AS test-builder
 COPY --link tests tests
 RUN cargo install sqlx-cli --no-default-features --features mysql && cargo test --no-run
 
-ENTRYPOINT ["cargo test"]
-
 FROM debian:bookworm-slim AS base-runner
 RUN adduser \
   --disabled-password \
