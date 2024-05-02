@@ -76,7 +76,7 @@ jobs:
       image: ghcr.io/rocketarminek/auth-api-rust:test-latest
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.ARMINEK_READ_ONLY_TOKEN }}
       env:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
     services:
