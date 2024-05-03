@@ -37,7 +37,7 @@ jobs:
         with:
           context: .
           push: false
-          target: dist
+          target: server
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
 
