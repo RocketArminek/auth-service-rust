@@ -43,3 +43,4 @@ jobs:
       - name: Test host files
         run: |
           ls -al
+          ls -al /app/target
