@@ -18,29 +18,43 @@ env:
   IMAGE_NAME: rocketarminek/auth-api-rust
 
 jobs:
-  dist-cache:
-    runs-on: ubuntu-20.04
-    name: "Dist cache"
+  prepare-vendor:
+    runs-on: ubuntu-latest
+    name: "Prepare vendor"
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          target: testing
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-testing
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-testing,mode=max
-      - name: Test host files
-        run: |
-          ls -al
-          ls -al /app/target
+          toolchain: 1.77.2
+          profile: minimal
+          override: true
+      - name: Check version
+        run: cargo --version
+
+#  prepare-vendor:
+#    runs-on: ubuntu-20.04
+#    name: "Prepare vendor"
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Set up Docker Buildx
+#        id: buildx
+#        uses: docker/setup-buildx-action@v3
+#      - name: Log in to the Container registry
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: .
+#          push: false
+#          target: testing
+#          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-testing
+#          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-testing,mode=max
+#      - name: Test host files
+#        run: |
+#          ls -al
+#          ls -al /app/target
