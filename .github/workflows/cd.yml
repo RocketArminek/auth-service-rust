@@ -4,11 +4,11 @@ on:
   workflow_dispatch: ~
   push:
     paths:
-#      - "src/**"
-#      - "Cargo.toml"
-#      - "Dockerfile"
-#      - "tests/**"
-#      - "migrations/**"
+      - "src/**"
+      - "Cargo.toml"
+      - "Dockerfile"
+      - "tests/**"
+      - "migrations/**"
       - ".github/workflows/cd.yml"
     branches:
       - "main"
