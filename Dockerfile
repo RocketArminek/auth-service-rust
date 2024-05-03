@@ -5,12 +5,12 @@ RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link .env .env
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
+COPY --link migrations migrations
 COPY --link src src
 
 FROM base-builder AS test
 COPY --link tests tests
 RUN cargo test --no-run
-COPY --link migrations migrations
 
 FROM base-builder AS dist
 RUN cargo build --release
@@ -27,7 +27,7 @@ RUN adduser \
 
 FROM base-runner AS server
 COPY --from=base-builder /app/.env /app/.env
-COPY --link migrations migrations
+COPY --from=base-builder /app/migrations /migrations
 RUN chown -R appuser /migrations
 COPY --from=dist /app/target/release/server /usr/local/bin
 RUN chown appuser /usr/local/bin/server
