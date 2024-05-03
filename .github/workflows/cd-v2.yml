@@ -30,9 +30,17 @@ jobs:
           profile: minimal
           override: true
       - name: Download vendors
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor
+          path: vendor
+      - name: Cargo update vendors
         run: cargo vendor
-      - name: Check files
-        run: ls -al
+      - name: Upload vendors
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor
+          path: vendor
 
 #  prepare-vendor:
 #    runs-on: ubuntu-20.04
