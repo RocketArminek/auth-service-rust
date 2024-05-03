@@ -60,11 +60,3 @@ RUN chown appuser /usr/local/bin/cli
 USER appuser
 
 ENTRYPOINT ["cli"]
-
-FROM rust:${RUST_VERSION}-slim-bookworm AS testing
-WORKDIR /app
-COPY --link Cargo.lock Cargo.lock
-COPY --link Cargo.toml Cargo.toml
-COPY --link .cargo .cargo
-RUN --mount=type=cache,target=/app/vendor \
-    cargo vendor
