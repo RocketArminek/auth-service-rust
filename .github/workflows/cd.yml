@@ -105,6 +105,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
       env:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+        SECRET: secret
+        PASSWORD_HASHING_SCHEME: bcrypt_low
     services:
       mysql:
         image: mysql:8.0
