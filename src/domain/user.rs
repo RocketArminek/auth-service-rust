@@ -69,7 +69,7 @@ impl User {
 
         match hashed_password {
             Ok(hashed_password) => self.password = hashed_password,
-            Err(error) => tracing::error!("Error shashing password: {:?}", error),
+            Err(error) => tracing::error!("Error hashing password: {:?}", error),
         }
     }
 
