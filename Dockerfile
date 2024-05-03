@@ -5,7 +5,9 @@ RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
 COPY --link .cargo .cargo
-RUN cargo vendor
+RUN --mount=type=cache,target=/app/vendor \
+    cargo vendor
+
 COPY --link .env .env
 COPY --link migrations migrations
 COPY --link src src
