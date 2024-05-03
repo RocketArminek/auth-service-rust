@@ -31,6 +31,7 @@ jobs:
           override: true
       - name: Download vendors
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: vendor
           path: vendor
