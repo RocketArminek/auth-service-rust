@@ -8,6 +8,9 @@ COPY --link .cargo .cargo
 #RUN --mount=type=cache,target=/app/vendor \ -> TODO how to preserve cache between builds?
 #    cargo vendor && cp -a /app/vendor /app/vendor-cache
 #RUN mv /app/vendor-cache /app/vendor
+#RUN --mount=type=bind,source=Cargo.lock,target=Cargo.lock \ -> way to do not copy Cargo.lock etc...
+#    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
+#    --mount=type=bind,source=.cargo,target=.cargo \
 RUN cargo vendor
 
 COPY --link .env .env
