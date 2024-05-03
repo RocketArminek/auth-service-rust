@@ -68,8 +68,8 @@ impl User {
         let hashed_password = hasher.hash_password(self.password.as_str());
 
         match hashed_password {
-            Ok(hashed_password) => { self.password = hashed_password },
-            Err(error) => tracing::error!("Error hashing password: {:?}", error),
+            Ok(hashed_password) => self.password = hashed_password,
+            Err(error) => tracing::error!("Error shashing password: {:?}", error),
         }
     }
 

@@ -6,7 +6,7 @@ COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
 COPY --link .cargo .cargo
 RUN --mount=type=cache,target=/app/vendor \
-    cargo vendor && cp -r /app/vendor /app/vendor-cache
+    cargo vendor && cp -a /app/vendor /app/vendor-cache
 RUN mv /app/vendor-cache /app/vendor
 
 COPY --link .env .env
@@ -16,12 +16,12 @@ COPY --link src src
 FROM base-builder AS test
 COPY --link tests tests
 RUN --mount=type=cache,target=/app/target \
-    cargo test --no-run && cp -r /app/target /app/target-tests
-RUN mv /app/target-tests /app/target
+    cargo test --no-run && cp -a /app/target /app/target-test
+RUN mv /app/target-test /app/target
 
 FROM base-builder AS dist
 RUN --mount=type=cache,target=/app/target \
-    cargo build --release && cp -r /app/target /app/target-release
+    cargo build --release && cp -a /app/target /app/target-release
 RUN mv /app/target-release /app/target
 
 FROM debian:bookworm-slim AS base-runner
