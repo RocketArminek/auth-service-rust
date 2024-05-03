@@ -7,7 +7,7 @@ use uuid::Uuid;
 fn it_can_be_created() {
     let user = User::new(
         Uuid::new_v4(),
-        String::from("test1@test.com"),
+        String::from("test@test.com"),
         String::from("Iknow#othing1"),
         Utc::now(),
     ).unwrap();
