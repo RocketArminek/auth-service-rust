@@ -20,7 +20,7 @@ env:
 jobs:
   dist-cache:
     runs-on: ubuntu-20.04
-    name: "Publish test image"
+    name: "Dist cache"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
