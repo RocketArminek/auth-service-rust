@@ -3,13 +3,13 @@ name: Rust auth api deployment
 on:
   workflow_dispatch: ~
   push:
-    paths:
-      - "src/**"
-      - "Cargo.toml"
-      - "Dockerfile"
-      - "tests/**"
-      - "migrations/**"
-      - ".github/workflows/cd.yml"
+    paths: []
+#      - "src/**"
+#      - "Cargo.toml"
+#      - "Dockerfile"
+#      - "tests/**"
+#      - "migrations/**"
+#      - ".github/workflows/cd.yml"
     branches:
       - "main"
 
