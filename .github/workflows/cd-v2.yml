@@ -29,8 +29,10 @@ jobs:
           toolchain: 1.77.2
           profile: minimal
           override: true
-      - name: Check version
-        run: cargo --version
+      - name: Download vendors
+        run: cargo vendor
+      - name: Check files
+        run: ls -al
 
 #  prepare-vendor:
 #    runs-on: ubuntu-20.04
