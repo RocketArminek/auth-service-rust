@@ -161,8 +161,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-      - name: Check host ls
-        run: ls -la
 
   terraform-apply:
     runs-on: ubuntu-latest

@@ -5,29 +5,16 @@ RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
 COPY --link .cargo .cargo
-#RUN --mount=type=cache,target=/app/vendor \ -> TODO how to preserve cache between builds?
-#    cargo vendor && cp -a /app/vendor /app/vendor-cache
-#RUN mv /app/vendor-cache /app/vendor
-#RUN --mount=type=bind,source=Cargo.lock,target=Cargo.lock \ -> way to do not copy Cargo.lock etc...
-#    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
-#    --mount=type=bind,source=.cargo,target=.cargo \
 RUN cargo vendor
 
-COPY --link .env .env
 COPY --link migrations migrations
 COPY --link src src
 
 FROM base-builder AS test
 COPY --link tests tests
-#RUN --mount=type=cache,target=/app/target \
-#    cargo test --no-run && cp -a /app/target /app/target-test
-#RUN mv /app/target-test /app/target
 RUN cargo test --no-run
 
 FROM base-builder AS dist
-#RUN --mount=type=cache,target=/app/target \
-#    cargo build --release && cp -a /app/target /app/target-release
-#RUN mv /app/target-release /app/target
 RUN cargo build --release
 
 FROM debian:bookworm-slim AS base-runner
@@ -41,7 +28,6 @@ RUN adduser \
   appuser
 
 FROM base-runner AS server
-COPY --from=base-builder /app/.env /app/.env
 COPY --from=base-builder /app/migrations /migrations
 RUN chown -R appuser /migrations
 COPY --from=dist /app/target/release/server /usr/local/bin
@@ -53,7 +39,6 @@ ENTRYPOINT ["server"]
 EXPOSE 8080/tcp
 
 FROM base-runner AS cli
-COPY --from=base-builder /app/.env /app/.env
 COPY --from=dist /app/target/release/cli /usr/local/bin
 RUN chown appuser /usr/local/bin/cli
 
