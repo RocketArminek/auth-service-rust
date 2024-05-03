@@ -2,9 +2,10 @@ ARG RUST_VERSION=1.77.2
 FROM rust:${RUST_VERSION}-slim-bookworm AS base-builder
 WORKDIR /app
 RUN cargo install sqlx-cli --no-default-features --features mysql
-COPY --link .env .env
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
+RUN cargo vendor
+COPY --link .env .env
 COPY --link migrations migrations
 COPY --link src src
 
