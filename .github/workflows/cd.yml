@@ -115,7 +115,7 @@ jobs:
           - 3306:3306
     steps:
       - name: Wait for MySQL
-        run: sleep 6
+        run: sleep 3
       - name: Prepare db
         run: |
           cd /app
