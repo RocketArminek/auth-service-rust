@@ -35,6 +35,8 @@ jobs:
         with:
           name: vendor
           path: vendor
+      - name: Ls vendors
+        run: ls -al vendor
       - name: Cargo update vendors
         run: cargo vendor
       - name: Upload vendors
