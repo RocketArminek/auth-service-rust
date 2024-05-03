@@ -36,7 +36,9 @@ jobs:
           name: vendor
           path: vendor
           run-id: 8941868538
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Ls vendors
+        continue-on-error: true
         run: ls -al vendor
       - name: Cargo update vendors
         run: cargo vendor
