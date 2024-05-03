@@ -4,6 +4,7 @@ WORKDIR /app
 RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
+COPY --link .cargo .cargo
 RUN cargo vendor
 COPY --link .env .env
 COPY --link migrations migrations
