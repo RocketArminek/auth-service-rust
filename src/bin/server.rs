@@ -17,7 +17,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
-    let port = 8080;
+    let port = "8080";
     let addr = &format!("0.0.0.0:{}", port);
     let listener = tokio::net::TcpListener::bind(addr).await;
 
