@@ -99,7 +99,7 @@ resource "kubernetes_secret" "app_4ecommerce" {
   }
 }
 
-resource "kubernetes_manifest" "routing" {
+resource "kubernetes_manifest" "routing_4ecommerce" {
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
