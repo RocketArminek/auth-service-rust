@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "src/**"
+      - ".ops/**"
       - "Cargo.toml"
       - "Dockerfile"
       - "tests/**"
