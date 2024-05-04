@@ -32,7 +32,7 @@ pub fn routes(
 #[openapi(
     servers(
         (description="dev", url="http://localhost:8080"),
-        (description="production", url="https://auth-api-rust.arminek.xyz"),
+        (description="4e-production", url="https://auth-4ecommerce.arminek.xyz"),
     ),
     paths(
         open_api_docs_action,
