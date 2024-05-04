@@ -14,12 +14,7 @@ module "app_4ecommerce" {
   replicas         = 1
   env              = local.app_env
 
-  hosts     = ["auth-4ecommerce.arminek.xyz"]
-  tls_hosts = ["arminek.xyz", "*.arminek.xyz"]
-  ingress_annotations = {
-    "kubernetes.io/ingress.class" : "traefik"
-    "cert-manager.io/cluster-issuer" : "letsencrypt"
-  }
+  ingress_enabled = false
 
   resources_limits = {
     "cpu"    = "350m"
@@ -101,5 +96,40 @@ resource "kubernetes_secret" "app_4ecommerce" {
 
   data = {
     secret = random_password.secret_4ecommerce.result
+  }
+}
+
+resource "kubernetes_manifest" "routing" {
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = local.app_name
+      namespace = local.namespace
+    }
+    spec = {
+      entryPoints = ["websecure", "web"]
+      routes = [
+        {
+          kind = "Rule"
+          match = "Host(`auth-4ecommerce.arminek.xyz`) && PathPrefix(`/`)"
+          services = [
+            {
+              name = local.app_name
+              port = 80
+            }
+          ]
+        }
+      ]
+      tls = {
+        secretName = "arminek-cert-tls"
+        domains = [
+          {
+            main = "arminek.xyz"
+            sans = ["*.arminek.xyz"]
+          }
+        ]
+      }
+    }
   }
 }
