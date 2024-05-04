@@ -1,11 +1,11 @@
 locals {
-  namespace = "shared"
-  app_name  = "auth-api-rust"
+  namespace = "4ecommerce"
+  app_name  = "auth-api"
   app_env   = "prod"
 }
 
-module "app" {
-  depends_on = [kubernetes_secret.app]
+module "app_4ecommerce" {
+  depends_on = [kubernetes_secret.app_4ecommerce]
   source           = "Arminek/app/k8s"
   version          = "1.1.0"
   app_name         = local.app_name
@@ -14,7 +14,7 @@ module "app" {
   replicas         = 1
   env              = local.app_env
 
-  hosts     = ["auth-api-rust.arminek.xyz"]
+  hosts     = ["auth-4ecommerce.arminek.xyz"]
   tls_hosts = ["arminek.xyz", "*.arminek.xyz"]
   ingress_annotations = {
     "kubernetes.io/ingress.class" : "traefik"
@@ -66,7 +66,7 @@ module "app" {
   envs_from_value = [
     {
       name  = "DATABASE_NAME"
-      value = "auth_service"
+      value = "auth_service_4ecommerce"
     },
     {
       name  = "DATABASE_HOST"
@@ -87,19 +87,19 @@ module "app" {
   ]
 }
 
-resource "random_password" "secret" {
+resource "random_password" "secret_4ecommerce" {
   length = 24
   special = true
 }
 
-resource "kubernetes_secret" "app" {
-  depends_on = [random_password.secret]
+resource "kubernetes_secret" "app_4ecommerce" {
+  depends_on = [random_password.secret_4ecommerce]
   metadata {
     name = local.app_name
     namespace = local.namespace
   }
 
   data = {
-    secret = random_password.secret.result
+    secret = random_password.secret_4ecommerce.result
   }
 }

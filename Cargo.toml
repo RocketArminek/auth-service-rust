@@ -18,7 +18,7 @@ path = "src/bin/cli.rs"
 
 [dependencies]
 axum = "0.7.5"
-tokio = { version = "1.37.0", features = ["signal", "rt-multi-thread"] }
+tokio = { version = "1.37.0", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = "0.3.18"
 serde = { version = "1.0.197", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive"] }
