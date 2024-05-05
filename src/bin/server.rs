@@ -21,8 +21,8 @@ async fn main() {
     let addr = &format!("0.0.0.0:{}", port);
     let listener = tokio::net::TcpListener::bind(addr).await;
 
-    let pool = create_mysql_pool().await.unwrap();
-    migrate!("./migrations").run(&pool).await.unwrap();
+    let pool = create_mysql_pool().await.expect("Failed to create MySQL pool");
+    migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
     let repository = MysqlUserRepository::new(pool);
 
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
@@ -33,7 +33,7 @@ async fn main() {
             axum::serve(listener, routes(secret, hashing_scheme, repository.clone()))
                 .with_graceful_shutdown(shutdown_signal())
                 .await
-                .unwrap();
+                .expect("Failed to start server");
         }
         Err(e) => {
             tracing::error!("Failed to bind to port {}: {}", port, e);
