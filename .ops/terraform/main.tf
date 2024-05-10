@@ -82,6 +82,22 @@ module "app_4ecommerce" {
   ]
 }
 
+resource "kubernetes_manifest" "auth_service_4ecommerce" {
+  manifest = {
+    apiVersion = "mysql.sql.crossplane.io/v1alpha1"
+    kind       = "Database"
+    metadata = {
+      name      = "auth-service-4ecommerce-v2"
+      namespace = local.namespace
+    }
+    spec = {
+      providerConfigRef = {
+        name = "percona-mysql-cluster"
+      }
+    }
+  }
+}
+
 resource "random_password" "secret_4ecommerce" {
   length = 24
   special = true
