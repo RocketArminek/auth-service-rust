@@ -2,7 +2,7 @@ locals {
   namespace = "4ecommerce"
   app_name  = "auth-api"
   app_env   = "prod"
-  database_name = "auth-service-4ecommerce-v2"
+  database_name = "auth-service-4ecommerce"
   mysql_user = "auth-4ecommerce"
 }
 
