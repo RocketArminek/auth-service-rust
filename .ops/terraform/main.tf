@@ -87,10 +87,13 @@ resource "kubernetes_manifest" "auth_service_4ecommerce" {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Database"
     metadata = {
-      name      = "auth-service-4ecommerce-v2"
+      name     = "auth-service-4ecommerce-v2"
     }
     spec = {
       providerConfigRef = {
+        name = "percona-mysql-cluster"
+      }
+      forProvider = {
         name = "percona-mysql-cluster"
       }
     }
