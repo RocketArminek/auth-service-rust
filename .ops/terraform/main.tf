@@ -94,7 +94,7 @@ resource "kubernetes_manifest" "auth_service_4ecommerce" {
         name = "percona-mysql-cluster"
       }
       forProvider = {
-        name = "percona-mysql-cluster"
+        binlog = true
       }
     }
   }
