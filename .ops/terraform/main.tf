@@ -45,11 +45,6 @@ module "app_4ecommerce" {
   }
   envs_from_secrets = [
     {
-      name        = "DATABASE_USER"
-      secret_name = "mysql-secret"
-      secret_key  = "user"
-    },
-    {
       name        = "DATABASE_PASSWORD"
       secret_name = format("%s-%s", local.app_name, "mysql-credentials")
       secret_key  = "password"
