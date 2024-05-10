@@ -2,6 +2,8 @@ locals {
   namespace = "4ecommerce"
   app_name  = "auth-api"
   app_env   = "prod"
+  database_name = "auth-service-4ecommerce-v2"
+  mysql_user = "auth-4ecommerce"
 }
 
 module "app_4ecommerce" {
@@ -49,7 +51,7 @@ module "app_4ecommerce" {
     },
     {
       name        = "DATABASE_PASSWORD"
-      secret_name = "mysql-secret"
+      secret_name = format("%s-%s", local.app_name, "mysql-credentials")
       secret_key  = "password"
     },
     {
@@ -60,8 +62,12 @@ module "app_4ecommerce" {
   ]
   envs_from_value = [
     {
+      name = "DATABASE_USER"
+      value = local.mysql_user
+    },
+    {
       name  = "DATABASE_NAME"
-      value = "auth_service_4ecommerce"
+      value = local.database_name
     },
     {
       name  = "DATABASE_HOST"
@@ -87,7 +93,7 @@ resource "kubernetes_manifest" "auth_service_4ecommerce" {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Database"
     metadata = {
-      name     = "auth-service-4ecommerce-v2"
+      name     = local.database_name
     }
     spec = {
       providerConfigRef = {
@@ -95,6 +101,74 @@ resource "kubernetes_manifest" "auth_service_4ecommerce" {
       }
       forProvider = {
         binlog = true
+      }
+    }
+  }
+}
+
+resource "random_password" "mysql_password_4ecommerce" {
+  length = 16
+  special = false
+}
+
+resource "kubernetes_secret" "mysql_credentials_4ecommerce" {
+  depends_on = [random_password.mysql_password_4ecommerce]
+  metadata {
+    name      = format("%s-%s", local.app_name, "mysql-credentials")
+    namespace = local.namespace
+  }
+  data = {
+    password = random_password.mysql_password_4ecommerce.result
+  }
+}
+
+resource "kubernetes_manifest" "mysql_user_4ecommerce" {
+  depends_on = [kubernetes_secret.mysql_credentials_4ecommerce, kubernetes_manifest.auth_service_4ecommerce]
+  manifest = {
+    apiVersion = "mysql.sql.crossplane.io/v1alpha1"
+    kind       = "User"
+    metadata = {
+      name     = local.mysql_user
+    }
+    spec = {
+      providerConfigRef = {
+        name = "percona-mysql-cluster"
+      }
+      forProvider = {
+        passwordSecretRef = {
+          name = format("%s-%s", local.app_name, "mysql-credentials")
+          namespace = local.namespace
+          key = "password"
+        }
+      }
+      writeConnectionSecretToRef = {
+        name = format("%s-%s", local.app_name, "mysql-connection-ref")
+        namespace = local.namespace
+      }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "mysql_user_grant_4ecommerce" {
+  depends_on = [kubernetes_manifest.mysql_user_4ecommerce, kubernetes_manifest.auth_service_4ecommerce]
+  manifest = {
+    apiVersion = "mysql.sql.crossplane.io/v1alpha1"
+    kind       = "Grant"
+    metadata = {
+      name     = format("%s-%s", local.mysql_user, local.database_name)
+    }
+    spec = {
+      providerConfigRef = {
+        name = "percona-mysql-cluster"
+      }
+      forProvider = {
+        userRef = {
+          name = local.mysql_user
+        }
+        databaseRef = {
+          name = local.database_name
+        }
+        privileges = ["SELECT", "INSERT", "UPDATE", "DELETE"]
       }
     }
   }
