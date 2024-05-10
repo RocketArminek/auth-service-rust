@@ -88,7 +88,6 @@ resource "kubernetes_manifest" "auth_service_4ecommerce" {
     kind       = "Database"
     metadata = {
       name      = "auth-service-4ecommerce-v2"
-      namespace = local.namespace
     }
     spec = {
       providerConfigRef = {
