@@ -43,7 +43,7 @@ pub fn routes(
     ),
     components(
         responses(HealthResponse, AuthResponse, SessionResponse, MessageResponse),
-        schemas(CreateUserRequest, LoginRequest),
+        schemas(HealthResponse, AuthResponse, SessionResponse, MessageResponse, CreateUserRequest, LoginRequest),
     )
 )]
 pub struct ApiDoc;

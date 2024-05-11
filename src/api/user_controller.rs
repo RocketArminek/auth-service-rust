@@ -227,7 +227,7 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToResponse)]
+#[derive(Debug, Deserialize, Serialize, ToResponse, ToSchema)]
 pub enum AuthResponse {
     OK(SessionResponse),
     BadRequest(MessageResponse),
@@ -236,7 +236,7 @@ pub enum AuthResponse {
     Forbidden(MessageResponse),
 }
 
-#[derive(Debug, Deserialize, Serialize, ToResponse)]
+#[derive(Debug, Deserialize, Serialize, ToResponse, ToSchema)]
 #[response(description = "Session response")]
 pub struct SessionResponse {
     pub session_id: String,
@@ -246,7 +246,7 @@ pub struct SessionResponse {
     pub expires_at: usize,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToResponse)]
+#[derive(Debug, Deserialize, Serialize, ToResponse, ToSchema)]
 pub struct MessageResponse {
     pub message: String,
 }
