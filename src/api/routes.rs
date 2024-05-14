@@ -3,6 +3,7 @@ use axum::routing::{any, post};
 use axum::{routing::get, Router};
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api::user_controller::*;
 use crate::api::utils_controller::*;
@@ -16,6 +17,7 @@ pub fn routes(
 ) -> Router {
     Router::new()
         .route("/", get(open_api_docs_action))
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
         .route("/v1/users/login", post(login))

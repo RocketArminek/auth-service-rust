@@ -22,3 +22,13 @@ async fn it_returns_open_api_docs(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::OK);
     assert!(body.contains("openapi"));
 }
+
+#[sqlx::test]
+async fn it_returns_swagger_ui(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool);
+    let response = server.get("/docs/").await;
+    let body = response.text();
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+    assert!(body.contains("Swagger UI"));
+}
