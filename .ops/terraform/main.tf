@@ -206,6 +206,9 @@ resource "kubernetes_manifest" "routing_4ecommerce" {
               port = 80
             }
           ]
+          middlewares = [
+            { name = "cors-arminek-xyz" }
+          ]
         }
       ]
       tls = {
