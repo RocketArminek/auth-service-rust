@@ -1,5 +1,4 @@
 use ::serde_json::json;
-use auth_service::api::user_controller::AuthResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::jwt::Claims;
 use auth_service::domain::user::User;
@@ -9,6 +8,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
+use auth_service::api::user_controller::{MessageResponse, SessionResponse};
 use crate::utils::create_test_server;
 
 #[sqlx::test]
@@ -120,32 +120,25 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
-    let body = response.json::<AuthResponse>();
+    let body = response.json::<SessionResponse>();
     let exp = Utc::now().add(Duration::days(30));
-    match body {
-        AuthResponse::OK(body) => {
-            assert_eq!(body.user_id, user.id.to_string());
-            assert_eq!(body.email, user.email);
-            assert_eq!(body.expires_at, exp.timestamp() as usize);
-            assert!(body.session_id.len() > 0);
-            assert!(body.token.len() > 0);
 
-            let token = decode::<Claims>(
-                &body.token,
-                &DecodingKey::from_secret(secret.as_ref()),
-                &Validation::default(),
-            )
-            .unwrap();
+    assert_eq!(body.user_id, user.id.to_string());
+    assert_eq!(body.email, user.email);
+    assert_eq!(body.expires_at, exp.timestamp() as usize);
+    assert!(body.session_id.len() > 0);
+    assert!(body.token.len() > 0);
 
-            assert_eq!(token.claims.sub, user.id.to_string());
-            assert_eq!(token.claims.email, user.email);
-            assert_eq!(token.claims.iss, "rocket-arminek");
-            assert_eq!(token.claims.exp, exp.timestamp() as usize);
+    let token = decode::<Claims>(
+        &body.token,
+        &DecodingKey::from_secret(secret.as_ref()),
+        &Validation::default(),
+    ).unwrap();
 
-            println!("{:?}", body.token);
-        }
-        _ => panic!("Unexpected response: {:?}", body),
-    }
+    assert_eq!(token.claims.sub, user.id.to_string());
+    assert_eq!(token.claims.email, user.email);
+    assert_eq!(token.claims.iss, "rocket-arminek");
+    assert_eq!(token.claims.exp, exp.timestamp() as usize);
 }
 
 #[sqlx::test]
@@ -166,25 +159,20 @@ async fn it_verifies_token(pool: Pool<MySql>) {
             "password": "Iknow#othing1",
         }))
         .await;
-    let body = response.json::<AuthResponse>();
+    let body = response.json::<SessionResponse>();
 
-    match body {
-        AuthResponse::OK(body) => {
-            let response = server
-                .get("/v1/users/verify")
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
-                )
-                .await;
+    let response = server
+        .get("/v1/users/verify")
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
 
-            let user_id_from_header = response.headers().get("X-User-Id").unwrap().to_str().unwrap();
+    let user_id_from_header = response.headers().get("X-User-Id").unwrap().to_str().unwrap();
 
-            assert_eq!(response.status_code(), StatusCode::OK);
-            assert_eq!(user_id_from_header, user.id.to_string());
-        }
-        _ => panic!("Unexpected response: {:?}", body),
-    }
+    assert_eq!(response.status_code(), StatusCode::OK);
+    assert_eq!(user_id_from_header, user.id.to_string());
 }
 
 #[sqlx::test]
@@ -205,24 +193,19 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
             "password": "Iknow#othing1",
         }))
         .await;
-    let body = response.json::<AuthResponse>();
+    let mut body = response.json::<SessionResponse>();
 
-    match body {
-        AuthResponse::OK(mut body) => {
-            body.token.push('1');
+    body.token.push('1');
 
-            let response = server
-                .get("/v1/users/verify")
-                .add_header(
-                    header::AUTHORIZATION,
-                    HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
-                )
-                .await;
+    let response = server
+        .get("/v1/users/verify")
+        .add_header(
+            header::AUTHORIZATION,
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
 
-            assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
-        }
-        _ => panic!("Unexpected response: {:?}", body),
-    }
+    assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
@@ -260,13 +243,8 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         )
         .await;
 
-    let body = response.json::<AuthResponse>();
+    let body = response.json::<MessageResponse>();
 
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
-    match body {
-        AuthResponse::Unauthorized(resp) => {
-            assert_eq!(resp.message, "Expired token");
-        }
-        _ => panic!("Unexpected response: {:?}", body),
-    }
+    assert_eq!(body.message, "Expired token");
 }

@@ -48,8 +48,8 @@ pub fn routes(
         verify,
     ),
     components(
-        responses(HealthResponse, AuthResponse, SessionResponse, MessageResponse),
-        schemas(HealthResponse, AuthResponse, SessionResponse, MessageResponse, CreateUserRequest, LoginRequest),
+        responses(HealthResponse, SessionResponse, MessageResponse),
+        schemas(HealthResponse, SessionResponse, MessageResponse, CreateUserRequest, LoginRequest),
     )
 )]
 pub struct ApiDoc;

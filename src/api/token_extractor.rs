@@ -1,5 +1,5 @@
 use axum::{async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
-use crate::api::user_controller::{AuthResponse, MessageResponse};
+use crate::api::user_controller::{MessageResponse};
 
 #[derive(Debug, Clone)]
 pub struct BearerToken(pub String);
@@ -9,7 +9,7 @@ impl<S> FromRequestParts<S> for BearerToken
 where
     S: Send + Sync,
 {
-    type Rejection = (StatusCode, Json<AuthResponse>);
+    type Rejection = (StatusCode, Json<MessageResponse>);
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let headers = parts.headers.clone();
@@ -22,16 +22,12 @@ where
                     tracing::warn!("Invalid Authorization header: {}", value);
 
                     Err((StatusCode::UNAUTHORIZED, Json(
-                        AuthResponse::Unauthorized(MessageResponse{
-                            message: String::from("Missing bearer token"),
-                        })
+                        MessageResponse{message: String::from("Missing bearer token")}
                     )))
                 }
             }
             None => Err((StatusCode::UNAUTHORIZED, Json(
-                AuthResponse::Unauthorized(MessageResponse{
-                    message: String::from("Authorization header is missing"),
-                })
+                MessageResponse{message: String::from("Authorization header is missing")}
             ))),
         }
     }

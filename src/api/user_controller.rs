@@ -75,7 +75,7 @@ pub async fn create_user(
 pub async fn login(
     State(state): State<ServerState>,
     request: Json<LoginRequest>,
-) -> (StatusCode, Json<AuthResponse>) {
+) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
     let user = state.repository.get_by_email(&email).await;
@@ -88,10 +88,8 @@ pub async fn login(
             ) {
                 return (
                     StatusCode::UNAUTHORIZED,
-                    Json(AuthResponse::Unauthorized(MessageResponse {
-                        message: String::from("Unauthorized"),
-                    })),
-                );
+                    Json(MessageResponse { message: String::from("Unauthorized") }),
+                ).into_response();
             }
 
             let now = Utc::now();
@@ -114,28 +112,24 @@ pub async fn login(
             match token {
                 Ok(token) => (
                     StatusCode::OK,
-                    Json(AuthResponse::OK(SessionResponse {
+                    Json(SessionResponse {
                         session_id: Uuid::new_v7(timestamp).to_string(),
                         user_id: user.id.to_string(),
                         email: user.email,
                         token,
                         expires_at: exp.timestamp() as usize,
-                    })),
-                ),
+                    }),
+                ).into_response(),
                 Err(_) => (
                     StatusCode::FORBIDDEN,
-                    Json(AuthResponse::Forbidden(MessageResponse {
-                        message: String::from("Could not encode token"),
-                    })),
-                ),
+                    Json(MessageResponse { message: String::from("Could not encode token") }),
+                ).into_response(),
             }
         }
         None => (
             StatusCode::NOT_FOUND,
-            Json(AuthResponse::NotFound(MessageResponse {
-                message: String::from("User not found"),
-            })),
-        ),
+            Json(MessageResponse { message: String::from("User not found") }),
+        ).into_response(),
     }
 }
 
@@ -168,47 +162,41 @@ pub async fn verify(
 
             (StatusCode::OK,
              headers,
-             Json(AuthResponse::OK(SessionResponse {
-                 session_id: Uuid::new_v7(Timestamp::from_unix(
-                     NoContext,
-                     now.timestamp() as u64,
-                     now.nanosecond(),
-                 )).to_string(),
-                 user_id,
-                 email: decoded_token.claims.email,
-                 token,
-                 expires_at: decoded_token.claims.exp,
-             })))
+             Json(
+                 SessionResponse {
+                     session_id: Uuid::new_v7(Timestamp::from_unix(
+                         NoContext,
+                         now.timestamp() as u64,
+                         now.nanosecond(),
+                     )).to_string(),
+                     user_id,
+                     email: decoded_token.claims.email,
+                     token,
+                     expires_at: decoded_token.claims.exp,
+                 }
+             )).into_response()
         }
         Err(error) => match error.kind() {
             ErrorKind::InvalidToken => (
                 StatusCode::UNAUTHORIZED,
                 headers,
-                Json(AuthResponse::Unauthorized(MessageResponse {
-                    message: String::from("Invalid token"),
-                })),
-            ),
+                Json(MessageResponse { message: String::from("Invalid token") }),
+            ).into_response(),
             ErrorKind::InvalidSignature => (
                 StatusCode::UNAUTHORIZED,
                 headers,
-                Json(AuthResponse::Unauthorized(MessageResponse {
-                    message: String::from("Invalid signature"),
-                })),
-            ),
+                Json(MessageResponse { message: String::from("Invalid signature") }),
+            ).into_response(),
             ErrorKind::ExpiredSignature => (
                 StatusCode::UNAUTHORIZED,
                 headers,
-                Json(AuthResponse::Unauthorized(MessageResponse {
-                    message: String::from("Expired token"),
-                })),
-            ),
+                Json(MessageResponse { message: String::from("Expired token") }),
+            ).into_response(),
             _ => (
                 StatusCode::UNAUTHORIZED,
                 headers,
-                Json(AuthResponse::Unauthorized(MessageResponse {
-                    message: String::from("Unauthorized"),
-                })),
-            ),
+                Json(MessageResponse { message: String::from("Unauthorized") }),
+            ).into_response(),
         },
     }
 }
@@ -223,15 +211,6 @@ pub struct CreateUserRequest {
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, ToResponse, ToSchema)]
-pub enum AuthResponse {
-    OK(SessionResponse),
-    BadRequest(MessageResponse),
-    Unauthorized(MessageResponse),
-    NotFound(MessageResponse),
-    Forbidden(MessageResponse),
 }
 
 #[derive(Debug, Deserialize, Serialize, ToResponse, ToSchema)]
