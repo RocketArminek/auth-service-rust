@@ -20,7 +20,8 @@ use uuid::{NoContext, Timestamp, Uuid};
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
     responses(
-        (status = 201, description = "Create user"),
+        (status = 201, description = "User created"),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
     )
 )]
 pub async fn create_user(
@@ -67,9 +68,9 @@ pub async fn create_user(
 #[utoipa::path(post, path = "/v1/users/login",
     request_body = LoginRequest,
     responses(
-        (status = 200, description = "Get token", content_type = "application/json", body = AuthResponse),
-        (status = 404, description = "User not found", content_type = "application/json", body = AuthResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = AuthResponse),
+        (status = 200, description = "Get token", content_type = "application/json", body = SessionResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
 pub async fn login(
@@ -135,9 +136,9 @@ pub async fn login(
 
 #[utoipa::path(get, path = "/v1/users/verify",
     responses(
-        (status = 200, description = "Token verified", content_type = "application/json", body = AuthResponse),
-        (status = 403, description = "Forbidden", content_type = "application/json", body = AuthResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = AuthResponse),
+        (status = 200, description = "Token verified", content_type = "application/json", body = SessionResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
 pub async fn verify(
