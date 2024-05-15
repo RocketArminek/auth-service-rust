@@ -78,7 +78,7 @@ module "app_4ecommerce" {
       //bcrypt_low, bcrypt, argon2 -> Warning: Changing this value will increase cpu and memory usage.
       //bcrypt_low is the most efficient hashing scheme
       //bcrypt is more cpu intensive than bcrypt_low
-      //argon2 is the most memory & cpu intensive hashing scheme it requires at least 1GB of memory per pod
+      //argon2 is the most memory & cpu intensive hashing scheme it requires at least 1GB of memory per pod 300 r/s
     }
   ]
 }

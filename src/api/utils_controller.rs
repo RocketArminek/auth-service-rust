@@ -1,8 +1,7 @@
-use crate::api::routes::ApiDoc;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use utoipa::{OpenApi, ToResponse, ToSchema};
+use utoipa::{ToResponse, ToSchema};
 
 #[utoipa::path(get, path = "/v1/health",
     responses(
@@ -23,15 +22,7 @@ pub async fn health_action() -> (StatusCode, Json<HealthResponse>) {
         (status = 200, description = "Open api schema", content_type = "application/json"),
     )
 )]
-pub async fn open_api_docs_action() -> (StatusCode, String) {
-    match ApiDoc::openapi().to_json() {
-        Ok(response) => (StatusCode::OK, response),
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            String::from("Internal Server Error"),
-        ),
-    }
-}
+pub async fn open_api_docs_action() {}
 
 #[derive(Serialize, Deserialize, ToResponse, ToSchema)]
 pub struct HealthResponse {

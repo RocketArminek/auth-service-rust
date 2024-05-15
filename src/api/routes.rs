@@ -10,14 +10,18 @@ use crate::api::utils_controller::*;
 use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
+#[utoipa::path(get, path = "/",
+    responses(
+        (status = 200, description = "Open api schema", content_type = "application/json"),
+    )
+)]
 pub fn routes(
     secret: String,
     hashing_scheme: HashingScheme,
     repository: MysqlUserRepository,
 ) -> Router {
     Router::new()
-        .route("/", get(open_api_docs_action))
-        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
         .route("/v1/users/login", post(login))

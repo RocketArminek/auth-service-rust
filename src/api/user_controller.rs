@@ -160,28 +160,26 @@ pub async fn verify(
     match decoded {
         Ok(decoded_token) => {
             let user_id = decoded_token.claims.sub.clone();
+            let now = Utc::now();
             headers.insert(
                 "X-User-Id",
-                header::HeaderValue::from_str(&user_id).unwrap(),
+                header::HeaderValue::from_str(&user_id).unwrap_or(header::HeaderValue::from_static("")),
             );
 
-            (
-                StatusCode::OK,
-                headers,
-                Json(AuthResponse::OK(SessionResponse {
-                    session_id: Uuid::new_v7(Timestamp::from_unix(
-                        NoContext,
-                        Utc::now().timestamp() as u64,
-                        Utc::now().nanosecond(),
-                    ))
-                        .to_string(),
-                    user_id,
-                    email: decoded_token.claims.email,
-                    token,
-                    expires_at: decoded_token.claims.exp,
-                }))
-            )
-        },
+            (StatusCode::OK,
+             headers,
+             Json(AuthResponse::OK(SessionResponse {
+                 session_id: Uuid::new_v7(Timestamp::from_unix(
+                     NoContext,
+                     now.timestamp() as u64,
+                     now.nanosecond(),
+                 )).to_string(),
+                 user_id,
+                 email: decoded_token.claims.email,
+                 token,
+                 expires_at: decoded_token.claims.exp,
+             })))
+        }
         Err(error) => match error.kind() {
             ErrorKind::InvalidToken => (
                 StatusCode::UNAUTHORIZED,
