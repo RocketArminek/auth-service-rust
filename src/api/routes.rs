@@ -7,18 +7,9 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api::user_controller::*;
 use crate::api::utils_controller::*;
-use crate::domain::crypto::HashingScheme;
-use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
-#[utoipa::path(get, path = "/",
-    responses(
-        (status = 200, description = "Open api schema", content_type = "application/json"),
-    )
-)]
 pub fn routes(
-    secret: String,
-    hashing_scheme: HashingScheme,
-    repository: MysqlUserRepository,
+    state: ServerState
 ) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
@@ -27,11 +18,7 @@ pub fn routes(
         .route("/v1/users/login", post(login))
         .route("/v1/users/verify", any(verify))
         .layer(TraceLayer::new_for_http())
-        .with_state(ServerState {
-            secret,
-            hashing_scheme,
-            repository,
-        })
+        .with_state(state)
 }
 
 #[derive(OpenApi)]
@@ -41,7 +28,7 @@ pub fn routes(
         (description="4e-production", url="https://auth-4ecommerce.arminek.xyz"),
     ),
     paths(
-        open_api_docs_action,
+        open_api_docs,
         health_action,
         create_user,
         login,
@@ -53,3 +40,10 @@ pub fn routes(
     )
 )]
 pub struct ApiDoc;
+
+#[utoipa::path(get, path = "/",
+    responses(
+        (status = 200, description = "Open api schema", content_type = "application/json"),
+    )
+)]
+pub async fn open_api_docs() { panic!("This is only for documentation") }

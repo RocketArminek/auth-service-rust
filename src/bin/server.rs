@@ -5,7 +5,10 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use dotenv::dotenv;
 use sqlx::sqlx_macros::migrate;
 use std::env;
+use std::sync::Arc;
 use tokio::signal;
+use tokio::sync::Mutex;
+use auth_service::api::ServerState;
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
 async fn main() {
@@ -23,14 +26,20 @@ async fn main() {
 
     let pool = create_mysql_pool().await.expect("Failed to create MySQL pool");
     migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
-    let repository = MysqlUserRepository::new(pool);
+    let repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool)));
 
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+
+    let state = ServerState {
+        secret,
+        hashing_scheme,
+        repository,
+    };
 
     match listener {
         Ok(listener) => {
             tracing::info!("Server started at {}", addr);
-            axum::serve(listener, routes(secret, hashing_scheme, repository.clone()))
+            axum::serve(listener, routes(state))
                 .with_graceful_shutdown(shutdown_signal())
                 .await
                 .expect("Failed to start server");

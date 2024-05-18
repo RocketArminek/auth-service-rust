@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use axum::Json;
+use axum::{Json};
 use serde::{Deserialize, Serialize};
 use utoipa::{ToResponse, ToSchema};
 
@@ -16,13 +16,6 @@ pub async fn health_action() -> (StatusCode, Json<HealthResponse>) {
         }),
     )
 }
-
-#[utoipa::path(get, path = "/",
-    responses(
-        (status = 200, description = "Open api schema", content_type = "application/json"),
-    )
-)]
-pub async fn open_api_docs_action() {}
 
 #[derive(Serialize, Deserialize, ToResponse, ToSchema)]
 pub struct HealthResponse {

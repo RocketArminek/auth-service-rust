@@ -11,9 +11,7 @@ use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
-use std::sync::Arc;
 use axum::response::IntoResponse;
-use tokio::sync::Mutex;
 use utoipa::{ToResponse, ToSchema};
 use uuid::{NoContext, Timestamp, Uuid};
 
@@ -30,8 +28,7 @@ pub async fn create_user(
 ) -> StatusCode {
     let email = request.email.clone();
     let password = request.password.clone();
-    let thread_safe_repository = Arc::new(Mutex::new(state.repository.clone()));
-    let existing = thread_safe_repository
+    let existing = state.repository
         .lock()
         .await
         .get_by_email(&email)
@@ -48,7 +45,7 @@ pub async fn create_user(
             tokio::task::spawn(
                 async move {
                     user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
-                    match thread_safe_repository.lock().await.add(&user).await {
+                    match state.repository.lock().await.add(&user).await {
                         Ok(_) => tracing::info!("User created: {}", user.email),
                         Err(error) => tracing::warn!("Failed to create user {:?}", error),
                     }
@@ -79,7 +76,7 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let user = state.repository.get_by_email(&email).await;
+    let user = state.repository.lock().await.get_by_email(&email).await;
 
     match user {
         Some(user) => {
