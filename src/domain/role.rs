@@ -3,7 +3,7 @@ use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::error::RoleError;
 
-#[derive(FromRow, Debug)]
+#[derive(FromRow, Debug, Clone, PartialEq, Eq)]
 pub struct Role {
     pub id: Uuid,
     pub name: String,

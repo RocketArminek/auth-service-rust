@@ -9,6 +9,7 @@ use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
 use auth_service::api::ServerState;
+use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
@@ -18,9 +19,8 @@ async fn main() {
     let hashing_scheme =
         env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
-    let restricted_role_pattern = env::var("RESTRICTED_ROLE_PATTERN")
-        .unwrap_or("^ADMIN.*".to_string());
-    let restricted_role_pattern = regex::Regex::new(restricted_role_pattern.as_str()).unwrap();
+    let restricted_role_prefix = env::var("RESTRICTED_ROLE_PREFIX")
+        .unwrap_or("ADMIN".to_string());
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
@@ -28,7 +28,10 @@ async fn main() {
     let addr = &format!("0.0.0.0:{}", port);
     let listener = tokio::net::TcpListener::bind(addr).await;
 
-    let pool = create_mysql_pool().await.expect("Failed to create MySQL pool");
+    tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+    tracing::info!("Configured restricted role prefix: {}", restricted_role_prefix.as_str());
+
+    let pool = create_mysql_pool().await.expect("Failed to connect & create MySQL pool");
     migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
     let user_repository = Arc::new(
         Mutex::new(MysqlUserRepository::new(pool.clone()))
@@ -36,8 +39,39 @@ async fn main() {
     let role_repository = Arc::new(
         Mutex::new(MysqlRoleRepository::new(pool.clone()))
     );
+    let existing_init_role = role_repository.lock()
+        .await.get_by_name(&restricted_role_prefix)
+        .await;
 
-    tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+    if existing_init_role.is_some() {
+        let existing_init_role = existing_init_role.clone().unwrap();
+        tracing::info!(
+            "Found existing restricted role base on pattern: {}, {}, {}",
+            existing_init_role.id,
+            existing_init_role.name,
+            existing_init_role.created_at.format("%Y-%m-%d %H:%M:%S")
+        );
+    }
+
+    if existing_init_role.is_none() {
+        let restricted_init_role = Role::now(restricted_role_prefix.clone())
+            .expect("Failed to create restricted role");
+
+        role_repository.lock()
+            .await.add(&restricted_init_role)
+            .await.expect("Failed to create restricted role");
+
+        tracing::info!(
+            "Created initial restricted role base on pattern: {}, {}, {}",
+            restricted_init_role.id,
+            restricted_init_role.name,
+            restricted_init_role.created_at.format("%Y-%m-%d %H:%M:%S")
+        );
+    }
+
+    let restricted_role_pattern = regex::Regex::new(
+        format!("^{}.*", restricted_role_prefix).as_str()
+    ).unwrap();
 
     let state = ServerState {
         secret,

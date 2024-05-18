@@ -1,5 +1,4 @@
 use sqlx::{MySql, Pool};
-use uuid::Uuid;
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 
@@ -34,23 +33,13 @@ async fn it_can_get_role_by_name(pool: Pool<MySql>) {
 }
 
 #[sqlx::test]
-async fn it_has_auth_owner_role_by_default(pool: Pool<MySql>) {
-    let id = Uuid::parse_str("018f8b15-4759-787c-bc55-1b8337d0e45c").unwrap();
-
-    let repository = MysqlRoleRepository::new(pool);
-    let row = repository.get_by_id(id).await.unwrap();
-
-    assert_eq!(row.name, "AUTH_OWNER".to_string());
-}
-
-#[sqlx::test]
 async fn it_can_get_all_roles(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
     repository.add(&role).await.unwrap();
     let rows = repository.get_all().await;
 
-    assert_eq!(rows.len(), 2);
+    assert_eq!(rows.len(), 1);
 }
 
 #[sqlx::test]

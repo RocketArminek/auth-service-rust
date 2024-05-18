@@ -161,9 +161,10 @@ fn it_does_not_create_user_with_invalid_email() {
 #[test]
 fn it_assign_role_to_user() {
     let mut create_cmd = Command::cargo_bin("cli").unwrap();
+    let mut init_role_cmd = Command::cargo_bin("cli").unwrap();
     let mut assign_cmd = Command::cargo_bin("cli").unwrap();
     let mut delete_cmd = Command::cargo_bin("cli").unwrap();
-    let email = String::from("jon11@snow.test");
+    let email = String::from("jon131@snow.test");
 
     create_cmd
         .arg("create-user")
@@ -174,15 +175,20 @@ fn it_assign_role_to_user() {
         .assert()
         .success();
 
+    init_role_cmd
+        .arg("init-restricted-role")
+        .assert()
+        .success();
+
     assign_cmd
         .arg("assign-role")
         .arg("--email")
         .arg(&email)
         .arg("--role")
-        .arg("AUTH_OWNER")
+        .arg("ADMIN")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Role assigned: AUTH_OWNER to jon11@snow.test"));
+        .stdout(predicate::str::contains("Role assigned: ADMIN to jon131@snow.test"));
 
     delete_cmd
         .arg("delete-user-by-email")
@@ -197,8 +203,7 @@ fn it_initializes_auth_owner_role() {
     let mut cmd = Command::cargo_bin("cli").unwrap();
 
     cmd
-        .arg("init-auth-owner-role")
+        .arg("init-restricted-role")
         .assert()
-        .success()
-        .stdout(predicate::str::contains("Role already exists"));
+        .success();
 }

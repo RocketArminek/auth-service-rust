@@ -19,6 +19,11 @@ pub fn routes(
         .route("/v1/users", post(create_user))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
+        .route("/v1/stateless/verify/roles/:role", any(verify))
+        .route("/v1/restricted/users", any(verify))
+        .route("/v1/restricted/users/:id", any(verify))
+        .route("/v1/restricted/roles", any(verify))
+        .route("/v1/restricted/roles/:id", any(verify))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

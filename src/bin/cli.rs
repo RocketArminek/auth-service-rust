@@ -45,7 +45,7 @@ enum Commands {
         #[arg(short, long)]
         role: String,
     },
-    InitAuthOwnerRole,
+    InitRestrictedRole,
 }
 
 #[tokio::main]
@@ -173,16 +173,25 @@ async fn main() {
                 }
             }
         }
-        Commands::InitAuthOwnerRole => {
-            let role = role_repository.get_by_name(&"AUTH_OWNER".to_string()).await;
+        Commands::InitRestrictedRole => {
+            let restricted_role_prefix = env::var("RESTRICTED_ROLE_PREFIX")
+                .unwrap_or("ADMIN".to_string());
+            let role = role_repository.get_by_name(&restricted_role_prefix).await;
 
             match role {
                 None => {
-                    let role = Role::now("AUTH_OWNER".to_string()).unwrap();
+                    let role = Role::now(restricted_role_prefix).unwrap();
                     role_repository
                         .add(&role)
                         .await
                         .expect("Failed to init auth owner role!");
+
+                    println!(
+                        "Created initial restricted role base on pattern: {}, {}, {}",
+                        role.id,
+                        role.name,
+                        role.created_at.format("%Y-%m-%d %H:%M:%S")
+                    );
                 }
                 Some(_) => {
                     println!("Role already exists");
