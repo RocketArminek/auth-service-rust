@@ -18,6 +18,9 @@ async fn main() {
     let hashing_scheme =
         env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
+    let restricted_role_pattern = env::var("RESTRICTED_ROLE_PATTERN")
+        .unwrap_or("^ADMIN.*".to_string());
+    let restricted_role_pattern = regex::Regex::new(restricted_role_pattern.as_str()).unwrap();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
@@ -39,6 +42,7 @@ async fn main() {
     let state = ServerState {
         secret,
         hashing_scheme,
+        restricted_role_pattern,
         user_repository,
         role_repository,
     };

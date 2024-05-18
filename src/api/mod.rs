@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use regex::Regex;
 use tokio::sync::Mutex;
 use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -15,6 +16,7 @@ pub mod stateless_auth_controller;
 pub struct ServerState {
     pub secret: String,
     pub hashing_scheme: HashingScheme,
+    pub restricted_role_pattern: Regex,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
     pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
 }

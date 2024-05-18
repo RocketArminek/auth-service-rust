@@ -32,6 +32,7 @@ tower-http = { version = "0.5.2", features = ["trace"] }
 tracing = "0.1.40"
 argon2 = "0.5.3"
 lazy-regex = "3.1.0"
+regex = "1.10.4"
 bcrypt = "0.15.1"
 jsonwebtoken = "9.3.0"
 utoipa-swagger-ui = { version = "7.0.1", features = ["axum"] }

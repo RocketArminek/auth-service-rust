@@ -92,7 +92,7 @@ async fn it_returns_bad_request_if_roles_does_not_exists(pool: Pool<MySql>) {
 }
 
 #[sqlx::test]
-async fn it_returns_bad_request_if_role_is_auth_owner(pool: Pool<MySql>) {
+async fn it_returns_bad_request_if_role_is_restricted(pool: Pool<MySql>) {
     let server = create_test_server("secret".to_string(), pool.clone());
     let email = String::from("jon@snow.test");
 
@@ -102,6 +102,23 @@ async fn it_returns_bad_request_if_role_is_auth_owner(pool: Pool<MySql>) {
             "email": &email,
             "password": "Iknow#othing1",
             "role": "ADMIN",
+        }))
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
+}
+
+#[sqlx::test]
+async fn it_returns_bad_request_if_role_restricted_another(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone());
+    let email = String::from("jon@snow.test");
+
+    let response = server
+        .post("/v1/users")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+            "role": "ADMIN_USER",
         }))
         .await;
 

@@ -3,8 +3,6 @@ use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::error::RoleError;
 
-pub const RESTRICTED_ROLE: &str = "ADMIN";
-
 #[derive(FromRow, Debug)]
 pub struct Role {
     pub id: Uuid,

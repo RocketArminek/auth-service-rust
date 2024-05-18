@@ -7,7 +7,6 @@ use axum::Json;
 use axum::response::IntoResponse;
 use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse};
 use crate::domain::error::UserError;
-use crate::domain::role::RESTRICTED_ROLE;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
@@ -25,11 +24,12 @@ pub async fn create_user(
     let email = request.email.clone();
     let password = request.password.clone();
     let role = request.role.clone();
-    if role.as_str() == RESTRICTED_ROLE {
+    if state.restricted_role_pattern.is_match(role.as_str()) {
         return (StatusCode::BAD_REQUEST, Json(MessageResponse {
             message: "Role is restricted".to_string(),
         })).into_response();
     }
+
     let existing = state.user_repository
         .lock()
         .await
