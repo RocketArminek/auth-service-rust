@@ -1,4 +1,4 @@
-use crate::domain::error::Error;
+use crate::domain::error::UserError;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 pub trait Hasher {
-    fn hash_password(&self, password: &str) -> Result<String, Error>;
+    fn hash_password(&self, password: &str) -> Result<String, UserError>;
     fn verify_password(&self, password: &str, hash: &str) -> bool;
 }
 
@@ -32,12 +32,12 @@ impl HashingScheme {
         }
     }
 
-    pub fn from_string(scheme: String) -> Result<Self, Error> {
+    pub fn from_string(scheme: String) -> Result<Self, UserError> {
         match scheme.as_str() {
             "argon2" => Ok(HashingScheme::Argon2),
             "bcrypt" => Ok(HashingScheme::Bcrypt),
             "bcrypt_low" => Ok(HashingScheme::BcryptLow),
-            _ => Err(Error::SchemeNotSupported),
+            _ => Err(UserError::SchemeNotSupported),
         }
     }
 }
@@ -94,7 +94,7 @@ impl SchemeAwareHasher {
 }
 
 impl Hasher for SchemeAwareHasher {
-    fn hash_password(&self, password: &str) -> Result<String, Error> {
+    fn hash_password(&self, password: &str) -> Result<String, UserError> {
         let hasher = self.algorithms.get(&self.current_scheme);
 
         match hasher {
@@ -106,7 +106,7 @@ impl Hasher for SchemeAwareHasher {
                     hashed_password
                 ))
             }
-            None => Err(Error::EncryptionFailed),
+            None => Err(UserError::EncryptionFailed),
         }
     }
 
@@ -141,12 +141,12 @@ impl Argon2Hasher {
 }
 
 impl Hasher for Argon2Hasher {
-    fn hash_password(&self, password: &str) -> Result<String, Error> {
+    fn hash_password(&self, password: &str) -> Result<String, UserError> {
         let salt = SaltString::generate(&mut OsRng);
 
         self.argon2
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|_| Error::EncryptionFailed)
+            .map_err(|_| UserError::EncryptionFailed)
             .map(|hash| hash.to_string())
     }
 
@@ -181,8 +181,8 @@ impl BcryptHasher {
 }
 
 impl Hasher for BcryptHasher {
-    fn hash_password(&self, password: &str) -> Result<String, Error> {
-        bcrypt::hash(password, self.cost).map_err(|_| Error::EncryptionFailed)
+    fn hash_password(&self, password: &str) -> Result<String, UserError> {
+        bcrypt::hash(password, self.cost).map_err(|_| UserError::EncryptionFailed)
     }
 
     fn verify_password(&self, password: &str, hash: &str) -> bool {

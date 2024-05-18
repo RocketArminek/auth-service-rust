@@ -1,16 +1,17 @@
 use crate::domain::crypto::Hasher;
-use crate::domain::error::Error;
+use crate::domain::error::UserError;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
 use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
+use crate::domain::role::Role;
 
 #[derive(FromRow, Debug)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
     pub password: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>
 }
 
 impl User {
@@ -19,7 +20,7 @@ impl User {
         email: String,
         password: String,
         created_at: DateTime<Utc>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, UserError> {
         let email_regex = regex!(r#"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$"#);
         let password_digit_check = regex!(r#"\d"#);
         let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
@@ -27,21 +28,21 @@ impl User {
         let password_lowercase_check = regex!(r#"[a-z]"#);
 
         if email.is_empty() {
-            Err(Error::InvalidEmail { email })
+            Err(UserError::InvalidEmail { email })
         } else if password.is_empty() {
-            Err(Error::EmptyPassword)
+            Err(UserError::EmptyPassword)
         } else if password.len() < 8 {
-            Err(Error::InvalidPassword)
+            Err(UserError::InvalidPassword)
         } else if !password_digit_check.is_match(&password) {
-            Err(Error::InvalidPassword)
+            Err(UserError::InvalidPassword)
         } else if !password_special_character_check.is_match(&password) {
-            Err(Error::InvalidPassword)
+            Err(UserError::InvalidPassword)
         } else if !password_uppercase_check.is_match(&password) {
-            Err(Error::InvalidPassword)
+            Err(UserError::InvalidPassword)
         } else if !password_lowercase_check.is_match(&password) {
-            Err(Error::InvalidPassword)
+            Err(UserError::InvalidPassword)
         } else if !email_regex.is_match(&email) {
-            Err(Error::InvalidEmail { email })
+            Err(UserError::InvalidEmail { email })
         } else {
             Ok(User {
                 id,
@@ -52,7 +53,7 @@ impl User {
         }
     }
 
-    pub fn now_with_email_and_password(email: String, password: String) -> Result<Self, Error> {
+    pub fn now_with_email_and_password(email: String, password: String) -> Result<Self, UserError> {
         let now = Utc::now();
         let timestamp = Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
 
@@ -75,5 +76,38 @@ impl User {
 
     pub fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {
         hasher.verify_password(password, self.password.as_str())
+    }
+}
+
+#[derive(Debug)]
+pub struct UserWithRoles {
+    pub id: Uuid,
+    pub email: String,
+    pub password: String,
+    pub created_at: DateTime<Utc>,
+    pub roles: Vec<Role>,
+}
+
+impl UserWithRoles {
+    pub fn from_user(user: User) -> Self {
+        Self::from_user_and_roles(user, vec![])
+    }
+
+    pub fn from_user_and_roles(user: User, roles: Vec<Role>) -> Self {
+        UserWithRoles {
+            id: user.id,
+            email: user.email,
+            password: user.password,
+            created_at: user.created_at,
+            roles,
+        }
+    }
+
+    pub fn add_role(&mut self, role: Role) {
+        self.roles.push(role);
+    }
+
+    pub fn has_role(&self, role_name: String) -> bool {
+        self.roles.iter().any(|role| role.name == role_name)
     }
 }

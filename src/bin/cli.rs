@@ -1,5 +1,5 @@
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
-use auth_service::domain::error::Error;
+use auth_service::domain::error::UserError;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::database::create_mysql_pool;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
@@ -70,19 +70,19 @@ async fn main() {
                     );
                 }
                 Err(error) => match error {
-                    Error::InvalidEmail { email } => {
+                    UserError::InvalidEmail { email } => {
                         panic!("Invalid email: {}", email);
                     }
-                    Error::EmptyPassword => {
+                    UserError::EmptyPassword => {
                         panic!("Empty password");
                     }
-                    Error::EncryptionFailed => {
+                    UserError::EncryptionFailed => {
                         panic!("Encryption failed");
                     }
-                    Error::InvalidPassword => {
+                    UserError::InvalidPassword => {
                         panic!("Invalid password format");
                     }
-                    Error::SchemeNotSupported => {
+                    UserError::SchemeNotSupported => {
                         panic!("Password hashing scheme not supported");
                     }
                 },

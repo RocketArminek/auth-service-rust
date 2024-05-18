@@ -1,7 +1,8 @@
 use auth_service::domain::crypto::SchemeAwareHasher;
-use auth_service::domain::user::User;
+use auth_service::domain::user::{User, UserWithRoles};
 use chrono::{Utc};
 use uuid::Uuid;
+use auth_service::domain::role::Role;
 
 #[test]
 fn it_can_be_created() {
@@ -85,4 +86,34 @@ fn it_can_verify_password_using_hasher() {
     user.hash_password(&hasher);
 
     assert_eq!(user.verify_password(&hasher, "Iknow#othing1"), true);
+}
+
+#[test]
+fn user_with_roles_can_be_created_from_user() {
+    let user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+    ).unwrap();
+    let mut user = UserWithRoles::from_user(user);
+    let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
+
+    user.add_role(role);
+
+    assert_eq!(user.roles.len(), 1);
+    assert_eq!(user.roles[0].name, String::from("SUPER_ADMIN"));
+    assert!(user.has_role(String::from("SUPER_ADMIN")));
+}
+
+#[test]
+fn user_with_roles_can_be_created_from_user_and_roles() {
+    let user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+    ).unwrap();
+    let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
+    let user = UserWithRoles::from_user_and_roles(user, vec![role]);
+
+    assert_eq!(user.roles.len(), 1);
+    assert_eq!(user.roles[0].name, String::from("SUPER_ADMIN"));
+    assert!(user.has_role(String::from("SUPER_ADMIN")));
 }
