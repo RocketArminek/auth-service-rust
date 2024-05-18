@@ -7,6 +7,8 @@ pub mod routes;
 mod token_extractor;
 pub mod user_controller;
 pub mod utils_controller;
+pub mod dto;
+pub mod stateless_auth_controller;
 
 #[derive(Clone)]
 pub struct ServerState {

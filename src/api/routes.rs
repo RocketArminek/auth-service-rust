@@ -6,7 +6,9 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api::user_controller::*;
+use crate::api::stateless_auth_controller::*;
 use crate::api::utils_controller::*;
+use crate::api::dto::*;
 
 pub fn routes(
     state: ServerState
@@ -15,8 +17,8 @@ pub fn routes(
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
-        .route("/v1/users/login", post(login))
-        .route("/v1/users/verify", any(verify))
+        .route("/v1/stateless/login", post(login))
+        .route("/v1/stateless/verify", any(verify))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -35,8 +37,15 @@ pub fn routes(
         verify,
     ),
     components(
-        responses(HealthResponse, SessionResponse, MessageResponse),
-        schemas(HealthResponse, SessionResponse, MessageResponse, CreateUserRequest, LoginRequest),
+        schemas(
+            HealthResponse,
+            SessionResponse,
+            MessageResponse,
+            UserResponse,
+            TokenResponse,
+            CreateUserRequest,
+            LoginRequest
+        ),
     )
 )]
 pub struct ApiDoc;

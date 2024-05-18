@@ -1,5 +1,5 @@
 use axum::{async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
-use crate::api::user_controller::{MessageResponse};
+use crate::api::dto::MessageResponse;
 
 #[derive(Debug, Clone)]
 pub struct BearerToken(pub String);

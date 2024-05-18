@@ -1,6 +1,6 @@
-use auth_service::api::utils_controller::HealthResponse;
 use axum::http::StatusCode;
 use sqlx::{MySql, Pool};
+use auth_service::api::dto::HealthResponse;
 use crate::utils::create_test_server;
 
 #[sqlx::test]

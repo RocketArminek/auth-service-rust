@@ -1,7 +1,6 @@
 use axum::http::StatusCode;
 use axum::{Json};
-use serde::{Deserialize, Serialize};
-use utoipa::{ToResponse, ToSchema};
+use crate::api::dto::HealthResponse;
 
 #[utoipa::path(get, path = "/v1/health",
     responses(
@@ -15,9 +14,4 @@ pub async fn health_action() -> (StatusCode, Json<HealthResponse>) {
             message: String::from("OK"),
         }),
     )
-}
-
-#[derive(Serialize, Deserialize, ToResponse, ToSchema)]
-pub struct HealthResponse {
-    pub message: String,
 }
