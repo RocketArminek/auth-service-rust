@@ -1,7 +1,7 @@
 use ::serde_json::json;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::jwt::Claims;
-use auth_service::domain::user::User;
+use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};

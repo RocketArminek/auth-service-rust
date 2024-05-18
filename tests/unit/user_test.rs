@@ -1,5 +1,5 @@
 use auth_service::domain::crypto::SchemeAwareHasher;
-use auth_service::domain::user::{User, UserWithRoles};
+use auth_service::domain::user::{PasswordHandler, User, UserWithRoles};
 use chrono::{Utc};
 use uuid::Uuid;
 use auth_service::domain::role::Role;

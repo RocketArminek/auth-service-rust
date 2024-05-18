@@ -9,6 +9,7 @@ use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
 use auth_service::api::ServerState;
+use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
 async fn main() {
@@ -26,14 +27,20 @@ async fn main() {
 
     let pool = create_mysql_pool().await.expect("Failed to create MySQL pool");
     migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
-    let repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool)));
+    let user_repository = Arc::new(
+        Mutex::new(MysqlUserRepository::new(pool.clone()))
+    );
+    let role_repository = Arc::new(
+        Mutex::new(MysqlRoleRepository::new(pool.clone()))
+    );
 
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
 
     let state = ServerState {
         secret,
         hashing_scheme,
-        repository,
+        user_repository,
+        role_repository,
     };
 
     match listener {

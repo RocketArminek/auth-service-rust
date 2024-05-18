@@ -2,7 +2,7 @@ use crate::domain::crypto::Hasher;
 use crate::domain::error::UserError;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
-use sqlx::FromRow;
+use sqlx::{FromRow};
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::role::Role;
 
@@ -64,19 +64,6 @@ impl User {
             now,
         )
     }
-
-    pub fn hash_password(&mut self, hasher: &impl Hasher) {
-        let hashed_password = hasher.hash_password(self.password.as_str());
-
-        match hashed_password {
-            Ok(hashed_password) => self.password = hashed_password,
-            Err(error) => tracing::error!("Error hashing password: {:?}", error),
-        }
-    }
-
-    pub fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {
-        hasher.verify_password(password, self.password.as_str())
-    }
 }
 
 #[derive(Debug)]
@@ -109,5 +96,43 @@ impl UserWithRoles {
 
     pub fn has_role(&self, role_name: String) -> bool {
         self.roles.iter().any(|role| role.name == role_name)
+    }
+}
+
+pub trait PasswordHandler {
+    fn hash_password(&mut self, hasher: &impl Hasher) {
+        let hashed_password = hasher.hash_password(self.get_password().as_str());
+
+        match hashed_password {
+            Ok(hashed_password) => self.set_password(hashed_password),
+            Err(error) => tracing::error!("Error hashing password: {:?}", error),
+        }
+    }
+
+    fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {
+        hasher.verify_password(password, self.get_password().as_str())
+    }
+
+    fn get_password(&self) -> String;
+    fn set_password(&mut self, password: String);
+}
+
+impl PasswordHandler for User {
+    fn get_password(&self) -> String {
+        self.password.clone()
+    }
+
+    fn set_password(&mut self, password: String) {
+        self.password = password;
+    }
+}
+
+impl PasswordHandler for UserWithRoles {
+    fn get_password(&self) -> String {
+        self.password.clone()
+    }
+
+    fn set_password(&mut self, password: String) {
+        self.password = password;
     }
 }

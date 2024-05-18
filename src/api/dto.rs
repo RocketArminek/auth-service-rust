@@ -5,6 +5,7 @@ use utoipa::{ToSchema};
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
+    pub role: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -44,4 +45,9 @@ pub struct MessageResponse {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct HealthResponse {
     pub message: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct CreatedResponse {
+    pub id: String,
 }

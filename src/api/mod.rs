@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use crate::domain::crypto::HashingScheme;
+use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 
 pub mod routes;
@@ -14,5 +15,6 @@ pub mod stateless_auth_controller;
 pub struct ServerState {
     pub secret: String,
     pub hashing_scheme: HashingScheme,
-    pub repository: Arc<Mutex<MysqlUserRepository>>,
+    pub user_repository: Arc<Mutex<MysqlUserRepository>>,
+    pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
 }

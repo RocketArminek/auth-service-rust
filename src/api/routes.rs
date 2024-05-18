@@ -44,7 +44,8 @@ pub fn routes(
             UserResponse,
             TokenResponse,
             CreateUserRequest,
-            LoginRequest
+            LoginRequest,
+            CreatedResponse
         ),
     )
 )]

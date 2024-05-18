@@ -11,6 +11,7 @@ use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
 use std::ops::Add;
 use axum::response::IntoResponse;
 use crate::api::dto::{LoginRequest, MessageResponse, TokenResponse, UserResponse};
+use crate::domain::user::PasswordHandler;
 
 #[utoipa::path(post, path = "/v1/stateless/login",
     request_body = LoginRequest,
@@ -26,7 +27,7 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let user = state.repository.lock().await.get_by_email(&email).await;
+    let user = state.user_repository.lock().await.get_by_email(&email).await;
 
     match user {
         Some(user) => {
