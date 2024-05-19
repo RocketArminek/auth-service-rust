@@ -168,7 +168,7 @@ resource "kubernetes_manifest" "mysql_user_grant_4ecommerce" {
         databaseRef = {
           name = local.database_name
         }
-        privileges = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "INDEX"]
+        privileges = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "INDEX", "REFERENCES", "LOCK TABLES"]
       }
     }
   }
