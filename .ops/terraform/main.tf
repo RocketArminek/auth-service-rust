@@ -7,7 +7,12 @@ locals {
 }
 
 module "app_4ecommerce" {
-  depends_on = [kubernetes_secret.app_4ecommerce]
+  depends_on = [
+    kubernetes_secret.app_4ecommerce,
+    kubernetes_manifest.auth_service_4ecommerce,
+    kubernetes_manifest.mysql_user_4ecommerce,
+    kubernetes_manifest.mysql_user_grant_4ecommerce,
+  ]
   source           = "Arminek/app/k8s"
   version          = "1.1.0"
   app_name         = local.app_name
