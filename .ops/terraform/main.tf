@@ -2,8 +2,8 @@ locals {
   namespace = "4ecommerce"
   app_name  = "auth-api"
   app_env   = "prod"
-  database_name = "4ecommerce_auth"
-  mysql_user = "4ecommerce_auth"
+  database_name = "ecommerce_auth"
+  mysql_user = "ecommerce_auth"
 }
 
 module "app_4ecommerce" {
