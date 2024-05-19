@@ -9,7 +9,7 @@ locals {
 module "app_4ecommerce" {
   depends_on = [
     kubernetes_secret.app_4ecommerce,
-    kubernetes_manifest.auth_service_4ecommerce,
+    kubernetes_manifest.auth_service_4ecommerce_db,
     kubernetes_manifest.mysql_user_4ecommerce,
     kubernetes_manifest.mysql_user_grant_4ecommerce,
   ]
@@ -88,7 +88,8 @@ module "app_4ecommerce" {
   ]
 }
 
-resource "kubernetes_manifest" "auth_service_4ecommerce" {
+resource "kubernetes_manifest" "auth_service_4ecommerce_db" {
+  count = 0
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Database"
@@ -123,7 +124,8 @@ resource "kubernetes_secret" "mysql_credentials_4ecommerce" {
 }
 
 resource "kubernetes_manifest" "mysql_user_4ecommerce" {
-  depends_on = [kubernetes_secret.mysql_credentials_4ecommerce, kubernetes_manifest.auth_service_4ecommerce]
+  count = 0
+  depends_on = [kubernetes_secret.mysql_credentials_4ecommerce, kubernetes_manifest.auth_service_4ecommerce_db]
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "User"
@@ -150,7 +152,8 @@ resource "kubernetes_manifest" "mysql_user_4ecommerce" {
 }
 
 resource "kubernetes_manifest" "mysql_user_grant_4ecommerce" {
-  depends_on = [kubernetes_manifest.mysql_user_4ecommerce, kubernetes_manifest.auth_service_4ecommerce]
+  count = 0
+  depends_on = [kubernetes_manifest.mysql_user_4ecommerce, kubernetes_manifest.auth_service_4ecommerce_db]
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Grant"
