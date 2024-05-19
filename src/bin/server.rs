@@ -32,7 +32,15 @@ async fn main() {
     tracing::info!("Configured restricted role prefix: {}", restricted_role_prefix.as_str());
 
     let pool = create_mysql_pool().await.expect("Failed to connect & create MySQL pool");
-    migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
+    let migration_result = migrate!("./migrations").run(&pool).await;
+    match migration_result {
+        Ok(_) => {
+            tracing::info!("Database migration completed successfully");
+        }
+        Err(e) => {
+            tracing::error!("Failed to migrate database: {}", e);
+        }
+    }
     let user_repository = Arc::new(
         Mutex::new(MysqlUserRepository::new(pool.clone()))
     );
