@@ -1,8 +1,10 @@
 use axum::routing::{any, post};
-use axum::{routing::get, Router};
+use axum::{routing::get, Router, middleware};
+use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use crate::api::acl_mw::restricted_acl;
 
 use crate::api::user_controller::*;
 use crate::api::stateless_auth_controller::*;
@@ -20,14 +22,18 @@ pub fn routes(
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
         .route("/v1/stateless/verify/roles/:role", any(verify))
-        .route("/v1/restricted/users", any(verify))
-        .route("/v1/restricted/users/:id", any(verify))
-        .route("/v1/restricted/roles", any(verify))
-        .route("/v1/restricted/roles/:id", any(verify))
+        .merge(
+            Router::new()
+                .route("/v1/restricted/users", post(create_restricted_user))
+                .layer(
+                    ServiceBuilder::new()
+                        .layer(middleware::from_fn_with_state(state.clone(), restricted_acl))
+                        .layer(TraceLayer::new_for_http())
+                )
+        )
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
-
 #[derive(OpenApi)]
 #[openapi(
     servers(
@@ -38,6 +44,7 @@ pub fn routes(
         open_api_docs,
         health_action,
         create_user,
+        create_restricted_user,
         login,
         verify,
     ),

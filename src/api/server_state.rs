@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use regex::Regex;
+use regex::{Error, Regex};
 use tokio::sync::Mutex;
 use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -62,4 +62,8 @@ impl RoleRepositoryAware for ServerState {
     fn get_role_repository(&self) -> Arc<Mutex<MysqlRoleRepository>> {
         self.role_repository.clone()
     }
+}
+
+pub fn parse_restricted_pattern(pattern: &str) -> Result<Regex, Error> {
+    Regex::new(format!("(?i)^{}.*", pattern).as_str())
 }

@@ -8,7 +8,7 @@ use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
-use auth_service::api::server_state::ServerState;
+use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 
@@ -78,9 +78,8 @@ async fn main() {
         );
     }
 
-    let restricted_role_pattern = regex::Regex::new(
-        format!("^{}.*", restricted_role_prefix).as_str()
-    ).unwrap();
+    let restricted_role_pattern = parse_restricted_pattern(restricted_role_prefix.as_str())
+        .unwrap();
 
     let state = ServerState {
         secret,

@@ -57,6 +57,7 @@ where
 
         match decoded {
             Ok(decoded_token) => {
+                tracing::info!("Decoded token: {:?}", decoded_token.claims);
                 let user_id = decoded_token.claims.id.clone();
                 let user_id = Uuid::parse_str(&user_id);
                 if user_id.is_err() {
