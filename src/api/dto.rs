@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{ToSchema};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateUserRequest {
@@ -50,4 +51,11 @@ pub struct HealthResponse {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreatedResponse {
     pub id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LoggedInUser {
+    pub id: Uuid,
+    pub email: String,
+    pub roles: Vec<String>,
 }

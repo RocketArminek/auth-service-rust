@@ -1,13 +1,12 @@
-use crate::api::token_extractor::BearerToken;
+use crate::api::axum_extractor::{StatelessUserWithRoles};
 use crate::api::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::jwt::Claims;
 use axum::extract::State;
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{Duration, Utc};
-use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use std::ops::Add;
 use axum::response::IntoResponse;
 use crate::api::dto::{LoginRequest, MessageResponse, TokenResponse, UserResponse};
@@ -47,7 +46,6 @@ pub async fn login(
             let claims = Claims::new(
                 user.id.to_string().clone(),
                 exp.timestamp() as usize,
-                "rocket-arminek".to_string(),
                 user.email.clone(),
             );
             let token = encode(
@@ -87,51 +85,14 @@ pub async fn login(
     )
 )]
 pub async fn verify(
-    BearerToken(token): BearerToken,
-    State(state): State<ServerState>,
+    StatelessUserWithRoles(user): StatelessUserWithRoles,
 ) -> impl IntoResponse {
-    let decoded = jsonwebtoken::decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(state.secret.as_ref()),
-        &Validation::default(),
-    );
     let mut headers = HeaderMap::new();
+    let user_id = user.id.to_string();
+    headers.insert(
+        "X-User-Id",
+        HeaderValue::from_str(&user_id.as_str()).unwrap_or(HeaderValue::from_static("")),
+    );
 
-    match decoded {
-        Ok(decoded_token) => {
-            let user_id = decoded_token.claims.sub.clone();
-            headers.insert(
-                "X-User-Id",
-                header::HeaderValue::from_str(&user_id).unwrap_or(header::HeaderValue::from_static("")),
-            );
-
-            (
-                StatusCode::OK,
-                headers,
-                Json(UserResponse { id: user_id, email: decoded_token.claims.email })
-            ).into_response()
-        }
-        Err(error) => match error.kind() {
-            ErrorKind::InvalidToken => (
-                StatusCode::UNAUTHORIZED,
-                headers,
-                Json(MessageResponse { message: String::from("Invalid token") }),
-            ).into_response(),
-            ErrorKind::InvalidSignature => (
-                StatusCode::UNAUTHORIZED,
-                headers,
-                Json(MessageResponse { message: String::from("Invalid signature") }),
-            ).into_response(),
-            ErrorKind::ExpiredSignature => (
-                StatusCode::UNAUTHORIZED,
-                headers,
-                Json(MessageResponse { message: String::from("Expired token") }),
-            ).into_response(),
-            _ => (
-                StatusCode::UNAUTHORIZED,
-                headers,
-                Json(MessageResponse { message: String::from("Unauthorized") }),
-            ).into_response(),
-        },
-    }
+    (StatusCode::OK, headers, Json(UserResponse { id: user_id, email: user.email })).into_response()
 }

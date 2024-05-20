@@ -82,9 +82,8 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
         &Validation::default(),
     ).unwrap();
 
-    assert_eq!(token.claims.sub, user.id.to_string());
+    assert_eq!(token.claims.id, user.id.to_string());
     assert_eq!(token.claims.email, user.email);
-    assert_eq!(token.claims.iss, "rocket-arminek");
     assert_eq!(token.claims.exp, exp.timestamp() as usize);
 }
 
@@ -172,7 +171,6 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     let claims = Claims::new(
         user.id.to_string().clone(),
         exp.timestamp() as usize,
-        "rocket-arminek".to_string(),
         user.email.clone(),
     );
     let token = encode(

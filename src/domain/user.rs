@@ -66,7 +66,7 @@ impl User {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserWithRoles {
     pub id: Uuid,
     pub email: String,
