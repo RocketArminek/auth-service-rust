@@ -3,7 +3,7 @@ use axum_test::TestServer;
 use sqlx::{MySql, Pool};
 use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
-use auth_service::api::ServerState;
+use auth_service::api::server_state::ServerState;
 use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;

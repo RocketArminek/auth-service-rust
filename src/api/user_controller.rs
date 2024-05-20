@@ -1,4 +1,3 @@
-use crate::api::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::State;
@@ -6,6 +5,7 @@ use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
 use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse};
+use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
 #[utoipa::path(post, path = "/v1/users",

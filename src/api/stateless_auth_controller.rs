@@ -1,5 +1,4 @@
 use crate::api::axum_extractor::{StatelessUserWithRoles};
-use crate::api::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::jwt::Claims;
 use axum::extract::State;
@@ -10,6 +9,7 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use std::ops::Add;
 use axum::response::IntoResponse;
 use crate::api::dto::{LoginRequest, MessageResponse, TokenResponse, UserResponse};
+use crate::api::server_state::ServerState;
 use crate::domain::user::PasswordHandler;
 
 #[utoipa::path(post, path = "/v1/stateless/login",

@@ -1,4 +1,3 @@
-use crate::api::ServerState;
 use axum::routing::{any, post};
 use axum::{routing::get, Router};
 use tower_http::trace::TraceLayer;
@@ -9,6 +8,7 @@ use crate::api::user_controller::*;
 use crate::api::stateless_auth_controller::*;
 use crate::api::utils_controller::*;
 use crate::api::dto::*;
+use crate::api::server_state::ServerState;
 
 pub fn routes(
     state: ServerState

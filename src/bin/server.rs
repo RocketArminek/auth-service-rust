@@ -8,7 +8,7 @@ use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
-use auth_service::api::ServerState;
+use auth_service::api::server_state::ServerState;
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 

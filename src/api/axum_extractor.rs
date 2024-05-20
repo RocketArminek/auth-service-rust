@@ -2,7 +2,7 @@ use axum::{async_trait, extract::FromRequestParts, http::header, http::request::
 use jsonwebtoken::{DecodingKey, Validation};
 use uuid::Uuid;
 use crate::api::dto::{LoggedInUser, MessageResponse};
-use crate::api::{SecretAware};
+use crate::api::server_state::SecretAware;
 use crate::domain::jwt::Claims;
 
 #[derive(Debug, Clone)]
