@@ -69,7 +69,11 @@ where
                 let user_id = user_id.unwrap();
 
                 Ok(StatelessLoggedInUser(
-                    LoggedInUser { id: user_id, email: decoded_token.claims.email, roles: vec![] }
+                    LoggedInUser {
+                        id: user_id,
+                        email: decoded_token.claims.email,
+                        roles: decoded_token.claims.roles,
+                    }
                 ))
             }
             Err(error) => match error.kind() {

@@ -181,7 +181,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         .await;
     let body = response.json::<TokenResponse>();
 
-    let _response = server
+    let response = server
         .post("/v1/restricted/users")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
@@ -194,7 +194,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         }))
         .await;
 
-    // assert_eq!(response.status_code(), StatusCode::CREATED); TODO
+    assert_eq!(response.status_code(), StatusCode::CREATED);
 }
 
 #[sqlx::test]

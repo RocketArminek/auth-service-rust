@@ -9,6 +9,8 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
 use auth_service::api::dto::{MessageResponse, TokenResponse};
+use auth_service::domain::role::Role;
+use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::utils::create_test_server;
 
 #[sqlx::test]
@@ -92,11 +94,14 @@ async fn it_verifies_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(secret.clone(), pool.clone());
     let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
         User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    let role = Role::now("user".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&user, role.id).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -116,9 +121,11 @@ async fn it_verifies_token(pool: Pool<MySql>) {
         .await;
 
     let user_id_from_header = response.headers().get("X-User-Id").unwrap().to_str().unwrap();
+    let roles_from_header = response.headers().get("X-User-Roles").unwrap().to_str().unwrap();
 
     assert_eq!(response.status_code(), StatusCode::OK);
     assert_eq!(user_id_from_header, user.id.to_string());
+    assert!(roles_from_header.contains("user"));
 }
 
 #[sqlx::test]
@@ -172,6 +179,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         user.id.to_string().clone(),
         exp.timestamp() as usize,
         user.email.clone(),
+        vec!["ADMIN_USER".to_string()],
     );
     let token = encode(
         &Header::default(),

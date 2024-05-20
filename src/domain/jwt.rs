@@ -5,10 +5,11 @@ pub struct Claims {
     pub id: String,
     pub exp: usize,
     pub email: String,
+    pub roles: Vec<String>,
 }
 
 impl Claims {
-    pub fn new(id: String, exp: usize, email: String) -> Self {
-        Self { id, email, exp }
+    pub fn new(id: String, exp: usize, email: String, roles: Vec<String>) -> Self {
+        Self { id, email, exp, roles }
     }
 }

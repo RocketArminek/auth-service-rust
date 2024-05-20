@@ -43,10 +43,12 @@ pub async fn login(
             let now = Utc::now();
             let exp = now.add(Duration::days(30));
 
+            let roles = user.roles.iter().map(|role| role.name.clone()).collect();
             let claims = Claims::new(
                 user.id.to_string().clone(),
                 exp.timestamp() as usize,
                 user.email.clone(),
+                roles
             );
             let token = encode(
                 &Header::default(),
@@ -89,9 +91,14 @@ pub async fn verify(
 ) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id.to_string();
+    let user_roles = user.roles.join(",");
     headers.insert(
         "X-User-Id",
         HeaderValue::from_str(&user_id.as_str()).unwrap_or(HeaderValue::from_static("")),
+    );
+    headers.insert(
+        "X-User-Roles",
+        HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
     );
 
     (StatusCode::OK, headers, Json(UserResponse { id: user_id, email: user.email })).into_response()
