@@ -9,7 +9,7 @@ use crate::domain::jwt::Claims;
 pub struct BearerToken(pub String);
 
 #[derive(Debug, Clone)]
-pub struct StatelessUserWithRoles(pub LoggedInUser);
+pub struct StatelessLoggedInUser(pub LoggedInUser);
 
 #[async_trait]
 impl<S> FromRequestParts<S> for BearerToken
@@ -41,7 +41,7 @@ where
 }
 
 #[async_trait]
-impl<S> FromRequestParts<S> for StatelessUserWithRoles
+impl<S> FromRequestParts<S> for StatelessLoggedInUser
 where
     S: SecretAware + Send + Sync,
 {
@@ -67,7 +67,7 @@ where
                 }
                 let user_id = user_id.unwrap();
 
-                Ok(StatelessUserWithRoles(
+                Ok(StatelessLoggedInUser(
                     LoggedInUser { id: user_id, email: decoded_token.claims.email, roles: vec![] }
                 ))
             }

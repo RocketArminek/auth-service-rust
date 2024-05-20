@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{StatelessUserWithRoles};
+use crate::api::axum_extractor::{StatelessLoggedInUser};
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::jwt::Claims;
 use axum::extract::State;
@@ -85,7 +85,7 @@ pub async fn login(
     )
 )]
 pub async fn verify(
-    StatelessUserWithRoles(user): StatelessUserWithRoles,
+    StatelessLoggedInUser(user): StatelessLoggedInUser,
 ) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id.to_string();
