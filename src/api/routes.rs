@@ -64,6 +64,7 @@ pub fn routes(
 pub struct ApiDoc;
 
 #[utoipa::path(get, path = "/",
+    tag="utils",
     responses(
         (status = 200, description = "Open api schema", content_type = "application/json"),
     )

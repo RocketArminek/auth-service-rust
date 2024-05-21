@@ -9,7 +9,7 @@ use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
 #[utoipa::path(post, path = "/v1/users",
-    tag="general",
+    tag="open",
     request_body = CreateUserRequest,
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),
