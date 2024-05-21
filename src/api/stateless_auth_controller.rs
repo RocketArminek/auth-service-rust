@@ -13,6 +13,7 @@ use crate::api::server_state::ServerState;
 use crate::domain::user::PasswordHandler;
 
 #[utoipa::path(post, path = "/v1/stateless/login",
+    tag="stateless",
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Get token", content_type = "application/json", body = TokenResponse),
@@ -80,6 +81,7 @@ pub async fn login(
 }
 
 #[utoipa::path(get, path = "/v1/stateless/verify",
+    tag="stateless",
     responses(
         (status = 200, description = "Token verified", content_type = "application/json", body = UserResponse),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),

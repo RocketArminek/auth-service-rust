@@ -9,6 +9,7 @@ use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
 #[utoipa::path(post, path = "/v1/users",
+    tag="general",
     request_body = CreateUserRequest,
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),
@@ -93,6 +94,7 @@ pub async fn create_user(
 }
 
 #[utoipa::path(post, path = "/v1/restricted/users",
+    tag="restricted",
     request_body = CreateUserRequest,
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),

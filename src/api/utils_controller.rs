@@ -3,6 +3,7 @@ use axum::{Json};
 use crate::api::dto::HealthResponse;
 
 #[utoipa::path(get, path = "/v1/health",
+    tag="utils",
     responses(
         (status = 200, description = "Health check action", content_type = "application/json", body = HealthResponse),
     )
