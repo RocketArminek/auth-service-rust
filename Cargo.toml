@@ -22,7 +22,7 @@ tokio = { version = "1.37.0", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = "0.3.18"
 serde = { version = "1.0.197", features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive"] }
-utoipa = "4.2.0"
+utoipa = "4.2.3"
 chrono = { version = "0.4.38", features = ["serde"] }
 uuid = { version = "1.8.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 sqlx = { version = "0.7.4", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
@@ -36,7 +36,7 @@ lazy-regex = "3.1.0"
 regex = "1.10.4"
 bcrypt = "0.15.1"
 jsonwebtoken = "9.3.0"
-utoipa-swagger-ui = { version = "7.0.1", features = ["axum"] }
+utoipa-swagger-ui = { version = "7.1.0", features = ["axum"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.14"

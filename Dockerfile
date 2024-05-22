@@ -1,6 +1,7 @@
 ARG RUST_VERSION=1.78.0
 FROM rust:${RUST_VERSION}-slim-bookworm AS base-builder
 WORKDIR /app
+RUN apt-get update && apt-get install -y curl
 RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml

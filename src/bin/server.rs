@@ -48,6 +48,36 @@ async fn main() {
     let role_repository = Arc::new(
         Mutex::new(MysqlRoleRepository::new(pool.clone()))
     );
+    let existing_normal_role = role_repository.lock()
+        .await.get_by_name(&"USER".to_string())
+        .await;
+
+    if existing_normal_role.is_some() {
+        let existing_normal_role = existing_normal_role.clone().unwrap();
+        tracing::info!(
+            "Found existing normal role: {}, {}, {}",
+            existing_normal_role.id,
+            existing_normal_role.name,
+            existing_normal_role.created_at.format("%Y-%m-%d %H:%M:%S")
+        );
+    }
+
+    if existing_normal_role.is_none() {
+        let normal_role = Role::now("USER".to_string())
+            .expect("Failed to create normal role");
+
+        role_repository.lock()
+            .await.add(&normal_role)
+            .await.expect("Failed to create normal role");
+
+        tracing::info!(
+            "Created initial normal role: {}, {}, {}",
+            normal_role.id,
+            normal_role.name,
+            normal_role.created_at.format("%Y-%m-%d %H:%M:%S")
+        );
+    }
+
     let existing_init_role = role_repository.lock()
         .await.get_by_name(&restricted_role_prefix)
         .await;
