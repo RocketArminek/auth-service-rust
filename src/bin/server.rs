@@ -31,7 +31,7 @@ async fn main() {
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
     tracing::info!("Configured restricted role prefix: {}", restricted_role_prefix.as_str());
 
-    let pool = create_mysql_pool().await.expect("Failed to connect & create MySQL pool");
+    let pool = create_mysql_pool().await.expect("Failed to connect & create db pool");
     let migration_result = migrate!("./migrations").run(&pool).await;
     match migration_result {
         Ok(_) => {
