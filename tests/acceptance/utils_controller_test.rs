@@ -1,11 +1,12 @@
 use axum::http::StatusCode;
 use sqlx::{MySql, Pool};
 use auth_service::api::dto::HealthResponse;
+use auth_service::domain::crypto::HashingScheme;
 use crate::utils::create_test_server;
 
 #[sqlx::test]
 async fn it_returns_health_check_result(pool: Pool<MySql>) {
-    let server = create_test_server("secret".to_string(), pool);
+    let server = create_test_server("secret".to_string(), pool, HashingScheme::BcryptLow);
     let response = server.get("/v1/health").await;
     let body = response.json::<HealthResponse>();
 
@@ -15,7 +16,7 @@ async fn it_returns_health_check_result(pool: Pool<MySql>) {
 
 #[sqlx::test]
 async fn it_returns_open_api_docs(pool: Pool<MySql>) {
-    let server = create_test_server("secret".to_string(), pool);
+    let server = create_test_server("secret".to_string(), pool, HashingScheme::BcryptLow);
     let response = server.get("/").await;
     let body = response.text();
 
@@ -25,7 +26,7 @@ async fn it_returns_open_api_docs(pool: Pool<MySql>) {
 
 #[sqlx::test]
 async fn it_returns_swagger_ui(pool: Pool<MySql>) {
-    let server = create_test_server("secret".to_string(), pool);
+    let server = create_test_server("secret".to_string(), pool, HashingScheme::BcryptLow);
     let response = server.get("/docs/").await;
     let body = response.text();
 

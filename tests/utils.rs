@@ -8,14 +8,14 @@ use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 
-pub fn create_test_server(secret: String, pool: Pool<MySql>) -> TestServer {
+pub fn create_test_server(secret: String, pool: Pool<MySql>, hashing_scheme: HashingScheme) -> TestServer {
     let user_repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let restricted_role_pattern = parse_restricted_pattern("ADMIN").unwrap();
     let state = ServerState {
         secret,
         restricted_role_pattern,
-        hashing_scheme: HashingScheme::BcryptLow,
+        hashing_scheme,
         user_repository: Arc::new(Mutex::new(user_repository)),
         role_repository: Arc::new(Mutex::new(role_repository)),
     };

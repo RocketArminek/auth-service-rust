@@ -81,15 +81,21 @@ impl SchemeAwareHasher {
         self.algorithms.insert(name, Box::new(hasher));
     }
 
-    pub fn is_outdated(&self, hash: &str) -> bool {
+    pub fn is_password_outdated(&self, hash: &str) -> bool {
+        let parts = self.extract_scheme_and_hash(hash);
+
+        parts.is_some_and(|scheme| scheme.0 != self.current_scheme)
+    }
+
+    fn extract_scheme_and_hash<'a>(&'a self, hash: &'a str) -> Option<(HashingScheme, &str)> {
         let parts: Vec<&str> = hash.splitn(2, '.').collect();
         if parts.len() != 2 {
-            return true;
+            return None;
         }
+        let scheme = HashingScheme::from_string(parts[0].to_string()).ok()?;
+        let hash = parts[1];
 
-        let scheme = HashingScheme::from_string(parts[0].to_string());
-
-        scheme.is_ok_and(|scheme| scheme != self.current_scheme)
+        Some((scheme, hash))
     }
 }
 
@@ -111,19 +117,13 @@ impl Hasher for SchemeAwareHasher {
     }
 
     fn verify_password(&self, password: &str, hash: &str) -> bool {
-        let parts: Vec<&str> = hash.splitn(2, '.').collect();
-        if parts.len() != 2 {
-            return false;
-        }
+        let parts = self.extract_scheme_and_hash(hash);
 
-        let scheme = HashingScheme::from_string(parts[0].to_string());
-        let password_hash = parts[1];
-
-        scheme.is_ok_and(|scheme| {
-            let hasher = self.algorithms.get(&scheme);
+        parts.is_some_and(|parts| {
+            let hasher = self.algorithms.get(&parts.0);
 
             match hasher {
-                Some(hasher) => hasher.verify_password(password, password_hash),
+                Some(hasher) => hasher.verify_password(password, parts.1),
                 None => false,
             }
         })

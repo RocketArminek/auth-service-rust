@@ -25,6 +25,18 @@ impl MysqlUserRepository {
         Ok(())
     }
 
+    pub async fn update(&self, user: &User) -> Result<(), Error> {
+        query("UPDATE users SET email = ?, password = ?, created_at = ? WHERE id = ?")
+            .bind(&user.email)
+            .bind(&user.password)
+            .bind(&user.created_at)
+            .bind(&user.id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn add_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), Error> {
         query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
             .bind(&user_id)

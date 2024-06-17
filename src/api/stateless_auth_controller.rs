@@ -1,5 +1,5 @@
 use crate::api::axum_extractor::{StatelessLoggedInUser};
-use crate::domain::crypto::SchemeAwareHasher;
+use crate::domain::crypto::{Hasher, SchemeAwareHasher};
 use crate::domain::jwt::Claims;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
@@ -31,14 +31,40 @@ pub async fn login(
 
     match user {
         Some(user) => {
+            let hasher = SchemeAwareHasher::with_scheme(state.hashing_scheme);
             if !user.verify_password(
-                &SchemeAwareHasher::with_scheme(state.hashing_scheme),
+                &hasher,
                 &password,
             ) {
                 return (
                     StatusCode::UNAUTHORIZED,
                     Json(MessageResponse { message: String::from("Unauthorized") }),
                 ).into_response();
+            }
+            if hasher.is_password_outdated(&user.password) {
+                let mut outdated_user = user.clone();
+                let scheme = state.hashing_scheme.clone();
+                tokio::task::spawn(
+                    async move {
+                        tracing::warn!(
+                            "Password hash outdated for {}({}), updating...",
+                            &outdated_user.email,
+                            &outdated_user.id
+                        );
+                        let new_password = SchemeAwareHasher::with_scheme(scheme)
+                            .hash_password(&password).unwrap_or(outdated_user.password.clone());
+                        outdated_user.set_password(new_password);
+                        let outdated_user = outdated_user.into();
+                        match state.user_repository.lock().await.update(&outdated_user).await {
+                            Ok(_) => tracing::info!(
+                                "Password updated for {}({})",
+                                &outdated_user.email,
+                                &outdated_user.id
+                            ),
+                            Err(e) => tracing::warn!("Could not update password hash {:?}", e),
+                        }
+                    }
+                );
             }
 
             let now = Utc::now();

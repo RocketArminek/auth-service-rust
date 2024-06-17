@@ -6,7 +6,7 @@ use sqlx::{FromRow};
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::role::Role;
 
-#[derive(FromRow, Debug)]
+#[derive(FromRow, Debug, Clone)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
@@ -73,6 +73,17 @@ pub struct UserWithRoles {
     pub password: String,
     pub created_at: DateTime<Utc>,
     pub roles: Vec<Role>,
+}
+
+impl Into<User> for UserWithRoles {
+    fn into(self) -> User {
+        User {
+            id: self.id,
+            email: self.email,
+            password: self.password,
+            created_at: self.created_at,
+        }
+    }
 }
 
 impl UserWithRoles {
