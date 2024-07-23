@@ -78,9 +78,9 @@ pub async fn create_user(
                         message: format!("Invalid email: {}", email),
                     })).into_response()
                 }
-                UserError::InvalidPassword => {
+                UserError::InvalidPassword {reason} => {
                     (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                        message: "Invalid password".to_string(),
+                        message: format!("Invalid password: {}", reason.unwrap_or("unknown".to_string())),
                     })).into_response()
                 }
                 _ => {
@@ -160,9 +160,9 @@ pub async fn create_restricted_user(
                         message: format!("Invalid email: {}", email),
                     })).into_response()
                 }
-                UserError::InvalidPassword => {
+                UserError::InvalidPassword {reason} => {
                     (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                        message: "Invalid password".to_string(),
+                        message: format!("Invalid password: {}", reason.unwrap_or("unknown".to_string())),
                     })).into_response()
                 }
                 _ => {

@@ -32,15 +32,15 @@ impl User {
         } else if password.is_empty() {
             Err(UserError::EmptyPassword)
         } else if password.len() < 8 {
-            Err(UserError::InvalidPassword)
+            Err(UserError::InvalidPassword { reason: Some("Password must be at least 8 characters long".to_string()) })
         } else if !password_digit_check.is_match(&password) {
-            Err(UserError::InvalidPassword)
+            Err(UserError::InvalidPassword { reason: Some("Password must contain at least one digit".to_string()) })
         } else if !password_special_character_check.is_match(&password) {
-            Err(UserError::InvalidPassword)
+            Err(UserError::InvalidPassword { reason: Some("Password must contain at least one special character".to_string()) })
         } else if !password_uppercase_check.is_match(&password) {
-            Err(UserError::InvalidPassword)
+            Err(UserError::InvalidPassword { reason: Some("Password must contain at least one uppercase letter".to_string()) })
         } else if !password_lowercase_check.is_match(&password) {
-            Err(UserError::InvalidPassword)
+            Err(UserError::InvalidPassword { reason: Some("Password must contain at least one lowercase letter".to_string()) })
         } else if !email_regex.is_match(&email) {
             Err(UserError::InvalidEmail { email })
         } else {
