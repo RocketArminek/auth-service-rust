@@ -31,19 +31,10 @@ RUN adduser \
 FROM base-runner AS server
 COPY --from=base-builder /app/migrations /migrations
 RUN chown -R appuser /migrations
-COPY --from=dist /app/target/release/server /usr/local/bin
-COPY --from=dist /app/target/release/cli /usr/local/bin
-RUN chown appuser /usr/local/bin/server /usr/local/bin/cli
+COPY --from=dist /app/target/release/app /usr/local/bin
+RUN chown appuser /usr/local/bin/app
 
 USER appuser
 
-ENTRYPOINT ["server"]
+ENTRYPOINT ["app"]
 EXPOSE 8080/tcp
-
-FROM base-runner AS cli
-COPY --from=dist /app/target/release/cli /usr/local/bin
-RUN chown appuser /usr/local/bin/cli
-
-USER appuser
-
-ENTRYPOINT ["cli"]
