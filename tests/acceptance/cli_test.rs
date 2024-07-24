@@ -8,14 +8,25 @@ use std::process::Command;
 fn it_creates_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
+    let mut create_role_cmd = Command::cargo_bin("app").unwrap();
+    let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
     let email = String::from("jon@snow.test");
+
+    create_role_cmd
+        .arg("create-role")
+        .arg("--name")
+        .arg("USER_CLI_1")
+        .assert()
+        .success();
 
     create_cmd
         .arg("create-user")
         .arg("--email")
         .arg(&email)
         .arg("--password")
-        .arg("Iknow#othing1");
+        .arg("Iknow#othing1")
+        .arg("--role")
+        .arg("USER_CLI_1");
 
     create_cmd
         .assert()
@@ -29,6 +40,13 @@ fn it_creates_user() {
         .arg(&email)
         .assert()
         .success();
+
+    delete_role_cmd
+        .arg("delete-role")
+        .arg("--name")
+        .arg("USER_CLI_1")
+        .assert()
+        .success();
 }
 
 #[test]
@@ -36,7 +54,16 @@ fn it_logs_into_account() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut login_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
+    let mut create_role_cmd = Command::cargo_bin("app").unwrap();
+    let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
     let email = String::from("jon9@snow.test");
+
+    create_role_cmd
+        .arg("create-role")
+        .arg("--name")
+        .arg("USER_CLI_2")
+        .assert()
+        .success();
 
     create_cmd
         .arg("create-user")
@@ -44,6 +71,8 @@ fn it_logs_into_account() {
         .arg(&email)
         .arg("--password")
         .arg("Iknow#othing1")
+        .arg("--role")
+        .arg("USER_CLI_2")
         .assert()
         .success();
 
@@ -64,6 +93,13 @@ fn it_logs_into_account() {
         .arg(&email)
         .assert()
         .success();
+
+    delete_role_cmd
+        .arg("delete-role")
+        .arg("--name")
+        .arg("USER_CLI_2")
+        .assert()
+        .success();
 }
 
 #[test]
@@ -71,14 +107,26 @@ fn it_gets_user_by_email() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut get_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
+    let mut create_role_cmd = Command::cargo_bin("app").unwrap();
+    let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
 
     let email = String::from("jon1@snow.test");
+
+    create_role_cmd
+        .arg("create-role")
+        .arg("--name")
+        .arg("USER_CLI_3")
+        .assert()
+        .success();
+
     create_cmd
         .arg("create-user")
         .arg("--email")
         .arg(&email)
         .arg("--password")
         .arg("Iknow#othing1")
+        .arg("--role")
+        .arg("USER_CLI_3")
         .assert()
         .success();
 
@@ -94,6 +142,13 @@ fn it_gets_user_by_email() {
         .arg("delete-user-by-email")
         .arg("--email")
         .arg(&email)
+        .assert()
+        .success();
+
+    delete_role_cmd
+        .arg("delete-role")
+        .arg("--name")
+        .arg("USER_CLI_3")
         .assert()
         .success();
 }
@@ -117,7 +172,16 @@ fn it_cannot_get_not_existing_user() {
 fn it_deletes_user_by_email() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
+    let mut create_role_cmd = Command::cargo_bin("app").unwrap();
+    let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
     let email = String::from("jon2@snow.test");
+
+    create_role_cmd
+        .arg("create-role")
+        .arg("--name")
+        .arg("USER_CLI_4")
+        .assert()
+        .success();
 
     create_cmd
         .arg("create-user")
@@ -125,6 +189,8 @@ fn it_deletes_user_by_email() {
         .arg(&email)
         .arg("--password")
         .arg("Iknow#othing1")
+        .arg("--role")
+        .arg("USER_CLI_4")
         .assert()
         .success();
 
@@ -141,6 +207,13 @@ fn it_deletes_user_by_email() {
             &email
         )))
         .stdout(predicate::str::contains(&email));
+
+    delete_role_cmd
+        .arg("delete-role")
+        .arg("--name")
+        .arg("USER_CLI_4")
+        .assert()
+        .success();
 }
 
 #[test]
@@ -161,10 +234,17 @@ fn it_does_not_create_user_with_invalid_email() {
 #[test]
 fn it_assign_role_to_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
-    let mut init_role_cmd = Command::cargo_bin("app").unwrap();
-    let mut assign_cmd = Command::cargo_bin("app").unwrap();
+    let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
+    let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
     let email = String::from("jon131@snow.test");
+
+    create_role_cmd
+        .arg("create-role")
+        .arg("--name")
+        .arg("USER_CLI_5")
+        .assert()
+        .success();
 
     create_cmd
         .arg("create-user")
@@ -172,28 +252,23 @@ fn it_assign_role_to_user() {
         .arg(&email)
         .arg("--password")
         .arg("Iknow#othing1")
-        .assert()
-        .success();
-
-    init_role_cmd
-        .arg("init-restricted-role")
-        .assert()
-        .success();
-
-    assign_cmd
-        .arg("assign-role")
-        .arg("--email")
-        .arg(&email)
         .arg("--role")
-        .arg("ADMIN")
+        .arg("USER_CLI_5")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Role assigned: ADMIN to jon131@snow.test"));
+        .stdout(predicate::str::contains("roles (USER_CLI_5)"));
 
     delete_cmd
         .arg("delete-user-by-email")
         .arg("--email")
         .arg(&email)
+        .assert()
+        .success();
+
+    delete_role_cmd
+        .arg("delete-role")
+        .arg("--name")
+        .arg("USER_CLI_5")
         .assert()
         .success();
 }

@@ -54,4 +54,13 @@ impl MysqlRoleRepository {
 
         Ok(())
     }
+
+    pub async fn delete_by_name(&self, name: &String) -> Result<(), Error> {
+        query("DELETE FROM roles WHERE name = ?")
+            .bind(name)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
 }

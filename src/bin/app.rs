@@ -55,6 +55,14 @@ enum Commands {
         #[arg(short, long)]
         role: String,
     },
+    CreateRole {
+        #[arg(short, long)]
+        name: String,
+    },
+    DeleteRole {
+        #[arg(short, long)]
+        name: String,
+    },
     InitRestrictedRole,
 }
 
@@ -145,16 +153,18 @@ async fn main() {
                         .await
                         .expect(&format!("Failed to get role {}", role));
                     user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme));
+                    user.add_role(existing_role.clone());
                     user_repository
                         .add_with_role(&user, existing_role.id)
                         .await
                         .expect("Failed to create user! Check if the email is already in use.");
 
                     println!(
-                        "User created: {} {} at {}",
+                        "User created: {} {} at {} with roles ({})",
                         user.id,
                         user.email,
-                        user.created_at.format("%Y-%m-%d %H:%M:%S")
+                        user.created_at.format("%Y-%m-%d %H:%M:%S"),
+                        user.roles.iter().map(|r| r.name.clone()).collect::<Vec<String>>().join(", ")
                     );
                 }
                 Err(error) => match error {
@@ -271,6 +281,25 @@ async fn main() {
                     println!("Role already exists");
                 }
             }
+        }
+        Some(Commands::CreateRole { name }) => {
+            let role = Role::now(name.to_owned()).unwrap();
+            role_repository
+                .add(&role)
+                .await
+                .expect(&format!("Failed to create {} role!", name));
+
+            println!(
+                "Created role: {}, {}, {}",
+                role.id,
+                role.name,
+                role.created_at.format("%Y-%m-%d %H:%M:%S")
+            );
+        }
+        Some(Commands::DeleteRole { name }) => {
+            role_repository.delete_by_name(name).await.unwrap();
+
+            println!("Role deleted for {}", name);
         }
     }
 }
