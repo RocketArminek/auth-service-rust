@@ -10,6 +10,7 @@ use crate::domain::error::UserError;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
+    tag="all",
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
