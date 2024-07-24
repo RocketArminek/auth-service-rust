@@ -65,7 +65,7 @@ pub struct UserListResponse {
     pub items: Vec<UserResponse>,
     pub page: i32,
     pub limit: i32,
-    pub size: i32,
+    pub total: i32,
     pub pages: i32,
 }
 

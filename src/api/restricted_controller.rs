@@ -118,7 +118,7 @@ pub async fn get_all_users(
                 .collect();
 
             (StatusCode::OK, Json(UserListResponse {
-                size: total,
+                total: total,
                 page,
                 limit,
                 items: user_responses,
