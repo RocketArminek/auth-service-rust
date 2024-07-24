@@ -6,12 +6,33 @@ use sqlx::{FromRow};
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::role::Role;
 
-#[derive(FromRow, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
     pub password: String,
-    pub created_at: DateTime<Utc>
+    pub created_at: DateTime<Utc>,
+    pub roles: Vec<Role>,
+}
+
+#[derive(FromRow, Debug, Clone)]
+pub struct UserRow {
+    pub id: Uuid,
+    pub email: String,
+    pub password: String,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<UserRow> for User {
+    fn from(row: UserRow) -> Self {
+        User {
+            id: row.id,
+            email: row.email,
+            password: row.password,
+            created_at: row.created_at,
+            roles: vec![],
+        }
+    }
 }
 
 impl User {
@@ -49,6 +70,7 @@ impl User {
                 email,
                 password,
                 created_at,
+                roles: vec![],
             })
         }
     }
@@ -64,41 +86,10 @@ impl User {
             now,
         )
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct UserWithRoles {
-    pub id: Uuid,
-    pub email: String,
-    pub password: String,
-    pub created_at: DateTime<Utc>,
-    pub roles: Vec<Role>,
-}
-
-impl Into<User> for UserWithRoles {
-    fn into(self) -> User {
-        User {
-            id: self.id,
-            email: self.email,
-            password: self.password,
-            created_at: self.created_at,
-        }
-    }
-}
-
-impl UserWithRoles {
-    pub fn from_user(user: User) -> Self {
-        Self::from_user_and_roles(user, vec![])
-    }
-
-    pub fn from_user_and_roles(user: User, roles: Vec<Role>) -> Self {
-        UserWithRoles {
-            id: user.id,
-            email: user.email,
-            password: user.password,
-            created_at: user.created_at,
-            roles,
-        }
+    pub fn with_roles(mut self, roles: Vec<Role>) -> Self {
+        self.roles = roles;
+        self
     }
 
     pub fn add_role(&mut self, role: Role) {
@@ -129,16 +120,6 @@ pub trait PasswordHandler {
 }
 
 impl PasswordHandler for User {
-    fn get_password(&self) -> String {
-        self.password.clone()
-    }
-
-    fn set_password(&mut self, password: String) {
-        self.password = password;
-    }
-}
-
-impl PasswordHandler for UserWithRoles {
     fn get_password(&self) -> String {
         self.password.clone()
     }

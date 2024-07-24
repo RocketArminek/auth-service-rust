@@ -8,28 +8,25 @@ use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
-#[utoipa::path(post, path = "/v1/users",
-    tag="regular",
+#[utoipa::path(post, path = "/v1/restricted/users",
+    tag="admin",
     request_body = CreateUserRequest,
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
         (status = 409, description = "User already exists", content_type = "application/json", body = MessageResponse),
         (status = 422, description = "Unprocessable entity"),
     )
 )]
-pub async fn create_user(
+pub async fn create_restricted_user(
     State(state): State<ServerState>,
     request: Json<CreateUserRequest>,
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
     let role = request.role.clone();
-    if state.restricted_role_pattern.is_match(role.as_str()) {
-        return (StatusCode::BAD_REQUEST, Json(MessageResponse {
-            message: "Role is restricted".to_string(),
-        })).into_response();
-    }
 
     let existing = state.user_repository
         .lock()

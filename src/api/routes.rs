@@ -7,6 +7,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::api::acl_mw::restricted_acl;
 
 use crate::api::user_controller::*;
+use crate::api::restricted_controller::*;
 use crate::api::stateless_auth_controller::*;
 use crate::api::utils_controller::*;
 use crate::api::dto::*;

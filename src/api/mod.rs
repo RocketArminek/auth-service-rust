@@ -6,3 +6,4 @@ pub mod dto;
 pub mod stateless_auth_controller;
 pub mod server_state;
 pub mod acl_mw;
+pub mod restricted_controller;

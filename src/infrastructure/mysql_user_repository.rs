@@ -1,4 +1,4 @@
-use crate::domain::user::{User, UserWithRoles};
+use crate::domain::user::{User, UserRow};
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
 use crate::domain::role::Role;
@@ -84,8 +84,8 @@ impl MysqlUserRepository {
         }
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Option<UserWithRoles> {
-        let user = query_as::<_, User>("SELECT * FROM users WHERE id = ?")
+    pub async fn get_by_id(&self, id: Uuid) -> Option<User> {
+        let user_row = query_as::<_, UserRow>("SELECT * FROM users WHERE id = ?")
             .bind(id)
             .fetch_one(&self.pool)
             .await
@@ -97,11 +97,11 @@ impl MysqlUserRepository {
             .await
             .unwrap_or(vec![]);
 
-        user.map(|user| UserWithRoles::from_user_and_roles(user, roles))
+        user_row.map(|user| User::from(user).with_roles(roles))
     }
 
-    pub async fn get_by_email(&self, email: &String) -> Option<UserWithRoles> {
-        let user = query_as::<_, User>("SELECT * FROM users WHERE email = ?")
+    pub async fn get_by_email(&self, email: &String) -> Option<User> {
+        let user_row = query_as::<_, UserRow>("SELECT * FROM users WHERE email = ?")
             .bind(email)
             .fetch_one(&self.pool)
             .await
@@ -113,7 +113,7 @@ impl MysqlUserRepository {
             .await
             .unwrap_or(vec![]);
 
-        user.map(|user| UserWithRoles::from_user_and_roles(user, roles))
+        user_row.map(|user| User::from(user).with_roles(roles))
     }
 
     pub async fn delete_by_email(&self, email: &String) -> Result<(), Error> {
