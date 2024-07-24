@@ -70,6 +70,6 @@ pub struct UserListResponse {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct Pagination {
-    pub page: i32,
-    pub limit: i32,
+    pub page: Option<i32>,
+    pub limit: Option<i32>,
 }

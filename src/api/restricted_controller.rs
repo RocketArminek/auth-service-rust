@@ -93,8 +93,8 @@ pub async fn create_restricted_user(
 #[utoipa::path(get, path = "/v1/restricted/users",
     tag="admin",
     params(
-        ("page" = i32, Query, description = "Page number"),
-        ("limit" = i32, Query, description = "Number of items per page")
+        ("page" = Option<i32>, Query, description = "Page number default 1"),
+        ("limit" = Option<i32>, Query, description = "Number of items per page default 10"),
     ),
     responses(
         (status = 200, description = "List of users", content_type = "application/json", body = UserListResponse),
@@ -107,8 +107,10 @@ pub async fn get_all_users(
     Query(pagination): Query<Pagination>
 ) -> impl IntoResponse {
     let user_repo = state.user_repository.lock().await;
+    let page = pagination.page.unwrap_or(1);
+    let limit = pagination.limit.unwrap_or(10);
 
-    match user_repo.find_all(pagination.page, pagination.limit).await {
+    match user_repo.find_all(page, limit).await {
         Ok((users, total)) => {
             let user_responses: Vec<UserResponse> = users
                 .into_iter()
@@ -117,8 +119,8 @@ pub async fn get_all_users(
 
             (StatusCode::OK, Json(UserListResponse {
                 size: total,
-                page: pagination.page,
-                limit: pagination.limit,
+                page,
+                limit,
                 items: user_responses,
             })).into_response()
         },
