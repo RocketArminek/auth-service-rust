@@ -10,6 +10,8 @@ fn it_can_be_created() {
         Uuid::new_v4(),
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
         Utc::now(),
     ).unwrap();
 
@@ -19,7 +21,12 @@ fn it_can_be_created() {
 
 #[test]
 fn it_cannot_be_created_with_empty_email() {
-    match User::now_with_email_and_password(String::from(""), String::from("password")) {
+    match User::now_with_email_and_password(
+        String::from(""),
+        String::from("password"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
@@ -27,7 +34,12 @@ fn it_cannot_be_created_with_empty_email() {
 
 #[test]
 fn it_cannot_be_created_with_empty_password() {
-    match User::now_with_email_and_password(String::from("test@test.com"), String::from("")) {
+    match User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from(""),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
@@ -35,8 +47,12 @@ fn it_cannot_be_created_with_empty_password() {
 
 #[test]
 fn it_cannot_be_created_with_invalid_email() {
-    match User::now_with_email_and_password(String::from("invalid-email"), String::from("password"))
-    {
+    match User::now_with_email_and_password(
+        String::from("invalid-email"),
+        String::from("password"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };
@@ -47,6 +63,8 @@ fn it_cannot_be_created_without_special_character() {
     match User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("Password1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -58,6 +76,8 @@ fn it_cannot_be_created_without_uppercase_character() {
     match User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("password1#"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -69,6 +89,8 @@ fn it_cannot_be_created_without_lowercase_character() {
     match User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("PASSWORD1#"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -80,6 +102,8 @@ fn it_can_verify_password_using_hasher() {
     let mut user = User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     )
     .unwrap();
     let hasher = SchemeAwareHasher::default();
@@ -93,6 +117,8 @@ fn user_has_roles() {
     let mut user = User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
 
@@ -108,6 +134,8 @@ fn user_does_not_have_roles_by_default() {
     let user = User::now_with_email_and_password(
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
 
     assert_eq!(user.roles.len(), 0);

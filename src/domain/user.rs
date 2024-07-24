@@ -11,6 +11,8 @@ pub struct User {
     pub id: Uuid,
     pub email: String,
     pub password: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
     pub created_at: DateTime<Utc>,
     pub roles: Vec<Role>,
 }
@@ -21,6 +23,8 @@ pub struct UserRow {
     pub email: String,
     pub password: String,
     pub created_at: DateTime<Utc>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
 }
 
 impl From<UserRow> for User {
@@ -29,6 +33,8 @@ impl From<UserRow> for User {
             id: row.id,
             email: row.email,
             password: row.password,
+            first_name: row.first_name,
+            last_name: row.last_name,
             created_at: row.created_at,
             roles: vec![],
         }
@@ -40,6 +46,8 @@ impl User {
         id: Uuid,
         email: String,
         password: String,
+        first_name: Option<String>,
+        last_name: Option<String>,
         created_at: DateTime<Utc>,
     ) -> Result<Self, UserError> {
         let email_regex = regex!(r#"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$"#);
@@ -69,13 +77,20 @@ impl User {
                 id,
                 email,
                 password,
+                first_name,
+                last_name,
                 created_at,
                 roles: vec![],
             })
         }
     }
 
-    pub fn now_with_email_and_password(email: String, password: String) -> Result<Self, UserError> {
+    pub fn now_with_email_and_password(
+        email: String,
+        password: String,
+        first_name: Option<String>,
+        last_name: Option<String>,
+    ) -> Result<Self, UserError> {
         let now = Utc::now();
         let timestamp = Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
 
@@ -83,6 +98,8 @@ impl User {
             Uuid::new_v7(timestamp),
             email.clone(),
             password.clone(),
+            first_name,
+            last_name,
             now,
         )
     }

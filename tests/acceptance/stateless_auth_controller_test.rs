@@ -34,7 +34,12 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -56,7 +61,12 @@ async fn it_returns_session_for_authenticated_user(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -96,7 +106,12 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt));
     repository.add(&user).await.unwrap();
 
@@ -126,7 +141,12 @@ async fn it_verifies_token(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
@@ -164,7 +184,12 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -197,7 +222,12 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -209,6 +239,8 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         exp.timestamp() as usize,
         user.email.clone(),
         vec!["ADMIN_USER".to_string()],
+        user.first_name.clone(),
+        user.last_name.clone(),
     );
     let token = encode(
         &Header::default(),

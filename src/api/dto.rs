@@ -7,6 +7,10 @@ pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
     pub role: String,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -36,6 +40,10 @@ pub struct TokenResponse {
 pub struct UserResponse {
     pub id: String,
     pub email: String,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -58,6 +66,8 @@ pub struct LoggedInUser {
     pub id: Uuid,
     pub email: String,
     pub roles: Vec<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

@@ -24,6 +24,8 @@ async fn it_creates_new_user(pool: Pool<MySql>) {
             "email": &email,
             "password": "Iknow#othing1",
             "role": "user",
+            "first_name": "Jon",
+            "last_name": "Snow",
         }))
         .await;
 
@@ -56,7 +58,12 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let user =
-        User::now_with_email_and_password(email.clone(), String::from("Iknow#othing1")).unwrap();
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
     repository.add(&user).await.unwrap();
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
@@ -162,7 +169,9 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("ned@stark.test"),
-        String::from("Iknow#othing1")
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
@@ -204,7 +213,9 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("ned@stark.test"),
-        String::from("Iknow#othing1")
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
@@ -243,7 +254,9 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("ned@stark.test"),
-        String::from("Iknow#othing1")
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
@@ -287,7 +300,9 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("admin@test.com"),
-        String::from("Admin#pass1")
+        String::from("Admin#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
@@ -297,7 +312,9 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
 
     let user = User::now_with_email_and_password(
         String::from("user@test.com"),
-        String::from("User#pass1")
+        String::from("User#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     repository.add(&user).await.unwrap();
 
@@ -330,7 +347,9 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("admin@test.com"),
-        String::from("Admin#pass1")
+        String::from("Admin#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
@@ -340,7 +359,9 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
 
     let user = User::now_with_email_and_password(
         String::from("user@test.com"),
-        String::from("User#pass1")
+        String::from("User#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     repository.add(&user).await.unwrap();
 
@@ -374,7 +395,9 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("admin@test.com"),
-        String::from("Admin#pass1")
+        String::from("Admin#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
     ).unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 

@@ -14,11 +14,13 @@ impl MysqlUserRepository {
     }
 
     pub async fn add(&self, user: &User) -> Result<(), Error> {
-        query("INSERT INTO users (id, email, password, created_at) VALUES (?, ?, ?, ?)")
+        query("INSERT INTO users (id, email, password, created_at, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(&user.id)
             .bind(&user.email)
             .bind(&user.password)
             .bind(&user.created_at)
+            .bind(&user.first_name)
+            .bind(&user.last_name)
             .execute(&self.pool)
             .await?;
 
@@ -26,10 +28,12 @@ impl MysqlUserRepository {
     }
 
     pub async fn update(&self, user: &User) -> Result<(), Error> {
-        query("UPDATE users SET email = ?, password = ?, created_at = ? WHERE id = ?")
+        query("UPDATE users SET email = ?, password = ?, created_at = ?, first_name = ?, last_name = ? WHERE id = ?")
             .bind(&user.email)
             .bind(&user.password)
             .bind(&user.created_at)
+            .bind(&user.first_name)
+            .bind(&user.last_name)
             .bind(&user.id)
             .execute(&self.pool)
             .await?;

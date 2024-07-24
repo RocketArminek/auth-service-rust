@@ -142,7 +142,9 @@ async fn main() {
         Some(Commands::CreateUser { email, password, role }) => {
             let user = User::now_with_email_and_password(
                 email.clone(),
-                password.clone()
+                password.clone(),
+                None,
+                None,
             );
 
             match user {

@@ -75,7 +75,9 @@ pub async fn login(
                 user.id.to_string().clone(),
                 exp.timestamp() as usize,
                 user.email.clone(),
-                roles
+                roles,
+                user.first_name.clone(),
+                user.last_name.clone(),
             );
             let token = encode(
                 &Header::default(),
@@ -129,5 +131,10 @@ pub async fn verify(
         HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
     );
 
-    (StatusCode::OK, headers, Json(UserResponse { id: user_id, email: user.email })).into_response()
+    (StatusCode::OK, headers, Json(UserResponse {
+        id: user_id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+    })).into_response()
 }

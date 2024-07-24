@@ -27,6 +27,8 @@ pub async fn create_restricted_user(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
+    let first_name = request.first_name.clone();
+    let last_name = request.last_name.clone();
     let role = request.role.clone();
 
     let existing = state.user_repository
@@ -48,7 +50,12 @@ pub async fn create_restricted_user(
     }
     let existing_role = existing_role.unwrap();
 
-    let user = User::now_with_email_and_password(email, password);
+    let user = User::now_with_email_and_password(
+        email,
+        password,
+        first_name,
+        last_name
+    );
 
     match user {
         Ok(mut user) => {
@@ -115,7 +122,12 @@ pub async fn get_all_users(
         Ok((users, total)) => {
             let user_responses: Vec<UserResponse> = users
                 .into_iter()
-                .map(|user| UserResponse {id: user.id.to_string(), email: user.email})
+                .map(|user| UserResponse {
+                    id: user.id.to_string(),
+                    email: user.email,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                })
                 .collect();
 
             (StatusCode::OK, Json(UserListResponse {
@@ -158,6 +170,8 @@ pub async fn get_user(
                 Some(user) => (StatusCode::OK, Json(UserResponse {
                     id: user.id.to_string(),
                     email: user.email,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
                 })).into_response(),
                 None => (StatusCode::NOT_FOUND, Json(MessageResponse {
                     message: "User not found".to_string(),

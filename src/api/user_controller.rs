@@ -24,6 +24,8 @@ pub async fn create_user(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
+    let first_name = request.first_name.clone();
+    let last_name = request.last_name.clone();
     let role = request.role.clone();
     if state.restricted_role_pattern.is_match(role.as_str()) {
         return (StatusCode::BAD_REQUEST, Json(MessageResponse {
@@ -50,7 +52,12 @@ pub async fn create_user(
     }
     let existing_role = existing_role.unwrap();
 
-    let user = User::now_with_email_and_password(email, password);
+    let user = User::now_with_email_and_password(
+        email,
+        password,
+        first_name,
+        last_name,
+    );
 
     match user {
         Ok(mut user) => {

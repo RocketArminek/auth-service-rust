@@ -73,6 +73,8 @@ where
                         id: user_id,
                         email: decoded_token.claims.email,
                         roles: decoded_token.claims.roles,
+                        first_name: decoded_token.claims.first_name,
+                        last_name: decoded_token.claims.last_name,
                     }
                 ))
             }
