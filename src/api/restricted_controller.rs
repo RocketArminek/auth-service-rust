@@ -122,6 +122,7 @@ pub async fn get_all_users(
                 page,
                 limit,
                 items: user_responses,
+                pages: (total as f64 / limit as f64).ceil() as i32,
             })).into_response()
         },
         Err(e) => {

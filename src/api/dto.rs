@@ -66,6 +66,7 @@ pub struct UserListResponse {
     pub page: i32,
     pub limit: i32,
     pub size: i32,
+    pub pages: i32,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

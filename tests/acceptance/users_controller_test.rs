@@ -276,4 +276,5 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
     assert_eq!(body.limit, 10);
     assert_eq!(body.page, 1);
     assert_eq!(body.size, 1);
+    assert_eq!(body.pages, 1);
 }
