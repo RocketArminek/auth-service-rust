@@ -124,4 +124,22 @@ impl MysqlUserRepository {
 
         Ok(())
     }
+
+    pub async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<UserRow>, i32), sqlx::Error> {
+        let offset = (page - 1) * limit;
+
+        let users = query_as::<_, UserRow>(
+            "SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        )
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await?;
+
+        let total: (i32,) = sqlx::query_as("SELECT COUNT(*) FROM users")
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok((users, total.0))
+    }
 }

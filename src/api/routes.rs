@@ -25,7 +25,7 @@ pub fn routes(
         .route("/v1/stateless/verify/roles/:role", any(verify))
         .merge(
             Router::new()
-                .route("/v1/restricted/users", post(create_restricted_user))
+                .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(state.clone(), restricted_acl))
@@ -46,6 +46,7 @@ pub fn routes(
         health_action,
         create_user,
         create_restricted_user,
+        get_all_users,
         login,
         verify,
     ),
@@ -58,7 +59,8 @@ pub fn routes(
             TokenResponse,
             CreateUserRequest,
             LoginRequest,
-            CreatedResponse
+            CreatedResponse,
+            UserListResponse,
         ),
     )
 )]

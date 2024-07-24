@@ -3,7 +3,7 @@ use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
-use auth_service::api::dto::{MessageResponse, TokenResponse};
+use auth_service::api::dto::{MessageResponse, TokenResponse, UserListResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -234,4 +234,46 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
         .await;
 
     assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test]
+async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let mut admin = User::now_with_email_and_password(
+        String::from("ned@stark.test"),
+        String::from("Iknow#othing1")
+    ).unwrap();
+    admin.hash_password(&SchemeAwareHasher::default());
+
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let role = Role::now("ADMIN_USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&admin, role.id).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "ned@stark.test",
+            "password": "Iknow#othing1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let response = server
+        .get("/v1/restricted/users?page=1&limit=10")
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+    let body = response.json::<UserListResponse>();
+
+    assert_eq!(body.items.len(), 1);
+    assert_eq!(body.items[0].email, "ned@stark.test");
+    assert_eq!(body.limit, 10);
+    assert_eq!(body.page, 1);
+    assert_eq!(body.size, 1);
 }

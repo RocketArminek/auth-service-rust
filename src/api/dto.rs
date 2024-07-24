@@ -59,3 +59,17 @@ pub struct LoggedInUser {
     pub email: String,
     pub roles: Vec<String>,
 }
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct UserListResponse {
+    pub items: Vec<UserResponse>,
+    pub page: i32,
+    pub limit: i32,
+    pub size: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct Pagination {
+    pub page: i32,
+    pub limit: i32,
+}

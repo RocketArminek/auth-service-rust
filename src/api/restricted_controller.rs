@@ -1,10 +1,10 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UserListResponse, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -86,6 +86,47 @@ pub async fn create_restricted_user(
                     })).into_response()
                 }
             }
+        }
+    }
+}
+
+#[utoipa::path(get, path = "/v1/restricted/users",
+    tag="admin",
+    params(
+        ("page" = i32, Query, description = "Page number"),
+        ("limit" = i32, Query, description = "Number of items per page")
+    ),
+    responses(
+        (status = 200, description = "List of users", content_type = "application/json", body = UserListResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn get_all_users(
+    State(state): State<ServerState>,
+    Query(pagination): Query<Pagination>
+) -> impl IntoResponse {
+    let user_repo = state.user_repository.lock().await;
+
+    match user_repo.find_all(pagination.page, pagination.limit).await {
+        Ok((users, total)) => {
+            let user_responses: Vec<UserResponse> = users
+                .into_iter()
+                .map(|user| UserResponse {id: user.id.to_string(), email: user.email})
+                .collect();
+
+            (StatusCode::OK, Json(UserListResponse {
+                size: total,
+                page: pagination.page,
+                limit: pagination.limit,
+                items: user_responses,
+            })).into_response()
+        },
+        Err(e) => {
+            tracing::error!("Failed to list users: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
+                message: "Failed to list users".to_string(),
+            })).into_response()
         }
     }
 }
