@@ -1,9 +1,10 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
+use uuid::{Uuid};
 use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UserListResponse, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
@@ -130,6 +131,88 @@ pub async fn get_all_users(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
                 message: "Failed to list users".to_string(),
             })).into_response()
+        }
+    }
+}
+
+#[utoipa::path(get, path = "/v1/restricted/users/{id}",
+    tag="admin",
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User details", content_type = "application/json", body = UserResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn get_user(
+    State(state): State<ServerState>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    let user_id= Uuid::parse_str(&id);
+    match user_id {
+        Ok(user_id) => {
+            match state.user_repository.lock().await.get_by_id(user_id).await {
+                Some(user) => (StatusCode::OK, Json(UserResponse {
+                    id: user.id.to_string(),
+                    email: user.email,
+                })).into_response(),
+                None => (StatusCode::NOT_FOUND, Json(MessageResponse {
+                    message: "User not found".to_string(),
+                })).into_response(),
+            }
+        }
+        Err(_) => {
+            return (StatusCode::BAD_REQUEST, Json(MessageResponse {
+                message: "Invalid user ID".to_string(),
+            })).into_response();
+        }
+    }
+}
+
+#[utoipa::path(delete, path = "/v1/restricted/users/{id}",
+    tag="admin",
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User deleted", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn delete_user(
+    State(state): State<ServerState>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    let user_id = Uuid::parse_str(&id);
+    match user_id {
+        Ok(user_id) => {
+            let user_repo = state.user_repository.lock().await;
+
+            match user_repo.get_by_id(user_id).await {
+                Some(user) => {
+                    match user_repo.delete_by_email(&user.email).await {
+                        Ok(_) => (StatusCode::OK, Json(MessageResponse {
+                            message: "User deleted successfully".to_string(),
+                        })).into_response(),
+                        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
+                            message: "Failed to delete user".to_string(),
+                        })).into_response(),
+                    }
+                },
+                None => (StatusCode::NOT_FOUND, Json(MessageResponse {
+                    message: "User not found".to_string(),
+                })).into_response(),
+            }
+        }
+        Err(_) => {
+            return (StatusCode::BAD_REQUEST, Json(MessageResponse {
+                message: "Invalid user ID".to_string(),
+            })).into_response();
         }
     }
 }

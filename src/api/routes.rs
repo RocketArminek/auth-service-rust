@@ -26,6 +26,7 @@ pub fn routes(
         .merge(
             Router::new()
                 .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
+                .route("/v1/restricted/users/:id", get(get_user).delete(delete_user))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(state.clone(), restricted_acl))
@@ -47,6 +48,8 @@ pub fn routes(
         create_user,
         create_restricted_user,
         get_all_users,
+        get_user,
+        delete_user,
         login,
         verify,
     ),

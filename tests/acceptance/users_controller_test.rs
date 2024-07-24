@@ -3,7 +3,8 @@ use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
-use auth_service::api::dto::{MessageResponse, TokenResponse, UserListResponse};
+use uuid::Uuid;
+use auth_service::api::dto::{MessageResponse, TokenResponse, UserListResponse, UserResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -277,4 +278,127 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
     assert_eq!(body.page, 1);
     assert_eq!(body.total, 1);
     assert_eq!(body.pages, 1);
+}
+
+#[sqlx::test]
+async fn it_can_get_single_user(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let mut admin = User::now_with_email_and_password(
+        String::from("admin@test.com"),
+        String::from("Admin#pass1")
+    ).unwrap();
+    admin.hash_password(&SchemeAwareHasher::default());
+
+    let role = Role::now("ADMIN_USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&admin, role.id).await.unwrap();
+
+    let user = User::now_with_email_and_password(
+        String::from("user@test.com"),
+        String::from("User#pass1")
+    ).unwrap();
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "admin@test.com",
+            "password": "Admin#pass1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let response = server
+        .get(&format!("/v1/restricted/users/{}", user.id))
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+    let body = response.json::<UserResponse>();
+    assert_eq!(body.email, "user@test.com");
+}
+
+#[sqlx::test]
+async fn it_can_delete_user(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let mut admin = User::now_with_email_and_password(
+        String::from("admin@test.com"),
+        String::from("Admin#pass1")
+    ).unwrap();
+    admin.hash_password(&SchemeAwareHasher::default());
+
+    let role = Role::now("ADMIN_USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&admin, role.id).await.unwrap();
+
+    let user = User::now_with_email_and_password(
+        String::from("user@test.com"),
+        String::from("User#pass1")
+    ).unwrap();
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "admin@test.com",
+            "password": "Admin#pass1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let response = server
+        .delete(&format!("/v1/restricted/users/{}", user.id))
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let deleted_user = repository.get_by_id(user.id).await;
+    assert!(deleted_user.is_none());
+}
+
+#[sqlx::test]
+async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let mut admin = User::now_with_email_and_password(
+        String::from("admin@test.com"),
+        String::from("Admin#pass1")
+    ).unwrap();
+    admin.hash_password(&SchemeAwareHasher::default());
+
+    let role = Role::now("ADMIN_USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&admin, role.id).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "admin@test.com",
+            "password": "Admin#pass1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let non_existent_id = Uuid::new_v4();
+    let response = server
+        .get(&format!("/v1/restricted/users/{}", non_existent_id))
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
 }
