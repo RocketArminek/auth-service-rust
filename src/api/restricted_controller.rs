@@ -243,8 +243,8 @@ pub async fn update_user(
         Some(user) => {
             let mut user = user.clone();
             user.email = email;
-            user.first_name = first_name;
-            user.last_name = last_name;
+            user.first_name = Some(first_name);
+            user.last_name = Some(last_name);
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
                     (StatusCode::OK, Json(UserResponse {

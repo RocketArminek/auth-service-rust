@@ -13,9 +13,9 @@ pub struct CreateUserRequest {
 pub struct UpdateProfileRequest {
     pub email: String,
     #[serde(rename = "firstName")]
-    pub first_name: Option<String>,
+    pub first_name: String,
     #[serde(rename = "lastName")]
-    pub last_name: Option<String>,
+    pub last_name: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
