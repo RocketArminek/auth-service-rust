@@ -1,7 +1,7 @@
 use crate::api::axum_extractor::{StatelessLoggedInUser};
 use crate::domain::crypto::{Hasher, SchemeAwareHasher};
 use crate::domain::jwt::Claims;
-use axum::extract::State;
+use axum::extract::{State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{Duration, Utc};

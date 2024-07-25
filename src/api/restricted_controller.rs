@@ -5,7 +5,7 @@ use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
 use uuid::{Uuid};
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UserListResponse, UserResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateProfileRequest, UserListResponse, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -27,8 +27,6 @@ pub async fn create_restricted_user(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let first_name = request.first_name.clone();
-    let last_name = request.last_name.clone();
     let role = request.role.clone();
 
     let existing = state.user_repository
@@ -53,8 +51,8 @@ pub async fn create_restricted_user(
     let user = User::now_with_email_and_password(
         email,
         password,
-        first_name,
-        last_name
+        None,
+        None
     );
 
     match user {
@@ -161,28 +159,18 @@ pub async fn get_all_users(
 )]
 pub async fn get_user(
     State(state): State<ServerState>,
-    Path(id): Path<String>,
+    Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let user_id= Uuid::parse_str(&id);
-    match user_id {
-        Ok(user_id) => {
-            match state.user_repository.lock().await.get_by_id(user_id).await {
-                Some(user) => (StatusCode::OK, Json(UserResponse {
-                    id: user.id.to_string(),
-                    email: user.email,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                })).into_response(),
-                None => (StatusCode::NOT_FOUND, Json(MessageResponse {
-                    message: "User not found".to_string(),
-                })).into_response(),
-            }
-        }
-        Err(_) => {
-            return (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                message: "Invalid user ID".to_string(),
-            })).into_response();
-        }
+    match state.user_repository.lock().await.get_by_id(id).await {
+        Some(user) => (StatusCode::OK, Json(UserResponse {
+            id: user.id.to_string(),
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+        })).into_response(),
+        None => (StatusCode::NOT_FOUND, Json(MessageResponse {
+            message: "User not found".to_string(),
+        })).into_response(),
     }
 }
 
@@ -200,33 +188,79 @@ pub async fn get_user(
 )]
 pub async fn delete_user(
     State(state): State<ServerState>,
-    Path(id): Path<String>,
+    Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let user_id = Uuid::parse_str(&id);
-    match user_id {
-        Ok(user_id) => {
-            let user_repo = state.user_repository.lock().await;
+    let user_repo = state.user_repository.lock().await;
 
-            match user_repo.get_by_id(user_id).await {
-                Some(user) => {
-                    match user_repo.delete_by_email(&user.email).await {
-                        Ok(_) => (StatusCode::OK, Json(MessageResponse {
-                            message: "User deleted successfully".to_string(),
-                        })).into_response(),
-                        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
-                            message: "Failed to delete user".to_string(),
-                        })).into_response(),
-                    }
-                },
-                None => (StatusCode::NOT_FOUND, Json(MessageResponse {
-                    message: "User not found".to_string(),
+    match user_repo.get_by_id(id).await {
+        Some(user) => {
+            match user_repo.delete_by_email(&user.email).await {
+                Ok(_) => (StatusCode::OK, Json(MessageResponse {
+                    message: "User deleted successfully".to_string(),
+                })).into_response(),
+                Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
+                    message: "Failed to delete user".to_string(),
                 })).into_response(),
             }
-        }
-        Err(_) => {
-            return (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                message: "Invalid user ID".to_string(),
+        },
+        None => (StatusCode::NOT_FOUND, Json(MessageResponse {
+            message: "User not found".to_string(),
+        })).into_response(),
+    }
+}
+
+#[utoipa::path(put, path = "/v1/restricted/users/{id}",
+    request_body = UpdateUserRequest,
+    tag="admin",
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User updated", content_type = "application/json", body = UserResponse),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 422, description = "Unprocessable entity"),
+    )
+)]
+pub async fn update_user(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    request: Json<UpdateProfileRequest>,
+) -> impl IntoResponse {
+    let email = request.email.clone();
+    let first_name = request.first_name.clone();
+    let last_name = request.last_name.clone();
+
+    let user = state.user_repository.lock().await.get_by_id(id).await;
+    match user {
+        None => {
+            return (StatusCode::NOT_FOUND, Json(MessageResponse {
+                message: "User not found".to_string(),
             })).into_response();
+        }
+        Some(user) => {
+            let mut user = user.clone();
+            user.email = email;
+            user.first_name = first_name;
+            user.last_name = last_name;
+            match state.user_repository.lock().await.update(&user).await {
+                Ok(_) => {
+                    (StatusCode::OK, Json(UserResponse {
+                        id: user.id.to_string(),
+                        email: user.email,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                    })).into_response()
+                }
+                Err(e) => {
+                    tracing::error!("Failed to update user: {:?}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
+                        message: "Failed to update user".to_string(),
+                    })).into_response()
+                }
+            }
         }
     }
 }

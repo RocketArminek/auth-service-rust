@@ -6,7 +6,12 @@ use uuid::Uuid;
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
-    pub role: String,
+    pub role: String
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct UpdateProfileRequest {
+    pub email: String,
     #[serde(rename = "firstName")]
     pub first_name: Option<String>,
     #[serde(rename = "lastName")]
@@ -66,7 +71,9 @@ pub struct LoggedInUser {
     pub id: Uuid,
     pub email: String,
     pub roles: Vec<String>,
+    #[serde(rename = "firstName")]
     pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
     pub last_name: Option<String>,
 }
 

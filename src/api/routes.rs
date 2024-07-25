@@ -1,4 +1,4 @@
-use axum::routing::{any, post};
+use axum::routing::{any, post, put};
 use axum::{routing::get, Router, middleware};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -20,13 +20,13 @@ pub fn routes(
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
+        .route("/v1/users/:id", put(update_profile))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
-        .route("/v1/stateless/verify/roles/:role", any(verify))
         .merge(
             Router::new()
                 .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
-                .route("/v1/restricted/users/:id", get(get_user).delete(delete_user))
+                .route("/v1/restricted/users/:id", get(get_user).delete(delete_user).put(update_user))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(state.clone(), restricted_acl))
@@ -52,6 +52,8 @@ pub fn routes(
         delete_user,
         login,
         verify,
+        update_profile,
+        update_user,
     ),
     components(
         schemas(
@@ -61,6 +63,7 @@ pub fn routes(
             UserResponse,
             TokenResponse,
             CreateUserRequest,
+            UpdateProfileRequest,
             LoginRequest,
             CreatedResponse,
             UserListResponse,

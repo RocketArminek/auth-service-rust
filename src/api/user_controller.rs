@@ -1,10 +1,12 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse};
+use uuid::Uuid;
+use crate::api::axum_extractor::StatelessLoggedInUser;
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateProfileRequest, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -24,8 +26,6 @@ pub async fn create_user(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let first_name = request.first_name.clone();
-    let last_name = request.last_name.clone();
     let role = request.role.clone();
     if state.restricted_role_pattern.is_match(role.as_str()) {
         return (StatusCode::BAD_REQUEST, Json(MessageResponse {
@@ -55,8 +55,8 @@ pub async fn create_user(
     let user = User::now_with_email_and_password(
         email,
         password,
-        first_name,
-        last_name,
+        None,
+        None,
     );
 
     match user {
@@ -93,6 +93,67 @@ pub async fn create_user(
                 _ => {
                     (StatusCode::BAD_REQUEST, Json(MessageResponse {
                         message: "Something went wrong".to_string(),
+                    })).into_response()
+                }
+            }
+        }
+    }
+}
+
+#[utoipa::path(put, path = "/v1/users/{id}",
+    request_body = UpdateUserRequest,
+    tag="all",
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User updated", content_type = "application/json", body = UserResponse),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 422, description = "Unprocessable entity"),
+    )
+)]
+pub async fn update_profile(
+    State(state): State<ServerState>,
+    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    Path(id): Path<Uuid>,
+    request: Json<UpdateProfileRequest>,
+) -> impl IntoResponse {
+    if user.id != id {
+        return (StatusCode::UNAUTHORIZED, Json(MessageResponse {
+            message: "Unauthorized".to_string(),
+        })).into_response();
+    }
+
+    let email = request.email.clone();
+    let first_name = request.first_name.clone();
+    let last_name = request.last_name.clone();
+
+    let user = state.user_repository.lock().await.get_by_id(id).await;
+    match user {
+        None => {
+            return (StatusCode::NOT_FOUND, Json(MessageResponse {
+                message: "User not found".to_string(),
+            })).into_response();
+        }
+        Some(user) => {
+            let mut user = user.clone();
+            user.email = email;
+            user.first_name = first_name;
+            user.last_name = last_name;
+            match state.user_repository.lock().await.update(&user).await {
+                Ok(_) => {
+                    (StatusCode::OK, Json(UserResponse {
+                        id: user.id.to_string(),
+                        email: user.email,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                    })).into_response()
+                }
+                Err(e) => {
+                    tracing::error!("Failed to update user: {:?}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(MessageResponse {
+                        message: "Failed to update user".to_string(),
                     })).into_response()
                 }
             }

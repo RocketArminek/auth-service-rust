@@ -425,3 +425,106 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test]
+async fn it_updates_user_information(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+
+    let mut user = User::now_with_email_and_password(
+        String::from("user@test.com"),
+        String::from("User#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ).unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+
+    let role = Role::now("USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&user, role.id).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "user@test.com",
+            "password": "User#pass1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let response = server
+        .put(&format!("/v1/users/{}", user.id))
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .json(&json!({
+            "email": "test@wp.pl",
+            "firstName": "Jon",
+            "lastName": "Doe",
+        }))
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let body = response.json::<UserResponse>();
+    assert_eq!(body.email, "test@wp.pl");
+    assert_eq!(body.first_name.unwrap(), "Jon");
+    assert_eq!(body.last_name.unwrap(), "Doe");
+}
+
+#[sqlx::test]
+async fn it_updates_other_user_information(pool: Pool<MySql>) {
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let mut admin = User::now_with_email_and_password(
+        String::from("admin@test.com"),
+        String::from("Admin#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ).unwrap();
+    admin.hash_password(&SchemeAwareHasher::default());
+
+    let role = Role::now("ADMIN_USER".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&admin, role.id).await.unwrap();
+
+    let user = User::now_with_email_and_password(
+        String::from("user@test.com"),
+        String::from("User#pass1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow"))
+    ).unwrap();
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": "admin@test.com",
+            "password": "Admin#pass1",
+        }))
+        .await;
+    let body = response.json::<TokenResponse>();
+
+    let response = server
+        .put(&format!("/v1/restricted/users/{}", user.id))
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+        )
+        .json(&json!({
+            "email": "test@wp.pl",
+            "firstName": "Jon",
+            "lastName": "Doe",
+        }))
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let body = response.json::<UserResponse>();
+    assert_eq!(body.email, "test@wp.pl");
+    assert_eq!(body.first_name.unwrap(), "Jon");
+    assert_eq!(body.last_name.unwrap(), "Doe");
+}
