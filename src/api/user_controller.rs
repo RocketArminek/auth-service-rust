@@ -1,10 +1,9 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
-use axum::extract::{Path, State};
+use axum::extract::{State};
 use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
-use uuid::Uuid;
 use crate::api::axum_extractor::StatelessLoggedInUser;
 use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserResponse};
 use crate::api::server_state::ServerState;
@@ -100,7 +99,7 @@ pub async fn create_user(
     }
 }
 
-#[utoipa::path(put, path = "/v1/users/{id}",
+#[utoipa::path(put, path = "/v1/me",
     request_body = UpdateUserRequest,
     tag="all",
     params(
@@ -116,20 +115,13 @@ pub async fn create_user(
 pub async fn update_profile(
     State(state): State<ServerState>,
     StatelessLoggedInUser(user): StatelessLoggedInUser,
-    Path(id): Path<Uuid>,
     request: Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
-    if user.id != id {
-        return (StatusCode::UNAUTHORIZED, Json(MessageResponse {
-            message: "Unauthorized".to_string(),
-        })).into_response();
-    }
-
     let email = request.email.clone();
     let first_name = request.first_name.clone();
     let last_name = request.last_name.clone();
 
-    let user = state.user_repository.lock().await.get_by_id(id).await;
+    let user = state.user_repository.lock().await.get_by_id(user.id).await;
     match user {
         None => {
             return (StatusCode::NOT_FOUND, Json(MessageResponse {

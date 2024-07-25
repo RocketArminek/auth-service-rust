@@ -454,7 +454,7 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
     let body = response.json::<TokenResponse>();
 
     let response = server
-        .put(&format!("/v1/users/{}", user.id))
+        .put("/v1/me")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
             HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),

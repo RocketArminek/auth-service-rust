@@ -20,7 +20,7 @@ pub fn routes(
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
-        .route("/v1/users/:id", put(update_profile))
+        .route("/v1/me", put(update_profile))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
         .merge(
