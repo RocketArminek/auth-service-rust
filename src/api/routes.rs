@@ -63,7 +63,7 @@ pub fn routes(
             UserResponse,
             TokenResponse,
             CreateUserRequest,
-            UpdateProfileRequest,
+            UpdateUserRequest,
             LoginRequest,
             CreatedResponse,
             UserListResponse,

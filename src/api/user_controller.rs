@@ -6,7 +6,7 @@ use axum::Json;
 use axum::response::IntoResponse;
 use uuid::Uuid;
 use crate::api::axum_extractor::StatelessLoggedInUser;
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateProfileRequest, UserResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -117,7 +117,7 @@ pub async fn update_profile(
     State(state): State<ServerState>,
     StatelessLoggedInUser(user): StatelessLoggedInUser,
     Path(id): Path<Uuid>,
-    request: Json<UpdateProfileRequest>,
+    request: Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
     if user.id != id {
         return (StatusCode::UNAUTHORIZED, Json(MessageResponse {

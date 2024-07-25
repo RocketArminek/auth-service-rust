@@ -5,7 +5,7 @@ use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
 use uuid::{Uuid};
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateProfileRequest, UserListResponse, UserResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateUserRequest, UserListResponse, UserResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -227,7 +227,7 @@ pub async fn delete_user(
 pub async fn update_user(
     State(state): State<ServerState>,
     Path(id): Path<Uuid>,
-    request: Json<UpdateProfileRequest>,
+    request: Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let first_name = request.first_name.clone();

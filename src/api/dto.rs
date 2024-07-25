@@ -10,7 +10,7 @@ pub struct CreateUserRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct UpdateProfileRequest {
+pub struct UpdateUserRequest {
     pub email: String,
     #[serde(rename = "firstName")]
     pub first_name: String,
