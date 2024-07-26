@@ -107,10 +107,10 @@ jobs:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
         SECRET: secret
         PASSWORD_HASHING_SCHEME: bcrypt_low
-        AWS_ACCESS_KEY: ""
-        AWS_SECRET_ACCESS_KEY: ""
-        AWS_BUCKET: ""
-        AWS_REGION: ""
+        AWS_ACCESS_KEY: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_BUCKET: test
+        AWS_REGION: test
     services:
       mysql:
         image: mysql:8.0
