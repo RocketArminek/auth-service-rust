@@ -4,6 +4,8 @@ use axum::extract::{State};
 use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use crate::api::axum_extractor::StatelessLoggedInUser;
 use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserResponse};
 use crate::api::server_state::ServerState;
@@ -133,6 +135,28 @@ pub async fn update_profile(
             user.email = email;
             user.first_name = Some(first_name);
             user.last_name = Some(last_name);
+
+            if let (Some(base64_avatar), Some(avatar_name)) = (request.avatar_data.clone(), request.avatar_name.clone()) {
+                let avatar_content = BASE64_STANDARD.decode(base64_avatar.as_bytes());
+                match avatar_content {
+                    Ok(avatar_content) => {
+                        let r = state
+                            .avatar_uploader
+                            .lock().await
+                            .upload(user.id, &avatar_name, avatar_content).await;
+                        match r {
+                            Ok(path) => { user.avatar_path = Some(path); }
+                            Err(e) => {
+                                tracing::error!("Failed to upload avatar: {:?}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to decode avatar: {:?}", e);
+                    }
+                }
+            }
+
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
                     (StatusCode::OK, Json(UserResponse {
@@ -140,6 +164,7 @@ pub async fn update_profile(
                         email: user.email,
                         first_name: user.first_name,
                         last_name: user.last_name,
+                        avatar_path: user.avatar_path,
                     })).into_response()
                 }
                 Err(e) => {

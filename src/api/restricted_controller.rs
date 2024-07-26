@@ -125,6 +125,7 @@ pub async fn get_all_users(
                     email: user.email,
                     first_name: user.first_name,
                     last_name: user.last_name,
+                    avatar_path: user.avatar_path,
                 })
                 .collect();
 
@@ -167,6 +168,7 @@ pub async fn get_user(
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
+            avatar_path: user.avatar_path,
         })).into_response(),
         None => (StatusCode::NOT_FOUND, Json(MessageResponse {
             message: "User not found".to_string(),
@@ -252,6 +254,7 @@ pub async fn update_user(
                         email: user.email,
                         first_name: user.first_name,
                         last_name: user.last_name,
+                        avatar_path: user.avatar_path,
                     })).into_response()
                 }
                 Err(e) => {

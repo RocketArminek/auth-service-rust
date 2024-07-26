@@ -8,6 +8,7 @@ pub struct Claims {
     pub roles: Vec<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    pub avatar_path: Option<String>,
 }
 
 impl Claims {
@@ -18,7 +19,8 @@ impl Claims {
         roles: Vec<String>,
         first_name: Option<String>,
         last_name: Option<String>,
+        avatar_path: Option<String>,
     ) -> Self {
-        Self { id, email, exp, roles, first_name, last_name }
+        Self { id, email, exp, roles, first_name, last_name, avatar_path }
     }
 }

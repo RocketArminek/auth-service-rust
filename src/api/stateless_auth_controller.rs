@@ -78,6 +78,7 @@ pub async fn login(
                 roles,
                 user.first_name.clone(),
                 user.last_name.clone(),
+                user.avatar_path.clone(),
             );
             let token = encode(
                 &Header::default(),
@@ -136,5 +137,6 @@ pub async fn verify(
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
+        avatar_path: user.avatar_path,
     })).into_response()
 }

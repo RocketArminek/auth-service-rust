@@ -241,6 +241,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         vec!["ADMIN_USER".to_string()],
         user.first_name.clone(),
         user.last_name.clone(),
+        user.avatar_path.clone(),
     );
     let token = encode(
         &Header::default(),

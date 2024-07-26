@@ -75,6 +75,7 @@ where
                         roles: decoded_token.claims.roles,
                         first_name: decoded_token.claims.first_name,
                         last_name: decoded_token.claims.last_name,
+                        avatar_path: decoded_token.claims.avatar_path,
                     }
                 ))
             }

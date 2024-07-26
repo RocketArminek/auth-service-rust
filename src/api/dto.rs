@@ -16,6 +16,10 @@ pub struct UpdateUserRequest {
     pub first_name: String,
     #[serde(rename = "lastName")]
     pub last_name: String,
+    #[serde(rename = "avatarData")]
+    pub avatar_data: Option<String>,
+    #[serde(rename = "avatarName")]
+    pub avatar_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -49,6 +53,8 @@ pub struct UserResponse {
     pub first_name: Option<String>,
     #[serde(rename = "lastName")]
     pub last_name: Option<String>,
+    #[serde(rename = "avatarPath")]
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -75,6 +81,8 @@ pub struct LoggedInUser {
     pub first_name: Option<String>,
     #[serde(rename = "lastName")]
     pub last_name: Option<String>,
+    #[serde(rename = "avatarPath")]
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

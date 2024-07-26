@@ -15,6 +15,7 @@ pub struct User {
     pub last_name: Option<String>,
     pub created_at: DateTime<Utc>,
     pub roles: Vec<Role>,
+    pub avatar_path: Option<String>,
 }
 
 #[derive(FromRow, Debug, Clone)]
@@ -25,6 +26,7 @@ pub struct UserRow {
     pub created_at: DateTime<Utc>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    pub avatar_path: Option<String>,
 }
 
 impl From<UserRow> for User {
@@ -37,6 +39,7 @@ impl From<UserRow> for User {
             last_name: row.last_name,
             created_at: row.created_at,
             roles: vec![],
+            avatar_path: row.avatar_path,
         }
     }
 }
@@ -81,6 +84,7 @@ impl User {
                 last_name,
                 created_at,
                 roles: vec![],
+                avatar_path: None,
             })
         }
     }
