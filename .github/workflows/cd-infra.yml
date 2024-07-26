@@ -43,4 +43,4 @@ jobs:
           echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
           cd .ops/terraform
           terraform init
-          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" -lock-timeout=10m
+          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock-timeout=10m
