@@ -94,6 +94,9 @@ pub async fn login(
                         email: user.email,
                         token,
                         expires_at: exp.timestamp() as usize,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        avatar_path: user.avatar_path,
                     }),
                 ).into_response(),
                 Err(_) => (

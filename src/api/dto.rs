@@ -43,6 +43,12 @@ pub struct TokenResponse {
     pub token: String,
     #[serde(rename = "expiresAt")]
     pub expires_at: usize,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+    #[serde(rename = "avatarPath")]
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
