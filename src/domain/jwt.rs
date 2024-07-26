@@ -6,8 +6,11 @@ pub struct Claims {
     pub exp: usize,
     pub email: String,
     pub roles: Vec<String>,
+    #[serde(rename = "firstName")]
     pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
     pub last_name: Option<String>,
+    #[serde(rename = "avatarPath")]
     pub avatar_path: Option<String>,
 }
 
