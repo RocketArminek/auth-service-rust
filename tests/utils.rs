@@ -13,7 +13,7 @@ pub fn create_test_server(secret: String, pool: Pool<MySql>, hashing_scheme: Has
     let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
     let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
     let restricted_role_pattern = parse_restricted_pattern("ADMIN").unwrap();
-    let avatar_uploader = Arc::new(Mutex::new(S3AvatarUploader::new().unwrap()));
+    let avatar_uploader = Arc::new(Mutex::new(S3AvatarUploader::new().expect("Failed to create S3AvatarUploader")));
 
     let state = ServerState {
         secret,

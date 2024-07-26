@@ -13,10 +13,10 @@ pub struct S3AvatarUploader {
 
 impl S3AvatarUploader {
     pub fn new() -> Result<Self, Box<dyn Error>> {
-        let access_key = env::var("AWS_ACCESS_KEY")?;
-        let secret_key = env::var("AWS_SECRET_ACCESS_KEY")?;
-        let bucket = env::var("AWS_BUCKET")?;
-        let region = env::var("AWS_REGION")?;
+        let access_key = env::var("AWS_ACCESS_KEY").expect("AWS_ACCESS_KEY is not set");
+        let secret_key = env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY is not set");
+        let bucket = env::var("AWS_BUCKET").expect("AWS_BUCKET is not set");
+        let region = env::var("AWS_REGION").expect("AWS_REGION is not set");
 
         let credentials = Credentials::new(access_key, secret_key, None, None, "example");
         let config = Config::builder()
