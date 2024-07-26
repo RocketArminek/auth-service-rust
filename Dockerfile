@@ -1,7 +1,7 @@
 ARG RUST_VERSION=1.80.0
 FROM rust:${RUST_VERSION}-slim-bookworm AS base-builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl ca-certificates
 RUN cargo install sqlx-cli --no-default-features --features mysql
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
@@ -27,6 +27,9 @@ RUN adduser \
   --no-create-home \
   --uid "10001" \
   appuser
+
+# Copy CA certificates from builder to runner
+COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 FROM base-runner AS server
 COPY --from=base-builder /app/migrations /migrations
