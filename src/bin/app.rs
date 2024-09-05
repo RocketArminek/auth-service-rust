@@ -79,59 +79,39 @@ enum Commands {
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
 async fn main() {
+    let cli = Cli::parse();
     from_filename(".env.local").or(dotenv()).ok();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+
     let hashing_scheme =
         env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
+    tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
 
-    let cli = Cli::parse();
+    let secret = env::var("SECRET").expect("SECRET is not set in envs");
     let pool = create_mysql_pool().await.unwrap();
-    migrate!("./migrations").run(&pool).await.unwrap();
-    let user_repository = MysqlUserRepository::new(pool.clone());
-    let role_repository = MysqlRoleRepository::new(pool.clone());
+    migrate_db(&pool).await;
+
+    let user_repository = Arc::new(
+        Mutex::new(MysqlUserRepository::new(pool.clone()))
+    );
+    let role_repository = Arc::new(
+        Mutex::new(MysqlRoleRepository::new(pool.clone()))
+    );
+
+    let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
+
+    let avatar_uploader = Arc::new(
+        Mutex::new(S3AvatarUploader::new().unwrap())
+    );
 
     match &cli.command {
         Some(Commands::Start) | None => {
-            tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
-                .init();
-
-            let secret = env::var("SECRET").expect("SECRET is not set in envs");
-
-            let hashing_scheme =
-                env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
-            let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
-
             let port = "8080";
             let addr = &format!("0.0.0.0:{}", port);
             let listener = tokio::net::TcpListener::bind(addr).await;
-
-            tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
-
-            let pool = create_mysql_pool().await.expect("Failed to connect & create db pool");
-            let migration_result = migrate!("./migrations").run(&pool).await;
-            match migration_result {
-                Ok(_) => {
-                    tracing::info!("Database migration completed successfully");
-                }
-                Err(e) => {
-                    tracing::error!("Failed to migrate database: {}", e);
-                    panic!("Failed to migrate database");
-                }
-            }
-
-            let user_repository = Arc::new(
-                Mutex::new(MysqlUserRepository::new(pool.clone()))
-            );
-            let role_repository = Arc::new(
-                Mutex::new(MysqlRoleRepository::new(pool.clone()))
-            );
-
-            let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
-
-            let avatar_uploader = Arc::new(
-                Mutex::new(S3AvatarUploader::new().expect("Failed to create S3 uploader"))
-            );
 
             let state = ServerState {
                 secret,
@@ -148,7 +128,7 @@ async fn main() {
                     axum::serve(listener, routes(state))
                         .with_graceful_shutdown(shutdown_signal())
                         .await
-                        .expect("Failed to start server");
+                        .unwrap();
                 }
                 Err(e) => {
                     tracing::error!("Failed to bind to port {}: {}", port, e);
@@ -167,15 +147,17 @@ async fn main() {
                 Ok(mut user) => {
                     let role = role.to_owned().unwrap_or("USER".to_string());
                     let existing_role = role_repository
+                        .lock().await
                         .get_by_name(&role)
                         .await
-                        .expect(&format!("Failed to get role {}", role));
+                        .unwrap();
                     user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme));
                     user.add_role(existing_role.clone());
                     user_repository
+                        .lock().await
                         .add_with_role(&user, existing_role.id)
                         .await
-                        .expect("Failed to create user! Check if the email is already in use.");
+                        .unwrap();
 
                     println!(
                         "User created: {} {} at {} with roles ({})",
@@ -205,7 +187,7 @@ async fn main() {
             }
         }
         Some(Commands::GetUserByEmail { email }) => {
-            let user = user_repository.get_by_email(email).await;
+            let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
                 None => {
@@ -220,12 +202,12 @@ async fn main() {
             }
         }
         Some(Commands::DeleteUserByEmail { email }) => {
-            user_repository.delete_by_email(email).await.unwrap();
+            user_repository.lock().await.delete_by_email(email).await.unwrap();
 
             println!("User deleted for {}", email);
         }
         Some(Commands::Login { email, password }) => {
-            let user = user_repository.get_by_email(email).await;
+            let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
                 None => {
@@ -248,14 +230,14 @@ async fn main() {
             }
         }
         Some(Commands::AssignRole { email, role }) => {
-            let user = user_repository.get_by_email(email).await;
+            let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
                 None => {
                     println!("User not found for {}", email);
                 }
                 Some(user) => {
-                    let r = role_repository.get_by_name(role).await;
+                    let r = role_repository.lock().await.get_by_name(role).await;
 
                     match r {
                         None => {
@@ -263,9 +245,10 @@ async fn main() {
                         }
                         Some(role) => {
                             user_repository
+                                .lock().await
                                 .add_role(user.id, role.id)
                                 .await
-                                .expect("Failed to assign role");
+                                .unwrap();
 
                             println!("Role assigned: {} to {}", role.name, user.email);
                         }
@@ -276,15 +259,16 @@ async fn main() {
         Some(Commands::InitRestrictedRole) => {
             let restricted_role_prefix = env::var("RESTRICTED_ROLE_PREFIX")
                 .unwrap_or("ADMIN".to_string());
-            let role = role_repository.get_by_name(&restricted_role_prefix).await;
+            let role = role_repository.lock().await.get_by_name(&restricted_role_prefix).await;
 
             match role {
                 None => {
                     let role = Role::now(restricted_role_prefix).unwrap();
                     role_repository
+                        .lock().await
                         .add(&role)
                         .await
-                        .expect("Failed to init auth owner role!");
+                        .unwrap();
 
                     println!(
                         "Created initial restricted role base on pattern: {}, {}, {}",
@@ -301,9 +285,10 @@ async fn main() {
         Some(Commands::CreateRole { name }) => {
             let role = Role::now(name.to_owned()).unwrap();
             role_repository
+                .lock().await
                 .add(&role)
                 .await
-                .expect(&format!("Failed to create {} role!", name));
+                .unwrap();
 
             println!(
                 "Created role: {}, {}, {}",
@@ -313,21 +298,21 @@ async fn main() {
             );
         }
         Some(Commands::DeleteRole { name }) => {
-            role_repository.delete_by_name(name).await.unwrap();
+            role_repository.lock().await.delete_by_name(name).await.unwrap();
 
             println!("Role deleted for {}", name);
         }
         Some(Commands::UploadAvatar { path, name, email }) => {
-            let uploader = S3AvatarUploader::new().expect("Failed to create S3 uploader");
-            let mut user = user_repository.get_by_email(email).await.expect("User not found");
-            let file_content = std::fs::read(&path).expect("Failed to read file");
+            let uploader = S3AvatarUploader::new().unwrap();
+            let mut user = user_repository.lock().await.get_by_email(email).await.unwrap();
+            let file_content = std::fs::read(&path).unwrap();
             let base64_encoded = BASE64_STANDARD.encode(&file_content);
             println!("Base64 encoded file: {}", base64_encoded);
 
             match uploader.upload(user.id, &name, file_content).await {
                 Ok(avatar_url) => {
                     user.avatar_path = Some(avatar_url);
-                    user_repository.update(&user).await.expect("Failed to update user");
+                    user_repository.lock().await.update(&user).await.unwrap();
                     println!("Avatar uploaded successfully");
                 }
                 Err(e) => {
@@ -342,13 +327,13 @@ async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
-            .expect("Failed to install CTRL+C signal handler");
+            .unwrap();
     };
 
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("Failed to install SIGTERM signal handler")
+            .unwrap()
             .recv()
             .await;
     };
@@ -361,69 +346,59 @@ async fn shutdown_signal() {
 
 
 async fn init_roles(role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Result<Regex, Error> {
-    let regular_role_prefix = env::var("REGULAR_ROLE_PREFIX")
-        .unwrap_or("USER".to_string());
-    tracing::info!("Configured regular role prefix: {}", regular_role_prefix);
+    init_role(&"REGULAR_ROLE_PREFIX".to_string(), "USER".to_string(), role_repository).await;
+    let restricted_role = init_role(&"RESTRICTED_ROLE_PREFIX".to_string(), "ADMIN".to_string(), role_repository).await;
 
-    let existing_regular_role = role_repository.lock()
-        .await.get_by_name(&regular_role_prefix)
+    parse_restricted_pattern(restricted_role.name.as_str())
+}
+
+async fn init_role(role_env_var: &String, default: String, role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Role {
+    let role_prefix = env::var(role_env_var)
+        .unwrap_or(default);
+
+    tracing::info!("Configured {} with: {}", role_env_var, role_prefix);
+    let existing_role = role_repository.lock()
+        .await.get_by_name(&role_prefix)
         .await;
 
-    if existing_regular_role.is_some() {
-        let existing_regular_role = existing_regular_role.clone().unwrap();
+    if existing_role.is_some() {
+        let existing_role = existing_role.clone().unwrap();
         tracing::info!(
-            "Found existing regular role: {}, {}, {}",
-            existing_regular_role.id,
-            existing_regular_role.name,
-            existing_regular_role.created_at.format("%Y-%m-%d %H:%M:%S")
+            "Found existing role: {}, {}, {}",
+            existing_role.id,
+            existing_role.name,
+            existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
         );
-    } else {
-        let regular_role = Role::now("USER".to_string())
-            .expect("Failed to create regular role");
 
-        role_repository.lock()
-            .await.add(&regular_role)
-            .await.expect("Failed to create regular role");
-
-        tracing::info!(
-            "Created initial regular role: {}, {}, {}",
-            regular_role.id,
-            regular_role.name,
-            regular_role.created_at.format("%Y-%m-%d %H:%M:%S")
-        );
+        return existing_role;
     }
 
-    let restricted_role_prefix = env::var("RESTRICTED_ROLE_PREFIX")
-        .unwrap_or("ADMIN".to_string());
-    tracing::info!("Configured restricted role prefix: {}", restricted_role_prefix);
+    let role = Role::now(role_prefix.to_string())
+        .unwrap();
 
-    let existing_init_role = role_repository.lock()
-        .await.get_by_name(&restricted_role_prefix)
-        .await;
+    role_repository.lock()
+        .await.add(&role)
+        .await.unwrap();
 
-    if existing_init_role.is_some() {
-        let existing_init_role = existing_init_role.clone().unwrap();
-        tracing::info!(
-            "Found existing restricted role base on pattern: {}, {}, {}",
-            existing_init_role.id,
-            existing_init_role.name,
-            existing_init_role.created_at.format("%Y-%m-%d %H:%M:%S")
-        );
-    } else {
-        let restricted_init_role = Role::now(restricted_role_prefix.clone())
-            .expect("Failed to create restricted role");
+    tracing::info!(
+        "Created role: {}, {}, {}",
+        role.id,
+        role.name,
+        role.created_at.format("%Y-%m-%d %H:%M:%S")
+    );
 
-        role_repository.lock()
-            .await.add(&restricted_init_role)
-            .await.expect("Failed to create restricted role");
+    role
+}
 
-        tracing::info!(
-            "Created initial restricted role base on pattern: {}, {}, {}",
-            restricted_init_role.id,
-            restricted_init_role.name,
-            restricted_init_role.created_at.format("%Y-%m-%d %H:%M:%S")
-        );
+async fn migrate_db(pool: &sqlx::MySqlPool) {
+    let migration_result = migrate!("./migrations").run(pool).await;
+    match migration_result {
+        Ok(_) => {
+            tracing::info!("Database migration completed successfully");
+        }
+        Err(e) => {
+            tracing::error!("Failed to migrate database: {}", e);
+            panic!("Failed to migrate database");
+        }
     }
-
-    parse_restricted_pattern(restricted_role_prefix.as_str())
 }
