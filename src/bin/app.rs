@@ -8,8 +8,6 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
 use regex::{Error, Regex};
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -17,7 +15,6 @@ use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-use auth_service::infrastructure::s3_avatar_uploader::{S3AvatarUploader};
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -28,7 +25,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Start the server")]
+    #[command(about = "🚀 Start the server")]
     Start,
     CreateUser {
         #[arg(short, long)]
@@ -67,14 +64,6 @@ enum Commands {
         name: String,
     },
     InitRestrictedRole,
-    UploadAvatar {
-        #[arg(short, long)]
-        path: String,
-        #[arg(short, long)]
-        name: String,
-        #[arg(short, long)]
-        email: String,
-    }
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
@@ -103,10 +92,6 @@ async fn main() {
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
 
-    let avatar_uploader = Arc::new(
-        Mutex::new(S3AvatarUploader::new().unwrap())
-    );
-
     match &cli.command {
         Some(Commands::Start) | None => {
             let port = "8080";
@@ -119,7 +104,6 @@ async fn main() {
                 restricted_role_pattern,
                 user_repository,
                 role_repository,
-                avatar_uploader,
             };
 
             match listener {
@@ -301,24 +285,6 @@ async fn main() {
             role_repository.lock().await.delete_by_name(name).await.unwrap();
 
             println!("Role deleted for {}", name);
-        }
-        Some(Commands::UploadAvatar { path, name, email }) => {
-            let uploader = S3AvatarUploader::new().unwrap();
-            let mut user = user_repository.lock().await.get_by_email(email).await.unwrap();
-            let file_content = std::fs::read(&path).unwrap();
-            let base64_encoded = BASE64_STANDARD.encode(&file_content);
-            println!("Base64 encoded file: {}", base64_encoded);
-
-            match uploader.upload(user.id, &name, file_content).await {
-                Ok(avatar_url) => {
-                    user.avatar_path = Some(avatar_url);
-                    user_repository.lock().await.update(&user).await.unwrap();
-                    println!("Avatar uploaded successfully");
-                }
-                Err(e) => {
-                    println!("Failed to upload avatar: {:?}", e);
-                }
-            }
         }
     }
 }
