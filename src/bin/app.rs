@@ -43,7 +43,7 @@ enum Commands {
         #[arg(short, long)]
         email: String,
     },
-    Login {
+    CheckPassword {
         #[arg(short, long)]
         email: String,
         #[arg(short, long)]
@@ -190,7 +190,7 @@ async fn main() {
 
             println!("User deleted for {}", email);
         }
-        Some(Commands::Login { email, password }) => {
+        Some(Commands::CheckPassword { email, password }) => {
             let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
@@ -202,7 +202,7 @@ async fn main() {
 
                     if user.verify_password(&hasher, password) {
                         println!(
-                            "User logged in: {} {} at {}",
+                            "User: {} {} at {} password is correct",
                             user.id,
                             user.email,
                             user.created_at.format("%Y-%m-%d %H:%M:%S")

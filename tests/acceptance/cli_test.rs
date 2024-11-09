@@ -50,9 +50,9 @@ fn it_creates_user() {
 }
 
 #[test]
-fn it_logs_into_account() {
+fn it_checks_password_of_the_account() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
-    let mut login_cmd = Command::cargo_bin("app").unwrap();
+    let mut check_password_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
@@ -76,15 +76,15 @@ fn it_logs_into_account() {
         .assert()
         .success();
 
-    login_cmd
-        .arg("login")
+    check_password_cmd
+        .arg("check-password")
         .arg("--email")
         .arg(&email)
         .arg("--password")
         .arg("Iknow#othing1")
         .assert()
         .success()
-        .stdout(predicate::str::contains("User logged in:"))
+        .stdout(predicate::str::contains("password is correct"))
         .stdout(predicate::str::contains(&email));
 
     delete_cmd
