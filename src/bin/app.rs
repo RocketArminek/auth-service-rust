@@ -301,9 +301,8 @@ async fn main() {
             let rabbitmq_url = env::var("RABBITMQ_URL")
                 .unwrap_or("amqp://localhost:5672".to_string());
 
-            let mut connection =
-                Connection::insecure_open(&rabbitmq_url)
-                    .expect("Failed to connect to RabbitMQ");
+            Connection::insecure_open(&rabbitmq_url)
+                .expect("Failed to connect to RabbitMQ");
         }
     }
 }
