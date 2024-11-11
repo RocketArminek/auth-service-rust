@@ -8,8 +8,12 @@ services:
       target: server
     environment:
       DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+      PASSWORD_HASHING_SCHEME: 'bcrypt_low'
+      SECRET: "secret"
+      RABBITMQ_URL: amqp://rabbit:5672
     ports:
       - "8080:8080"
+
   mysql:
     image: mysql:8.0
     environment:
@@ -17,12 +21,9 @@ services:
       MYSQL_DATABASE: auth_service_dev
     ports:
       - "3306:3306"
-  test:
-    depends_on:
-      - mysql
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test-builder
-    environment:
-      DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+
+  rabbit:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"

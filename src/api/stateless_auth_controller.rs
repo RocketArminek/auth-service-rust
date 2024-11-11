@@ -68,7 +68,11 @@ pub async fn login(
             }
 
             let now = Utc::now();
-            let exp = now.add(Duration::days(30));
+            let duration = Duration::new(
+                state.at_duration_in_seconds,
+                0
+            ).unwrap_or_default();
+            let exp = now.add(duration);
 
             let roles = user.roles.iter().map(|role| role.name.clone()).collect();
             let claims = Claims::new(

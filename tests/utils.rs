@@ -12,7 +12,9 @@ pub fn create_test_server(
     secret: String,
     pool: Pool<MySql>,
     hashing_scheme: HashingScheme,
-    restricted_pattern: Option<String>
+    restricted_pattern: Option<String>,
+    at_duration_in_seconds: i64,
+    rt_duration_in_seconds: i64,
 ) -> TestServer {
     let user_repository = Arc::new(
         Mutex::new(MysqlUserRepository::new(pool.clone()))
@@ -28,6 +30,8 @@ pub fn create_test_server(
         secret,
         restricted_role_pattern,
         hashing_scheme,
+        at_duration_in_seconds,
+        rt_duration_in_seconds,
         user_repository,
         role_repository,
     };

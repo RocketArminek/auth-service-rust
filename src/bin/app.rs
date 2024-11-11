@@ -8,6 +8,7 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
+use amiquip::Connection;
 use regex::{Error, Regex};
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -64,6 +65,7 @@ enum Commands {
         name: String,
     },
     InitRestrictedRole,
+    CheckRabbitmqConnection,
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
@@ -78,6 +80,13 @@ async fn main() {
         env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+
+    let at_duration_in_seconds =
+        env::var("AT_DURATION_IN_SECONDS").unwrap_or("300".to_string()).parse::<i64>().unwrap_or(300);
+    tracing::info!("Configured access token duration in seconds: {}", &at_duration_in_seconds);
+    let rt_duration_in_seconds =
+        env::var("RT_DURATION_IN_SECONDS").unwrap_or("2592000".to_string()).parse::<i64>().unwrap_or(2592000);
+    tracing::info!("Configured refresh token duration in seconds: {}", &rt_duration_in_seconds);
 
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
     let pool = create_mysql_pool().await.unwrap();
@@ -102,6 +111,8 @@ async fn main() {
                 secret,
                 hashing_scheme,
                 restricted_role_pattern,
+                at_duration_in_seconds,
+                rt_duration_in_seconds,
                 user_repository,
                 role_repository,
             };
@@ -285,6 +296,14 @@ async fn main() {
             role_repository.lock().await.delete_by_name(name).await.unwrap();
 
             println!("Role deleted for {}", name);
+        }
+        Some(Commands::CheckRabbitmqConnection) => {
+            let rabbitmq_url = env::var("RABBITMQ_URL")
+                .unwrap_or("amqp://localhost:5672".to_string());
+
+            let mut connection =
+                Connection::insecure_open(&rabbitmq_url)
+                    .expect("Failed to connect to RabbitMQ");
         }
     }
 }
