@@ -4,7 +4,7 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
-use auth_service::api::dto::{MessageResponse, TokenResponse, UserListResponse, UserResponse};
+use auth_service::api::dto::{MessageResponse, LoginResponse, UserListResponse, UserResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -189,13 +189,13 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
             "password": "Iknow#othing1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .post("/v1/restricted/users")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .json(&json!({
             "email": &email,
@@ -230,13 +230,13 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
             "password": "Iknow#othing1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .post("/v1/restricted/users")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .json(&json!({
             "email": &email,
@@ -272,13 +272,13 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
             "password": "Iknow#othing1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .get("/v1/restricted/users?page=1&limit=10")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .await;
 
@@ -325,13 +325,13 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
             "password": "Admin#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .get(&format!("/v1/restricted/users/{}", user.id))
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .await;
 
@@ -372,13 +372,13 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
             "password": "Admin#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .delete(&format!("/v1/restricted/users/{}", user.id))
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .await;
 
@@ -412,14 +412,14 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
             "password": "Admin#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let non_existent_id = Uuid::new_v4();
     let response = server
         .get(&format!("/v1/restricted/users/{}", non_existent_id))
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .await;
 
@@ -451,13 +451,13 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
             "password": "User#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .put("/v1/me")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .json(&json!({
             "firstName": "Jon",
@@ -506,13 +506,13 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
             "password": "Admin#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .put(&format!("/v1/restricted/users/{}", user.id))
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .json(&json!({
             "firstName": "Jon",
@@ -553,13 +553,13 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
             "password": "Admin#pass1",
         }))
         .await;
-    let body = response.json::<TokenResponse>();
+    let body = response.json::<LoginResponse>();
 
     let response = server
         .put(&format!("/v1/restricted/users/{}", Uuid::new_v4()))
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", body.token)).unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
         )
         .json(&json!({
             "email": "test@wp.pl",

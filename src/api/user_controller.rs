@@ -137,11 +137,12 @@ pub async fn update_profile(
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
                     (StatusCode::OK, Json(UserResponse {
-                        id: user.id.to_string(),
+                        id: user.id,
                         email: user.email,
                         first_name: user.first_name,
                         last_name: user.last_name,
                         avatar_path: user.avatar_path,
+                        roles: user.roles.iter().map(|role| role.name.clone()).collect()
                     })).into_response()
                 }
                 Err(e) => {

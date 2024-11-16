@@ -23,6 +23,7 @@ pub fn routes(
         .route("/v1/me", put(update_profile))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
+        .route("/v1/stateless/refresh", post(refresh))
         .merge(
             Router::new()
                 .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
@@ -52,15 +53,16 @@ pub fn routes(
         delete_user,
         login,
         verify,
+        refresh,
         update_profile,
         update_user,
     ),
     components(
         schemas(
             HealthResponse,
-            SessionResponse,
             MessageResponse,
             UserResponse,
+            LoginResponse,
             TokenResponse,
             CreateUserRequest,
             UpdateUserRequest,

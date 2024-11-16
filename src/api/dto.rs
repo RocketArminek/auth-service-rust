@@ -26,31 +26,24 @@ pub struct LoginRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct SessionResponse {
-    #[serde(rename = "sessionId")]
-    pub session_id: String,
-    pub token: TokenResponse
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct TokenResponse {
-    #[serde(rename = "userId")]
-    pub user_id: String,
-    pub email: String,
-    pub token: String,
+    pub value: String,
     #[serde(rename = "expiresAt")]
-    pub expires_at: usize,
-    #[serde(rename = "firstName")]
-    pub first_name: Option<String>,
-    #[serde(rename = "lastName")]
-    pub last_name: Option<String>,
-    #[serde(rename = "avatarPath")]
-    pub avatar_path: Option<String>,
+    pub expires_at: usize
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct LoginResponse {
+    pub user: UserResponse,
+    #[serde(rename = "accessToken")]
+    pub access_token: TokenResponse,
+    #[serde(rename = "refreshToken")]
+    pub refresh_token: TokenResponse,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone)]
 pub struct UserResponse {
-    pub id: String,
+    pub id: Uuid,
     pub email: String,
     #[serde(rename = "firstName")]
     pub first_name: Option<String>,
@@ -58,6 +51,7 @@ pub struct UserResponse {
     pub last_name: Option<String>,
     #[serde(rename = "avatarPath")]
     pub avatar_path: Option<String>,
+    pub roles: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -73,19 +67,6 @@ pub struct HealthResponse {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreatedResponse {
     pub id: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct LoggedInUser {
-    pub id: Uuid,
-    pub email: String,
-    pub roles: Vec<String>,
-    #[serde(rename = "firstName")]
-    pub first_name: Option<String>,
-    #[serde(rename = "lastName")]
-    pub last_name: Option<String>,
-    #[serde(rename = "avatarPath")]
-    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

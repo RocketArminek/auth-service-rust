@@ -1,6 +1,6 @@
-use crate::api::axum_extractor::{StatelessLoggedInUser};
+use crate::api::axum_extractor::{RefreshRequest, StatelessLoggedInUser};
 use crate::domain::crypto::{Hasher, SchemeAwareHasher};
-use crate::domain::jwt::Claims;
+use crate::domain::jwt::{Claims, TokenType};
 use axum::extract::{State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
@@ -8,7 +8,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use std::ops::Add;
 use axum::response::IntoResponse;
-use crate::api::dto::{LoginRequest, MessageResponse, TokenResponse, UserResponse};
+use crate::api::dto::{LoginRequest, MessageResponse, LoginResponse, UserResponse, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::user::PasswordHandler;
 
@@ -16,7 +16,7 @@ use crate::domain::user::PasswordHandler;
     tag="stateless",
     request_body = LoginRequest,
     responses(
-        (status = 200, description = "Get token", content_type = "application/json", body = TokenResponse),
+        (status = 200, description = "Login response", content_type = "application/json", body = LoginResponse),
         (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
@@ -67,43 +67,60 @@ pub async fn login(
                 );
             }
 
+            let user_response = UserResponse {
+                id: user.id,
+                roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                email: user.email,
+                avatar_path: user.avatar_path,
+                first_name: user.first_name,
+                last_name: user.last_name,
+            };
+
             let now = Utc::now();
-            let duration = Duration::new(
+            let at_duration = Duration::new(
                 state.at_duration_in_seconds,
                 0
             ).unwrap_or_default();
-            let exp = now.add(duration);
+            let at_exp = now.add(at_duration);
 
-            let roles = user.roles.iter().map(|role| role.name.clone()).collect();
-            let claims = Claims::new(
-                user.id.to_string().clone(),
-                exp.timestamp() as usize,
-                user.email.clone(),
-                roles,
-                user.first_name.clone(),
-                user.last_name.clone(),
-                user.avatar_path.clone(),
+            let at_body = Claims::new(
+                at_exp.timestamp() as usize,
+                user_response.clone(),
+                TokenType::Access
             );
-            let token = encode(
+            let access_token = encode(
                 &Header::default(),
-                &claims,
+                &at_body,
                 &EncodingKey::from_secret(state.secret.as_ref()),
             );
 
-            match token {
-                Ok(token) => (
+            let rt_duration = Duration::new(
+                state.rt_duration_in_seconds,
+                0
+            ).unwrap_or_default();
+            let rt_exp = now.add(rt_duration);
+            let rt_body = Claims::new(
+                rt_exp.timestamp() as usize,
+                user_response.clone(),
+                TokenType::Refresh
+            );
+
+            let refresh_token = encode(
+                &Header::default(),
+                &rt_body,
+                &EncodingKey::from_secret(state.secret.as_ref()),
+            );
+
+            match (access_token, refresh_token) {
+                (Ok(access_token), Ok(refresh_token)) => (
                     StatusCode::OK,
-                    Json(TokenResponse {
-                        user_id: user.id.to_string(),
-                        email: user.email,
-                        token,
-                        expires_at: exp.timestamp() as usize,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        avatar_path: user.avatar_path,
+                    Json(LoginResponse {
+                        user: user_response.clone(),
+                        refresh_token: TokenResponse { value: refresh_token, expires_at: rt_exp.timestamp() as usize },
+                        access_token: TokenResponse { value: access_token, expires_at: at_exp.timestamp() as usize },
                     }),
                 ).into_response(),
-                Err(_) => (
+                _ => (
                     StatusCode::FORBIDDEN,
                     Json(MessageResponse { message: String::from("Could not encode token") }),
                 ).into_response(),
@@ -128,11 +145,11 @@ pub async fn verify(
     StatelessLoggedInUser(user): StatelessLoggedInUser,
 ) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
-    let user_id = user.id.to_string();
+    let user_id = user.id;
     let user_roles = user.roles.join(",");
     headers.insert(
         "X-User-Id",
-        HeaderValue::from_str(&user_id.as_str()).unwrap_or(HeaderValue::from_static("")),
+        HeaderValue::from_str(&user_id.to_string()).unwrap_or(HeaderValue::from_static("")),
     );
     headers.insert(
         "X-User-Roles",
@@ -145,5 +162,88 @@ pub async fn verify(
         first_name: user.first_name,
         last_name: user.last_name,
         avatar_path: user.avatar_path,
+        roles: user.roles
     })).into_response()
+}
+
+#[utoipa::path(post, path = "/v1/stateless/refresh",
+    tag="stateless",
+    responses(
+        (status = 200, description = "Token refresh", content_type = "application/json", body = LoginResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn refresh(
+    State(state): State<ServerState>,
+    RefreshRequest(request): RefreshRequest,
+) -> impl IntoResponse {
+    let user = state.user_repository.lock().await.get_by_email(&request.email).await;
+
+    match user {
+        Some(user) => {
+            let user_response = UserResponse {
+                id: user.id,
+                roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                email: user.email,
+                avatar_path: user.avatar_path,
+                first_name: user.first_name,
+                last_name: user.last_name,
+            };
+
+            let now = Utc::now();
+            let at_duration = Duration::new(
+                state.at_duration_in_seconds,
+                0
+            ).unwrap_or_default();
+            let at_exp = now.add(at_duration);
+
+            let at_body = Claims::new(
+                at_exp.timestamp() as usize,
+                user_response.clone(),
+                TokenType::Access
+            );
+            let access_token = encode(
+                &Header::default(),
+                &at_body,
+                &EncodingKey::from_secret(state.secret.as_ref()),
+            );
+
+            let rt_duration = Duration::new(
+                state.rt_duration_in_seconds,
+                0
+            ).unwrap_or_default();
+            let rt_exp = now.add(rt_duration);
+            let rt_body = Claims::new(
+                rt_exp.timestamp() as usize,
+                user_response.clone(),
+                TokenType::Refresh
+            );
+
+            let refresh_token = encode(
+                &Header::default(),
+                &rt_body,
+                &EncodingKey::from_secret(state.secret.as_ref()),
+            );
+
+            match (access_token, refresh_token) {
+                (Ok(access_token), Ok(refresh_token)) => (
+                    StatusCode::OK,
+                    Json(LoginResponse {
+                        user: user_response.clone(),
+                        refresh_token: TokenResponse { value: refresh_token, expires_at: rt_exp.timestamp() as usize },
+                        access_token: TokenResponse { value: access_token, expires_at: at_exp.timestamp() as usize },
+                    }),
+                ).into_response(),
+                _ => (
+                    StatusCode::FORBIDDEN,
+                    Json(MessageResponse { message: String::from("Could not encode token") }),
+                ).into_response(),
+            }
+        }
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(MessageResponse { message: String::from("User not found") }),
+        ).into_response(),
+    }
 }

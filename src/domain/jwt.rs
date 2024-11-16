@@ -1,29 +1,25 @@
 use serde::{Deserialize, Serialize};
+use crate::api::dto::UserResponse;
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum TokenType {
+    Access,
+    Refresh,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub id: String,
     pub exp: usize,
-    pub email: String,
-    pub roles: Vec<String>,
-    #[serde(rename = "firstName")]
-    pub first_name: Option<String>,
-    #[serde(rename = "lastName")]
-    pub last_name: Option<String>,
-    #[serde(rename = "avatarPath")]
-    pub avatar_path: Option<String>,
+    pub user: UserResponse,
+    pub token_type: TokenType
 }
 
 impl Claims {
     pub fn new(
-        id: String,
         exp: usize,
-        email: String,
-        roles: Vec<String>,
-        first_name: Option<String>,
-        last_name: Option<String>,
-        avatar_path: Option<String>,
+        user: UserResponse,
+        token_type: TokenType
     ) -> Self {
-        Self { id, email, exp, roles, first_name, last_name, avatar_path }
+        Self { exp, user, token_type }
     }
 }
