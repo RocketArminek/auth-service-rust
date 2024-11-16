@@ -12,6 +12,7 @@ pub struct ServerState {
     pub restricted_role_pattern: Regex,
     pub at_duration_in_seconds: i64,
     pub rt_duration_in_seconds: i64,
+    pub verification_required: bool,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
     pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
 }

@@ -21,7 +21,8 @@ async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
         HashingScheme::BcryptLow,
         None,
         60,
-        60
+        60,
+        true
     );
 
     let response = server
@@ -37,7 +38,7 @@ async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
 
 #[sqlx::test]
 async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
-    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server("secret".to_string(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
@@ -65,7 +66,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
 async fn it_issues_access_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let at_duration = 60;
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, at_duration, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, at_duration, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
@@ -117,7 +118,8 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
         HashingScheme::BcryptLow,
         None,
         60,
-        rt_duration
+        rt_duration,
+        true
     );
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -162,7 +164,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
@@ -196,7 +198,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_verifies_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -240,7 +242,7 @@ async fn it_verifies_token(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -279,7 +281,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_refreshes_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -336,7 +338,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -366,7 +368,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
@@ -405,7 +407,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =
@@ -443,7 +445,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
 #[sqlx::test]
 async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     let secret = "secret".to_string();
-    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60, true);
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user =

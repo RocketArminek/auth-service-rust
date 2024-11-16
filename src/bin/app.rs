@@ -85,14 +85,28 @@ async fn main() {
         env::var("AT_DURATION_IN_SECONDS")
             .unwrap_or("300".to_string())
             .parse::<i64>()
-            .unwrap_or(300);
-    tracing::info!("Configured access token duration in seconds: {}", &at_duration_in_seconds);
+            .unwrap();
+
+    tracing::info!(
+        "Configured access token duration in seconds: {} ({} m)",
+        &at_duration_in_seconds,
+        &at_duration_in_seconds / 60
+    );
+
     let rt_duration_in_seconds =
         env::var("RT_DURATION_IN_SECONDS")
             .unwrap_or("2592000".to_string())
             .parse::<i64>()
-            .unwrap_or(2592000);
-    tracing::info!("Configured refresh token duration in seconds: {}", &rt_duration_in_seconds);
+            .unwrap();
+
+    tracing::info!(
+        "Configured refresh token duration in seconds: {} ({} d)",
+        &rt_duration_in_seconds,
+        &rt_duration_in_seconds / 60 / 60 / 24
+    );
+    
+    let verification_required = env::var("VERIFICATION_REQUIRED")
+        .unwrap_or("true".to_string()).parse::<bool>().unwrap();
 
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
     let pool = create_mysql_pool().await.unwrap();
@@ -119,6 +133,7 @@ async fn main() {
                 restricted_role_pattern,
                 at_duration_in_seconds,
                 rt_duration_in_seconds,
+                verification_required,
                 user_repository,
                 role_repository,
             };

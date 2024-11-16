@@ -11,7 +11,7 @@ use crate::domain::error::UserError;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
-    tag="all",
+    tag="user",
     responses(
         (status = 201, description = "User created", content_type = "application/json", body = CreatedResponse),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
@@ -101,7 +101,7 @@ pub async fn create_user(
 
 #[utoipa::path(put, path = "/v1/me",
     request_body = UpdateUserRequest,
-    tag="all",
+    tag="user",
     params(
         ("id" = String, Path, description = "User ID")
     ),
