@@ -82,10 +82,16 @@ async fn main() {
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
 
     let at_duration_in_seconds =
-        env::var("AT_DURATION_IN_SECONDS").unwrap_or("300".to_string()).parse::<i64>().unwrap_or(300);
+        env::var("AT_DURATION_IN_SECONDS")
+            .unwrap_or("300".to_string())
+            .parse::<i64>()
+            .unwrap_or(300);
     tracing::info!("Configured access token duration in seconds: {}", &at_duration_in_seconds);
     let rt_duration_in_seconds =
-        env::var("RT_DURATION_IN_SECONDS").unwrap_or("2592000".to_string()).parse::<i64>().unwrap_or(2592000);
+        env::var("RT_DURATION_IN_SECONDS")
+            .unwrap_or("2592000".to_string())
+            .parse::<i64>()
+            .unwrap_or(2592000);
     tracing::info!("Configured refresh token duration in seconds: {}", &rt_duration_in_seconds);
 
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
