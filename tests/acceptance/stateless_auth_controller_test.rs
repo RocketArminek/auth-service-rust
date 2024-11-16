@@ -238,6 +238,45 @@ async fn it_verifies_token(pool: Pool<MySql>) {
 }
 
 #[sqlx::test]
+async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user =
+        User::now_with_email_and_password(
+            email.clone(),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow"))
+        ).unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    let role = Role::now("user".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&user, role.id).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+        }))
+        .await;
+    let body = response.json::<LoginResponse>();
+
+    let response = server
+        .get("/v1/stateless/verify")
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.refresh_token.value)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
 async fn it_refreshes_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(secret.clone(), pool.clone(), HashingScheme::BcryptLow, None, 60, 60);
