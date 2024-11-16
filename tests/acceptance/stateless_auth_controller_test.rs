@@ -8,7 +8,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
-use auth_service::api::dto::{MessageResponse, LoginResponse, UserResponse};
+use auth_service::api::dto::{MessageResponse, LoginResponse, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::utils::create_test_server;
@@ -461,7 +461,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     
     let claims = Claims::new(
         exp.timestamp() as usize,
-        UserResponse {
+        UserDTO {
             id: user.id,
             email: user.email.clone(),
             roles: vec!["ADMIN_USER".to_string()],

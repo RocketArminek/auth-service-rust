@@ -1,6 +1,6 @@
 use axum::{async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
 use jsonwebtoken::{DecodingKey, Validation};
-use crate::api::dto::{MessageResponse, UserResponse};
+use crate::api::dto::{MessageResponse, UserDTO};
 use crate::api::server_state::SecretAware;
 use crate::domain::jwt::{Claims, TokenType};
 
@@ -8,10 +8,10 @@ use crate::domain::jwt::{Claims, TokenType};
 pub struct BearerToken(pub String);
 
 #[derive(Debug, Clone)]
-pub struct StatelessLoggedInUser(pub UserResponse);
+pub struct StatelessLoggedInUser(pub UserDTO);
 
 #[derive(Debug, Clone)]
-pub struct RefreshRequest(pub UserResponse);
+pub struct RefreshRequest(pub UserDTO);
 
 #[async_trait]
 impl<S> FromRequestParts<S> for BearerToken

@@ -8,7 +8,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use std::ops::Add;
 use axum::response::IntoResponse;
-use crate::api::dto::{LoginRequest, MessageResponse, LoginResponse, UserResponse, TokenResponse};
+use crate::api::dto::{LoginRequest, MessageResponse, LoginResponse, UserDTO, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::user::PasswordHandler;
 
@@ -67,7 +67,7 @@ pub async fn login(
                 );
             }
 
-            let user_response = UserResponse {
+            let user_response = UserDTO {
                 id: user.id,
                 roles: user.roles.iter().map(|role| role.name.clone()).collect(),
                 email: user.email,
@@ -136,7 +136,7 @@ pub async fn login(
 #[utoipa::path(get, path = "/v1/stateless/verify",
     tag="stateless",
     responses(
-        (status = 200, description = "Token verified", content_type = "application/json", body = UserResponse),
+        (status = 200, description = "Token verified", content_type = "application/json", body = UserDTO),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
@@ -156,7 +156,7 @@ pub async fn verify(
         HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
     );
 
-    (StatusCode::OK, headers, Json(UserResponse {
+    (StatusCode::OK, headers, Json(UserDTO {
         id: user_id,
         email: user.email,
         first_name: user.first_name,
@@ -182,7 +182,7 @@ pub async fn refresh(
 
     match user {
         Some(user) => {
-            let user_response = UserResponse {
+            let user_response = UserDTO {
                 id: user.id,
                 roles: user.roles.iter().map(|role| role.name.clone()).collect(),
                 email: user.email,

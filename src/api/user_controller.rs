@@ -5,7 +5,7 @@ use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
 use crate::api::axum_extractor::StatelessLoggedInUser;
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserDTO};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -106,7 +106,7 @@ pub async fn create_user(
         ("id" = String, Path, description = "User ID")
     ),
     responses(
-        (status = 200, description = "User updated", content_type = "application/json", body = UserResponse),
+        (status = 200, description = "User updated", content_type = "application/json", body = UserDTO),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
         (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
         (status = 422, description = "Unprocessable entity"),
@@ -136,7 +136,7 @@ pub async fn update_profile(
 
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
-                    (StatusCode::OK, Json(UserResponse {
+                    (StatusCode::OK, Json(UserDTO {
                         id: user.id,
                         email: user.email,
                         first_name: user.first_name,

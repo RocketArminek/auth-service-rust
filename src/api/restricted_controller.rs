@@ -5,7 +5,7 @@ use axum::http::{StatusCode};
 use axum::Json;
 use axum::response::IntoResponse;
 use uuid::{Uuid};
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateUserRequest, UserListResponse, UserResponse};
+use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateUserRequest, UserListResponse, UserDTO};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
 
@@ -118,9 +118,9 @@ pub async fn get_all_users(
 
     match user_repo.find_all(page, limit).await {
         Ok((users, total)) => {
-            let user_responses: Vec<UserResponse> = users
+            let user_responses: Vec<UserDTO> = users
                 .into_iter()
-                .map(|user| UserResponse {
+                .map(|user| UserDTO {
                     id: user.id,
                     email: user.email,
                     first_name: user.first_name,
@@ -164,7 +164,7 @@ pub async fn get_user(
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
     match state.user_repository.lock().await.get_by_id(id).await {
-        Some(user) => (StatusCode::OK, Json(UserResponse {
+        Some(user) => (StatusCode::OK, Json(UserDTO {
             id: user.id,
             email: user.email,
             first_name: user.first_name,
@@ -252,7 +252,7 @@ pub async fn update_user(
 
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
-                    (StatusCode::OK, Json(UserResponse {
+                    (StatusCode::OK, Json(UserDTO {
                         id: user.id,
                         email: user.email,
                         first_name: user.first_name,

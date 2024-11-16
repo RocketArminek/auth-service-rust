@@ -61,7 +61,7 @@ pub fn routes(
         schemas(
             HealthResponse,
             MessageResponse,
-            UserResponse,
+            UserDTO,
             LoginResponse,
             TokenResponse,
             CreateUserRequest,

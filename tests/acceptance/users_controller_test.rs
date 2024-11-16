@@ -4,7 +4,7 @@ use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
-use auth_service::api::dto::{MessageResponse, LoginResponse, UserListResponse, UserResponse};
+use auth_service::api::dto::{MessageResponse, LoginResponse, UserListResponse, UserDTO};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -336,7 +336,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         .await;
 
     assert_eq!(response.status_code(), StatusCode::OK);
-    let body = response.json::<UserResponse>();
+    let body = response.json::<UserDTO>();
     assert_eq!(body.email, "user@test.com");
 }
 
@@ -468,7 +468,7 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
-    let body = response.json::<UserResponse>();
+    let body = response.json::<UserDTO>();
     assert_eq!(body.first_name.unwrap(), "Jon");
     assert_eq!(body.last_name.unwrap(), "Doe");
     assert_eq!(body.avatar_path.unwrap(), "https://somepath.com/123.jpg");
@@ -523,7 +523,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
-    let body = response.json::<UserResponse>();
+    let body = response.json::<UserDTO>();
     assert_eq!(body.first_name.unwrap(), "Jon");
     assert_eq!(body.last_name.unwrap(), "Doe");
     assert_eq!(body.avatar_path.unwrap(), "https://somepath.com/123.jpg");

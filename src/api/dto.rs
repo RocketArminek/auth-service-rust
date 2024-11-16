@@ -34,7 +34,7 @@ pub struct TokenResponse {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct LoginResponse {
-    pub user: UserResponse,
+    pub user: UserDTO,
     #[serde(rename = "accessToken")]
     pub access_token: TokenResponse,
     #[serde(rename = "refreshToken")]
@@ -42,7 +42,7 @@ pub struct LoginResponse {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema, Clone)]
-pub struct UserResponse {
+pub struct UserDTO {
     pub id: Uuid,
     pub email: String,
     #[serde(rename = "firstName")]
@@ -71,7 +71,7 @@ pub struct CreatedResponse {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UserListResponse {
-    pub items: Vec<UserResponse>,
+    pub items: Vec<UserDTO>,
     pub page: i32,
     pub limit: i32,
     pub total: i32,
