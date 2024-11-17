@@ -107,10 +107,6 @@ jobs:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
         SECRET: secret
         PASSWORD_HASHING_SCHEME: bcrypt_low
-        AWS_ACCESS_KEY: test
-        AWS_SECRET_ACCESS_KEY: test
-        AWS_BUCKET: test
-        AWS_REGION: test
     services:
       mysql:
         image: mysql:8.0
@@ -121,7 +117,7 @@ jobs:
           - 3306:3306
     steps:
       - name: Wait for MySQL
-        run: sleep 3
+        run: sleep 10
       - name: Prepare db
         run: |
           cd /app

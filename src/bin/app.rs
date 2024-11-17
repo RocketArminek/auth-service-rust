@@ -8,7 +8,7 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
-use amiquip::Connection;
+use lapin::{Connection, ConnectionProperties};
 use regex::{Error, Regex};
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -104,7 +104,7 @@ async fn main() {
         &rt_duration_in_seconds,
         &rt_duration_in_seconds / 60 / 60 / 24
     );
-    
+
     let verification_required = env::var("VERIFICATION_REQUIRED")
         .unwrap_or("true".to_string()).parse::<bool>().unwrap();
 
@@ -322,8 +322,10 @@ async fn main() {
             let rabbitmq_url = env::var("RABBITMQ_URL")
                 .unwrap_or("amqp://localhost:5672".to_string());
 
-            Connection::insecure_open(&rabbitmq_url)
-                .expect("Failed to connect to RabbitMQ");
+            Connection::connect(
+                &rabbitmq_url,
+                ConnectionProperties::default(),
+            ).await.expect("Failed to connect to rabbitmq");
         }
     }
 }
@@ -348,7 +350,6 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 }
-
 
 async fn init_roles(role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Result<Regex, Error> {
     init_role(&"REGULAR_ROLE_PREFIX".to_string(), "USER".to_string(), role_repository).await;
