@@ -37,6 +37,7 @@ pub fn routes(
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
+
 #[derive(OpenApi)]
 #[openapi(
     servers(

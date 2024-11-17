@@ -3,7 +3,7 @@ name = "auth-service"
 version = "0.1.0"
 edition = "2021"
 authors = ["Arkadiusz Krakowiak<arkadiusz.k.e@gmail.com>"]
-description = "A simple authorization and authentication service"
+description = "A simple event driven authorization and authentication service written to be compatible with traefik forward auth."
 license = "GPL-3"
 
 [[bin]]
@@ -13,29 +13,29 @@ path = "src/bin/app.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.5"
-tokio = { version = "1.39.0", features = ["signal", "rt-multi-thread", "net"] }
+axum = "0.7.9"
+tokio = { version = "1.41.1", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = "0.3.18"
-serde = { version = "1.0.204", features = ["derive"] }
-clap = { version = "4.5.9", features = ["derive"] }
-utoipa = { version = "4.2.3", features = ["uuid"] }
+serde = { version = "1.0.215", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
+utoipa = { version = "5.2.0", features = ["uuid"] }
 chrono = { version = "0.4.38", features = ["serde"] }
-uuid = { version = "1.10.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
-sqlx = { version = "0.8.0", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
+uuid = { version = "1.11.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
 dotenv = "0.15.0"
-serde_json = "1.0.120"
-tower-http = { version = "0.5.2", features = ["trace"] }
-tower = { version = "0.4.13", features = ["util"] }
+serde_json = "1.0.133"
+tower-http = { version = "0.6.1", features = ["trace"] }
+tower = { version = "0.5.1", features = ["util"] }
 tracing = "0.1.40"
-argon2 = "0.5.3"
-lazy-regex = "3.1.0"
-regex = "1.10.5"
+argon2 = "0.6.0-pre.1"
+lazy-regex = "3.3.0"
+regex = "1.11.1"
 bcrypt = "0.15.1"
 jsonwebtoken = "9.3.0"
-utoipa-swagger-ui = { version = "7.1.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "8.0.3", features = ["axum"] }
 lapin = "2.5.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.14"
-axum-test = "15.3.0"
-predicates = "3.1.0"
+assert_cmd = "2.0.16"
+axum-test = "16.4.0"
+predicates = "3.1.2"

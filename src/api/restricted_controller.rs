@@ -153,7 +153,7 @@ pub async fn get_all_users(
         ("id" = String, Path, description = "User ID")
     ),
     responses(
-        (status = 200, description = "User details", content_type = "application/json", body = UserResponse),
+        (status = 200, description = "User details", content_type = "application/json", body = UserDTO),
         (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
@@ -220,7 +220,7 @@ pub async fn delete_user(
         ("id" = String, Path, description = "User ID")
     ),
     responses(
-        (status = 200, description = "User updated", content_type = "application/json", body = UserResponse),
+        (status = 200, description = "User updated", content_type = "application/json", body = UserDTO),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
         (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
