@@ -64,6 +64,10 @@ enum Commands {
         #[arg(short, long)]
         name: String,
     },
+    GetRole {
+        #[arg(short, long)]
+        name: String,
+    },
     InitRestrictedRole,
     CheckRabbitmqConnection,
 }
@@ -312,6 +316,17 @@ async fn main() {
                 role.name,
                 role.created_at.format("%Y-%m-%d %H:%M:%S")
             );
+        }
+        Some(Commands::GetRole { name }) => {
+            let role = role_repository.lock().await.get_by_name(name).await;
+            match role {
+                None => {
+                    panic!("Role not found for {}", name);
+                }
+                Some(role) => {
+                    println!("Get role: {}", role.name);
+                }
+            }
         }
         Some(Commands::DeleteRole { name }) => {
             role_repository.lock().await.delete_by_name(name).await.unwrap();
