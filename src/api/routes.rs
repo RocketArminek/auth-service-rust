@@ -12,6 +12,7 @@ use crate::api::stateless_auth_controller::*;
 use crate::api::utils_controller::*;
 use crate::api::dto::*;
 use crate::api::server_state::ServerState;
+use crate::domain::jwt::UserDTO;
 
 pub fn routes(
     state: ServerState

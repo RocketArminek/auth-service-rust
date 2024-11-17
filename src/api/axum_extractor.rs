@@ -1,8 +1,8 @@
 use axum::{async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
 use jsonwebtoken::{DecodingKey, Validation};
-use crate::api::dto::{MessageResponse, UserDTO};
+use crate::api::dto::MessageResponse;
 use crate::api::server_state::SecretAware;
-use crate::domain::jwt::{Claims, TokenType};
+use crate::domain::jwt::{Claims, TokenType, UserDTO};
 
 #[derive(Debug, Clone)]
 pub struct BearerToken(pub String);

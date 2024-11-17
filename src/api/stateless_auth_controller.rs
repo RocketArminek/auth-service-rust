@@ -1,14 +1,14 @@
 use crate::api::axum_extractor::{RefreshRequest, StatelessLoggedInUser};
 use crate::domain::crypto::{Hasher, SchemeAwareHasher};
-use crate::domain::jwt::{Claims, TokenType};
-use axum::extract::{State};
+use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use std::ops::Add;
 use axum::response::IntoResponse;
-use crate::api::dto::{LoginRequest, MessageResponse, LoginResponse, UserDTO, TokenResponse};
+use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::user::PasswordHandler;
 

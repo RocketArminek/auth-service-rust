@@ -1,13 +1,14 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::{Path, Query, State};
-use axum::http::{StatusCode};
+use axum::http::StatusCode;
 use axum::Json;
 use axum::response::IntoResponse;
-use uuid::{Uuid};
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, Pagination, UpdateUserRequest, UserListResponse, UserDTO};
+use uuid::Uuid;
+use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, Pagination, UpdateUserRequest, UserListResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
+use crate::domain::jwt::UserDTO;
 
 #[utoipa::path(post, path = "/v1/restricted/users",
     tag="admin",

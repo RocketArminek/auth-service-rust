@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use utoipa::{ToSchema};
-use uuid::Uuid;
+use utoipa::ToSchema;
+use crate::domain::jwt::UserDTO;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateUserRequest {
@@ -39,19 +39,6 @@ pub struct LoginResponse {
     pub access_token: TokenResponse,
     #[serde(rename = "refreshToken")]
     pub refresh_token: TokenResponse,
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema, Clone)]
-pub struct UserDTO {
-    pub id: Uuid,
-    pub email: String,
-    #[serde(rename = "firstName")]
-    pub first_name: Option<String>,
-    #[serde(rename = "lastName")]
-    pub last_name: Option<String>,
-    #[serde(rename = "avatarPath")]
-    pub avatar_path: Option<String>,
-    pub roles: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

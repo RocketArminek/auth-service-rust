@@ -1,13 +1,14 @@
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::user::{PasswordHandler, User};
-use axum::extract::{State};
-use axum::http::{StatusCode};
+use axum::extract::State;
+use axum::http::StatusCode;
 use axum::Json;
 use axum::response::IntoResponse;
 use crate::api::axum_extractor::StatelessLoggedInUser;
-use crate::api::dto::{CreatedResponse, CreateUserRequest, MessageResponse, UpdateUserRequest, UserDTO};
+use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, UpdateUserRequest};
 use crate::api::server_state::ServerState;
 use crate::domain::error::UserError;
+use crate::domain::jwt::UserDTO;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
