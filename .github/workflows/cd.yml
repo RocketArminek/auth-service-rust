@@ -117,7 +117,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: toor
           MYSQL_DATABASE: auth_service_dev
     steps:
-      - name: Wait for MySQL
+      - name: Wait for Services
         run: sleep 10
       - name: Prepare db
         run: |
