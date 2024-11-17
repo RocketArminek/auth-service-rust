@@ -105,16 +105,17 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
       env:
         DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+        RABBITMQ_URL: amqp://rabbit:5672
         SECRET: secret
         PASSWORD_HASHING_SCHEME: bcrypt_low
     services:
+      rabbit:
+        image: rabbitmq:3-management
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: toor
           MYSQL_DATABASE: auth_service_dev
-        ports:
-          - 3306:3306
     steps:
       - name: Wait for MySQL
         run: sleep 10

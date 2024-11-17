@@ -1,7 +1,8 @@
-use crate::domain::user::{User, UserRow};
+use crate::domain::user::User;
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
 use crate::domain::role::Role;
+use crate::infrastructure::dto::UserRow;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {

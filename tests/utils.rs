@@ -7,6 +7,13 @@ use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
+use tokio::time::sleep;
+use std::time::Duration;
+use std::env;
+use futures_lite::StreamExt;
+use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
 
 pub fn create_test_server(
     secret: String,
@@ -39,4 +46,111 @@ pub fn create_test_server(
     };
 
     TestServer::new(routes(state)).unwrap()
+}
+
+pub async fn setup_test_consumer(exchange_name: &str) -> (
+    Channel,
+    Consumer,
+    String,
+) {
+    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://127.0.0.1:5672".to_string());
+
+    let conn = Connection::connect(
+        &rabbitmq_url,
+        ConnectionProperties::default().with_connection_name("test_consumer".into()),
+    )
+        .await
+        .expect("Failed to connect to RabbitMQ");
+
+    let channel = conn.create_channel().await.expect("Failed to create channel");
+
+    channel
+        .exchange_declare(
+            exchange_name,
+            ExchangeKind::Fanout,
+            ExchangeDeclareOptions {
+                durable: false,
+                ..ExchangeDeclareOptions::default()
+            },
+            FieldTable::default(),
+        )
+        .await
+        .expect("Failed to declare exchange");
+
+    let queue = channel
+        .queue_declare(
+            "",
+            QueueDeclareOptions {
+                exclusive: true,
+                auto_delete: true,
+                ..QueueDeclareOptions::default()
+            },
+            FieldTable::default(),
+        )
+        .await
+        .expect("Failed to declare queue");
+
+    let queue_name = queue.name().to_string();
+
+    channel
+        .queue_bind(
+            &queue_name,
+            exchange_name,
+            "",
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .expect("Failed to bind queue");
+
+    let consumer = channel
+        .basic_consume(
+            &queue_name,
+            "test_consumer",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .expect("Failed to create consumer");
+
+    (channel, consumer, queue_name)
+}
+
+pub async fn wait_for_event<T: std::fmt::Debug>(
+    mut consumer: lapin::Consumer,
+    timeout_secs: u64,
+    predicate: impl Fn(&T) -> bool,
+) -> Option<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    let timeout = sleep(Duration::from_secs(timeout_secs));
+    tokio::pin!(timeout);
+
+    tokio::select! {
+        _ = &mut timeout => {
+            println!("Timeout waiting for event");
+            None
+        }
+        result = async {
+            while let Some(delivery) = consumer.next().await {
+                match delivery {
+                    Ok(delivery) => {
+                        if let Ok(event) = serde_json::from_slice::<T>(&delivery.data) {
+                            println!("Received event: {:?}", event);
+                            if predicate(&event) {
+                                delivery.ack(BasicAckOptions::default()).await.expect("Failed to ack message");
+                                return Some(event);
+                            }
+                        }
+                        delivery.ack(BasicAckOptions::default()).await.expect("Failed to ack message");
+                    }
+                    Err(e) => {
+                        println!("Error receiving message: {:?}", e);
+                    }
+                }
+            }
+            None
+        } => result,
+    }
 }

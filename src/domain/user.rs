@@ -2,7 +2,6 @@ use crate::domain::crypto::Hasher;
 use crate::domain::error::UserError;
 use chrono::{DateTime, Timelike, Utc};
 use lazy_regex::regex;
-use sqlx::{FromRow};
 use uuid::{NoContext, Timestamp, Uuid};
 use crate::domain::role::Role;
 
@@ -16,32 +15,6 @@ pub struct User {
     pub created_at: DateTime<Utc>,
     pub roles: Vec<Role>,
     pub avatar_path: Option<String>,
-}
-
-#[derive(FromRow, Debug, Clone)]
-pub struct UserRow {
-    pub id: Uuid,
-    pub email: String,
-    pub password: String,
-    pub created_at: DateTime<Utc>,
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub avatar_path: Option<String>,
-}
-
-impl From<UserRow> for User {
-    fn from(row: UserRow) -> Self {
-        User {
-            id: row.id,
-            email: row.email,
-            password: row.password,
-            first_name: row.first_name,
-            last_name: row.last_name,
-            created_at: row.created_at,
-            roles: vec![],
-            avatar_path: row.avatar_path,
-        }
-    }
 }
 
 impl User {
@@ -96,7 +69,11 @@ impl User {
         last_name: Option<String>,
     ) -> Result<Self, UserError> {
         let now = Utc::now();
-        let timestamp = Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
+        let timestamp = Timestamp::from_unix(
+            NoContext,
+            now.timestamp() as u64,
+            now.nanosecond()
+        );
 
         User::new(
             Uuid::new_v7(timestamp),
