@@ -126,6 +126,27 @@ async fn main() {
     let role_repository = Arc::new(
         Mutex::new(MysqlRoleRepository::new(pool.clone()))
     );
+    let rabbitmq_url = env::var("RABBITMQ_URL")
+        .unwrap_or("amqp://localhost:5672".to_string());
+    let rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME")
+        .unwrap_or("nebula.auth.events".to_string());
+
+    let conn = Connection::connect(
+        &rabbitmq_url,
+        ConnectionProperties::default(),
+    ).await.expect("Failed to connect to rabbitmq");
+
+    let message_publisher = RabbitmqMessagePublisher::new(
+        &conn,
+        rabbitmq_exchange_name,
+        ExchangeKind::Fanout,
+        ExchangeDeclareOptions {
+            durable: true,
+            auto_delete: false,
+            ..ExchangeDeclareOptions::default()
+        }
+    ).await.expect("Failed to create message publisher");
+    let message_publisher = Arc::new(Mutex::new(message_publisher));
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
 
@@ -144,6 +165,7 @@ async fn main() {
                 verification_required,
                 user_repository,
                 role_repository,
+                message_publisher,
             };
 
             match listener {
@@ -338,14 +360,6 @@ async fn main() {
             println!("Role deleted for {}", name);
         }
         Some(Commands::CheckRabbitmqConnection) => {
-            let rabbitmq_url = env::var("RABBITMQ_URL")
-                .unwrap_or("amqp://localhost:5672".to_string());
-
-            let conn = Connection::connect(
-                &rabbitmq_url,
-                ConnectionProperties::default(),
-            ).await.expect("Failed to connect to rabbitmq");
-
             let rabbitmq_message_publisher = RabbitmqMessagePublisher::new(
                 &conn,
                 "nebula.auth.cli_test".to_string(),

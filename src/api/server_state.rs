@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
+use crate::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
 
 #[derive(Clone)]
 pub struct ServerState {
@@ -15,6 +16,7 @@ pub struct ServerState {
     pub verification_required: bool,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
     pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
+    pub message_publisher: Arc<Mutex<RabbitmqMessagePublisher>>,
 }
 
 pub trait SecretAware {

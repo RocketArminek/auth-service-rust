@@ -15,8 +15,9 @@ use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use serde::{Deserialize, Serialize};
+use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
 
-pub fn create_test_server(
+pub async fn create_test_server(
     secret: String,
     pool: Pool<MySql>,
     hashing_scheme: HashingScheme,
@@ -34,6 +35,30 @@ pub fn create_test_server(
     let restricted_role_pattern = parse_restricted_pattern(
         &restricted_pattern.unwrap_or("ADMIN".to_string())
     ).unwrap();
+    let rabbitmq_url = env::var("RABBITMQ_URL")
+        .unwrap_or("amqp://localhost:5672".to_string());
+    let rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME")
+        .unwrap_or("nebula.auth.test.".to_string());
+
+    let rabbitmq_conn = Connection::connect(
+        &rabbitmq_url,
+        ConnectionProperties::default()
+    ).await.expect("Can't connect to RabbitMQ");
+    let id = uuid::Uuid::new_v4();
+    let message_publisher = RabbitmqMessagePublisher::new(
+        &rabbitmq_conn,
+        format!("{}.{}", rabbitmq_exchange_name, id),
+        ExchangeKind::Fanout,
+        ExchangeDeclareOptions {
+            durable: false,
+            auto_delete: true,
+            ..ExchangeDeclareOptions::default()
+        }
+    ).await.expect("Failed to create RabbitMQ message publisher");
+
+    let message_publisher = Arc::new(
+        Mutex::new(message_publisher)
+    );
 
     let state = ServerState {
         secret,
@@ -44,6 +69,7 @@ pub fn create_test_server(
         verification_required,
         user_repository,
         role_repository,
+        message_publisher
     };
 
     TestServer::new(routes(state)).unwrap()

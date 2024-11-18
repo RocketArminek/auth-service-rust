@@ -1,5 +1,3 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use lapin::{BasicProperties, Channel, Connection, ExchangeKind};
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use std::error::Error;
@@ -8,8 +6,9 @@ use axum::async_trait;
 use serde::Serialize;
 use crate::infrastructure::message_publisher::MessagePublisher;
 
+#[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
-    channel: Arc<Mutex<Channel>>,
+    channel: Channel,
     exchange_name: String,
 }
 
@@ -29,8 +28,6 @@ impl RabbitmqMessagePublisher {
             FieldTable::default(),
         ).await?;
 
-        let channel = Arc::new(Mutex::new(channel));
-
         Ok(RabbitmqMessagePublisher { channel, exchange_name })
     }
 }
@@ -42,9 +39,8 @@ impl MessagePublisher for RabbitmqMessagePublisher {
         T: Serialize + Send + Sync
     {
         let payload = serde_json::to_vec(event)?;
-        let channel = self.channel.lock().await;
 
-        channel
+        self.channel
             .basic_publish(
                 &self.exchange_name,
                 "",

@@ -7,6 +7,7 @@ pub trait MessagePublisher {
     async fn publish<T>(&self, event: &T) -> Result<(), Box<dyn Error>> where T: Serialize + Send + Sync;
 }
 
+#[derive(Clone)]
 pub struct NullPublisher {}
 
 #[async_trait]
