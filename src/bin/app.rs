@@ -11,7 +11,7 @@ use std::sync::Arc;
 use lapin::{Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use regex::{Error, Regex};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
