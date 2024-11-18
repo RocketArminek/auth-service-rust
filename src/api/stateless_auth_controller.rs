@@ -61,7 +61,7 @@ pub async fn login(
                                 &outdated_user.email,
                                 &outdated_user.id
                             ),
-                            Err(e) => tracing::warn!("Could not update password hash {:?}", e),
+                            Err(e) => tracing::error!("Could not update password hash {:?}", e),
                         }
                     }
                 );

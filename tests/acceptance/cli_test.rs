@@ -326,3 +326,13 @@ fn it_initializes_auth_owner_role() {
         .assert()
         .success();
 }
+
+#[test]
+fn it_checks_rabbitmq_connection() {
+    let mut cmd = Command::cargo_bin("app").unwrap();
+
+    cmd
+        .arg("check-rabbitmq-connection")
+        .assert()
+        .success();
+}

@@ -65,7 +65,7 @@ pub async fn create_restricted_user(
                     user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
                     match state.user_repository.lock().await.add_with_role(&user, existing_role.id).await {
                         Ok(_) => tracing::info!("User created: {}", user.email),
-                        Err(error) => tracing::warn!("Failed to create user {:?}", error),
+                        Err(error) => tracing::error!("Failed to create user {:?}", error),
                     }
                 }
             );

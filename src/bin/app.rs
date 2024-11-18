@@ -11,7 +11,6 @@ use std::sync::Arc;
 use lapin::{Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use regex::{Error, Regex};
-use serde::{Serialize};
 use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -346,7 +345,7 @@ async fn main() {
                 &rabbitmq_url,
                 ConnectionProperties::default(),
             ).await.expect("Failed to connect to rabbitmq");
-            
+
             let rabbitmq_message_publisher = RabbitmqMessagePublisher::new(
                 &conn,
                 "nebula.auth.cli_test".to_string(),
@@ -357,7 +356,7 @@ async fn main() {
                     ..ExchangeDeclareOptions::default()
                 }
             ).await.unwrap();
-            
+
             let message = json!({
                 "test": "some"
             });
