@@ -14,6 +14,7 @@ use futures_lite::StreamExt;
 use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
+use serde::{Deserialize, Serialize};
 
 pub fn create_test_server(
     secret: String,
@@ -70,6 +71,7 @@ pub async fn setup_test_consumer(exchange_name: &str) -> (
             ExchangeKind::Fanout,
             ExchangeDeclareOptions {
                 durable: false,
+                auto_delete: true,
                 ..ExchangeDeclareOptions::default()
             },
             FieldTable::default(),
@@ -153,4 +155,13 @@ where
             None
         } => result,
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum TestEvent {
+    #[serde(rename = "test.something")]
+    Something {
+        name: String
+    },
 }

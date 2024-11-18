@@ -8,14 +8,19 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
-use lapin::{Connection, ConnectionProperties};
+use lapin::{Connection, ConnectionProperties, ExchangeKind};
+use lapin::options::ExchangeDeclareOptions;
 use regex::{Error, Regex};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::message_publisher::MessagePublisher;
+use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -337,10 +342,27 @@ async fn main() {
             let rabbitmq_url = env::var("RABBITMQ_URL")
                 .unwrap_or("amqp://localhost:5672".to_string());
 
-            Connection::connect(
+            let conn = Connection::connect(
                 &rabbitmq_url,
                 ConnectionProperties::default(),
             ).await.expect("Failed to connect to rabbitmq");
+            
+            let rabbitmq_message_publisher = RabbitmqMessagePublisher::new(
+                &conn,
+                "nebula.auth.cli_test".to_string(),
+                ExchangeKind::Fanout,
+                ExchangeDeclareOptions {
+                    durable: false,
+                    auto_delete: true,
+                    ..ExchangeDeclareOptions::default()
+                }
+            ).await.unwrap();
+            
+            let message = json!({
+                "test": "some"
+            });
+
+            rabbitmq_message_publisher.publish(&message).await.unwrap();
         }
     }
 }
