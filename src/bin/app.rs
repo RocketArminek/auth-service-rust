@@ -8,18 +8,18 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
-use lapin::{Connection, ConnectionProperties, ExchangeKind};
+use lapin::{ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use regex::{Error, Regex};
-use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
+use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-use auth_service::infrastructure::message_publisher::MessagePublisher;
-use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
+use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
+use auth_service::infrastructure::rabbitmq_message_publisher::{create_rabbitmq_connection, RabbitmqMessagePublisher};
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -126,27 +126,8 @@ async fn main() {
     let role_repository = Arc::new(
         Mutex::new(MysqlRoleRepository::new(pool.clone()))
     );
-    let rabbitmq_url = env::var("RABBITMQ_URL")
-        .unwrap_or("amqp://localhost:5672".to_string());
-    let rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME")
-        .unwrap_or("nebula.auth.events".to_string());
-
-    let conn = Connection::connect(
-        &rabbitmq_url,
-        ConnectionProperties::default(),
-    ).await.expect("Failed to connect to rabbitmq");
-
-    let message_publisher = RabbitmqMessagePublisher::new(
-        &conn,
-        rabbitmq_exchange_name,
-        ExchangeKind::Fanout,
-        ExchangeDeclareOptions {
-            durable: true,
-            auto_delete: false,
-            ..ExchangeDeclareOptions::default()
-        }
-    ).await.expect("Failed to create message publisher");
-    let message_publisher = Arc::new(Mutex::new(message_publisher));
+    
+    let message_publisher = create_message_publisher().await;
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
 
@@ -360,6 +341,8 @@ async fn main() {
             println!("Role deleted for {}", name);
         }
         Some(Commands::CheckRabbitmqConnection) => {
+            let conn = create_rabbitmq_connection().await;
+
             let rabbitmq_message_publisher = RabbitmqMessagePublisher::new(
                 &conn,
                 "nebula.auth.cli_test".to_string(),
@@ -371,9 +354,7 @@ async fn main() {
                 }
             ).await.unwrap();
 
-            let message = json!({
-                "test": "some"
-            });
+            let message = UserEvents::Created {email: "jon@snow.test".to_string()};
 
             rabbitmq_message_publisher.publish(&message).await.unwrap();
         }

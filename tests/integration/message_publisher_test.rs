@@ -1,6 +1,7 @@
 use std::env;
 use lapin::{Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
+use auth_service::domain::event::UserEvents;
 use auth_service::infrastructure::message_publisher::{MessagePublisher, NullPublisher};
 use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
 use crate::utils;
@@ -28,10 +29,10 @@ async fn it_dispatches_messages_into_queue() {
     ).await.unwrap();
 
     message_publisher.publish(
-        &TestEvent::Something { name: String::from("some") }
+        &UserEvents::Created { email: String::from("some@email.com") }
     ).await.unwrap();
 
-    let event = utils::wait_for_event::<TestEvent>(
+    let event = utils::wait_for_event::<UserEvents>(
         consumer,
         5,
         |_| true,
@@ -39,8 +40,8 @@ async fn it_dispatches_messages_into_queue() {
 
     assert!(event.is_some(), "Should have received some event");
 
-    if let Some(TestEvent::Something { name }) = event {
-        assert_eq!(name, "some");
+    if let Some(UserEvents::Created { email }) = event {
+        assert_eq!(email, "some@email.com");
     }
 }
 
@@ -52,7 +53,7 @@ async fn it_does_nothing() {
     let message_publisher = NullPublisher {};
 
     message_publisher.publish(
-        &TestEvent::Something { name: String::from("some") }
+        &UserEvents::Created { email: String::from("some@email.com") }
     ).await.unwrap();
 
     let event = utils::wait_for_event::<TestEvent>(
