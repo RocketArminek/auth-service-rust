@@ -2,6 +2,7 @@ use std::env;
 use lapin::{Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use auth_service::domain::event::UserEvents;
+use auth_service::domain::jwt::UserDTO;
 use auth_service::infrastructure::message_publisher::{MessagePublisher, NullPublisher};
 use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
 use crate::utils;
@@ -29,7 +30,16 @@ async fn it_dispatches_messages_into_queue() {
     ).await.unwrap();
 
     message_publisher.publish(
-        &UserEvents::Created { email: String::from("some@email.com") }
+        &UserEvents::Created { 
+            user: UserDTO {
+                id: uuid::Uuid::new_v4(),
+                email: "some@test.com".to_string(),
+                last_name: None,
+                first_name: None,
+                roles: vec![],
+                avatar_path: None
+            }
+        }
     ).await.unwrap();
 
     let event = utils::wait_for_event::<UserEvents>(
@@ -40,8 +50,8 @@ async fn it_dispatches_messages_into_queue() {
 
     assert!(event.is_some(), "Should have received some event");
 
-    if let Some(UserEvents::Created { email }) = event {
-        assert_eq!(email, "some@email.com");
+    if let Some(UserEvents::Created { user }) = event {
+        assert_eq!(user.email, "some@test.com");
     }
 }
 
@@ -53,7 +63,16 @@ async fn it_does_nothing() {
     let message_publisher = NullPublisher {};
 
     message_publisher.publish(
-        &UserEvents::Created { email: String::from("some@email.com") }
+        &UserEvents::Created {
+            user: UserDTO {
+                id: uuid::Uuid::new_v4(),
+                email: "some@test.com".to_string(),
+                last_name: None,
+                first_name: None,
+                roles: vec![],
+                avatar_path: None
+            } 
+        }
     ).await.unwrap();
 
     let event = utils::wait_for_event::<TestEvent>(

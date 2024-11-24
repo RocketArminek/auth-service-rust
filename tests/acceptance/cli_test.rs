@@ -2,16 +2,14 @@ use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::process::Command;
 
-//TODO how to clean up the database after each test?
-
 #[test]
 fn it_creates_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let email = String::from("jon1@snow.test");
-    let role_name = String::from("USER_CLI_1");
+    let email = format!("jon{}@snow.test", uuid::Uuid::new_v4());
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     create_role_cmd
         .arg("create-role")
@@ -57,8 +55,8 @@ fn it_checks_password_of_the_account() {
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let email = String::from("jon2@snow.test");
-    let role_name = String::from("USER_CLI_2");
+    let email = format!("jon{}@snow.test", uuid::Uuid::new_v4());
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     create_role_cmd
         .arg("create-role")
@@ -111,8 +109,8 @@ fn it_gets_user_by_email() {
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let email = String::from("jon3@snow.test");
-    let role_name = String::from("USER_CLI_3");
+    let email = format!("jon{}@snow.test", uuid::Uuid::new_v4());
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     create_role_cmd
         .arg("create-role")
@@ -177,8 +175,8 @@ fn it_deletes_user_by_email() {
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let email = String::from("jon4@snow.test");
-    let role_name = String::from("USER_CLI_4");
+    let email = format!("jon{}@snow.test", uuid::Uuid::new_v4());
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     create_role_cmd
         .arg("create-role")
@@ -241,8 +239,9 @@ fn it_assign_role_to_user() {
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let email = String::from("jon5@snow.test");
-    let role_name = String::from("USER_CLI_5");
+    let email = format!("jon{}@snow.test", uuid::Uuid::new_v4());
+    let role_suffix = uuid::Uuid::new_v4();
+    let role_name = format!("USER_CLI_{}", &role_suffix);
 
     create_role_cmd
         .arg("create-role")
@@ -261,7 +260,7 @@ fn it_assign_role_to_user() {
         .arg(&role_name)
         .assert()
         .success()
-        .stdout(predicate::str::contains("roles (USER_CLI_5)"));
+        .stdout(predicate::str::contains(format!("roles (USER_CLI_{})", &role_suffix)));
 
     delete_cmd
         .arg("delete-user-by-email")
@@ -283,7 +282,7 @@ fn it_gets_role() {
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut get_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_role_cmd = Command::cargo_bin("app").unwrap();
-    let role_name = String::from("USER_CLI_6");
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     create_role_cmd
         .arg("create-role")
@@ -311,7 +310,7 @@ fn it_gets_role() {
 fn it_initializes_auth_owner_role() {
     let mut cmd = Command::cargo_bin("app").unwrap();
     let mut get_role_cmd = Command::cargo_bin("app").unwrap();
-    let role_name = String::from("USER_CLI_7");
+    let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
     cmd
         .arg("init-restricted-role")
@@ -333,6 +332,20 @@ fn it_checks_rabbitmq_connection() {
 
     cmd
         .arg("check-rabbitmq-connection")
+        .assert()
+        .success();
+}
+
+#[test]
+fn it_consumes_rabbitmq_messages() {
+    let mut cmd = Command::cargo_bin("app").unwrap();
+
+    cmd
+        .arg("consume-rabbitmq-messages")
+        .arg("-e")
+        .arg("test_exchange")
+        .arg("-d")
+        .arg("true")
         .assert()
         .success();
 }

@@ -8,14 +8,17 @@ use dotenv::{dotenv, from_filename};
 use sqlx::sqlx_macros::migrate;
 use std::env;
 use std::sync::Arc;
+use futures_lite::StreamExt;
 use lapin::{ExchangeKind};
-use lapin::options::ExchangeDeclareOptions;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
 use regex::{Error, Regex};
 use tokio::signal;
 use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::event::UserEvents;
+use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
@@ -74,6 +77,12 @@ enum Commands {
     },
     InitRestrictedRole,
     CheckRabbitmqConnection,
+    ConsumeRabbitmqMessages {
+        #[arg(short, long)]
+        exchange_name: String,
+        #[arg(short, long)]
+        dry_run: Option<bool>,
+    },
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads=4)]
@@ -354,9 +363,98 @@ async fn main() {
                 }
             ).await.unwrap();
 
-            let message = UserEvents::Created {email: "jon@snow.test".to_string()};
+            let message = UserEvents::Created {
+                user: UserDTO {
+                    id: uuid::Uuid::new_v4(),
+                    email: "some@test.com".to_string(),
+                    last_name: None,
+                    first_name: None,
+                    roles: vec![],
+                    avatar_path: None
+                }
+            };
 
             rabbitmq_message_publisher.publish(&message).await.unwrap();
+        }
+        Some(Commands::ConsumeRabbitmqMessages { exchange_name, dry_run }) => {
+            let conn = create_rabbitmq_connection().await;
+            let exchange_name = exchange_name.to_owned();
+            let channel = conn.create_channel().await.expect("Failed to create channel");
+            let dry_run = dry_run.unwrap_or(false);
+
+            channel
+                .exchange_declare(
+                    &exchange_name,
+                    ExchangeKind::Fanout,
+                    ExchangeDeclareOptions {
+                        durable: false,
+                        auto_delete: true,
+                        ..ExchangeDeclareOptions::default()
+                    },
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to declare exchange");
+
+            let queue = channel
+                .queue_declare(
+                    "",
+                    QueueDeclareOptions {
+                        exclusive: true,
+                        auto_delete: true,
+                        ..QueueDeclareOptions::default()
+                    },
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to declare queue");
+
+            let queue_name = queue.name().to_string();
+
+            channel
+                .queue_bind(
+                    &queue_name,
+                    &exchange_name,
+                    "",
+                    QueueBindOptions::default(),
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to bind queue");
+
+            let mut consumer = channel
+                .basic_consume(
+                    &queue_name,
+                    "test_consumer",
+                    BasicConsumeOptions::default(),
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to create consumer");
+
+            if dry_run {
+                println!("Just a dry run");
+                return;
+            }
+
+            while let Some(delivery) = consumer.next().await {
+                match delivery {
+                    Ok(delivery) => {
+                        if let Ok(event) = serde_json::from_slice::<UserEvents>(&delivery.data) {
+                            println!("Received event: {:?}", event);
+                        } else {
+                            println!("Cannot deserialize event: {:?}", delivery);
+                        }
+
+                        delivery.ack(BasicAckOptions::default())
+                            .await
+                            .expect("Failed to ack message");
+                    }
+                    Err(e) => {
+                        println!("Error receiving message: {:?}", e);
+                    }
+                }
+            }
         }
     }
 }
