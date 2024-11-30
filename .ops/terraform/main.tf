@@ -1,17 +1,17 @@
 locals {
-  namespace = "4ecommerce"
+  namespace = "demo"
   app_name  = "auth-api"
   app_env   = "prod"
-  database_name = "4ecommerce.auth"
-  mysql_user = "4ecommerce.auth"
+  database_name = "demo.auth"
+  mysql_user = "demo.auth"
 }
 
-module "app_4ecommerce" {
+module "app_demo" {
   depends_on = [
-    kubernetes_secret.app_4ecommerce,
-    kubernetes_manifest.auth_service_4ecommerce_db,
-    kubernetes_manifest.mysql_user_4ecommerce,
-    kubernetes_manifest.mysql_user_grant_4ecommerce,
+    kubernetes_secret.app_demo,
+    kubernetes_manifest.auth_service_demo_db,
+    kubernetes_manifest.mysql_user_demo,
+    kubernetes_manifest.mysql_user_grant_demo,
   ]
   source           = "Arminek/app/k8s"
   version          = "1.1.0"
@@ -24,12 +24,12 @@ module "app_4ecommerce" {
   ingress_enabled = false
 
   resources_limits = {
-    "cpu"    = "350m"
+    "cpu"    = "100m"
     "memory" = "64Mi"
   }
 
   resources_requests = {
-    "cpu"    = "250m"
+    "cpu"    = "50m"
     "memory" = "32Mi"
   }
 
@@ -90,7 +90,7 @@ module "app_4ecommerce" {
     {
       name  = "PASSWORD_HASHING_SCHEME"
       value = "bcrypt_low"
-      //bcrypt_low, bcrypt, argon2 -> Warning: Changing this value will increase cpu and memory usage.
+      //bcrypt_low, bcrypt, argon2 -> Warning: Changing this value will change cpu and memory usage.
       //bcrypt_low is the most efficient hashing scheme
       //bcrypt is more cpu intensive than bcrypt_low
       //argon2 is the most memory & cpu intensive hashing scheme it requires at least 1GB of memory per pod 300 r/s
@@ -106,7 +106,7 @@ module "app_4ecommerce" {
   ]
 }
 
-resource "kubernetes_manifest" "auth_service_4ecommerce_db" {
+resource "kubernetes_manifest" "auth_service_demo_db" {
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Database"
@@ -124,24 +124,24 @@ resource "kubernetes_manifest" "auth_service_4ecommerce_db" {
   }
 }
 
-resource "random_password" "mysql_password_4ecommerce" {
+resource "random_password" "mysql_password_demo" {
   length = 16
   special = false
 }
 
-resource "kubernetes_secret" "mysql_credentials_4ecommerce" {
-  depends_on = [random_password.mysql_password_4ecommerce]
+resource "kubernetes_secret" "mysql_credentials_demo" {
+  depends_on = [random_password.mysql_password_demo]
   metadata {
     name      = format("%s-%s", local.app_name, "mysql-credentials")
     namespace = local.namespace
   }
   data = {
-    password = random_password.mysql_password_4ecommerce.result
+    password = random_password.mysql_password_demo.result
   }
 }
 
-resource "kubernetes_manifest" "mysql_user_4ecommerce" {
-  depends_on = [kubernetes_secret.mysql_credentials_4ecommerce, kubernetes_manifest.auth_service_4ecommerce_db]
+resource "kubernetes_manifest" "mysql_user_demo" {
+  depends_on = [kubernetes_secret.mysql_credentials_demo, kubernetes_manifest.auth_service_demo_db]
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "User"
@@ -167,8 +167,8 @@ resource "kubernetes_manifest" "mysql_user_4ecommerce" {
   }
 }
 
-resource "kubernetes_manifest" "mysql_user_grant_4ecommerce" {
-  depends_on = [kubernetes_manifest.mysql_user_4ecommerce, kubernetes_manifest.auth_service_4ecommerce_db]
+resource "kubernetes_manifest" "mysql_user_grant_demo" {
+  depends_on = [kubernetes_manifest.mysql_user_demo, kubernetes_manifest.auth_service_demo_db]
   manifest = {
     apiVersion = "mysql.sql.crossplane.io/v1alpha1"
     kind       = "Grant"
@@ -192,26 +192,24 @@ resource "kubernetes_manifest" "mysql_user_grant_4ecommerce" {
   }
 }
 
-resource "random_password" "secret_4ecommerce" {
+resource "random_password" "secret_demo" {
   length = 24
   special = true
 }
 
-resource "kubernetes_secret" "app_4ecommerce" {
-  depends_on = [random_password.secret_4ecommerce]
+resource "kubernetes_secret" "app_demo" {
+  depends_on = [random_password.secret_demo]
   metadata {
     name = local.app_name
     namespace = local.namespace
   }
 
   data = {
-    secret = random_password.secret_4ecommerce.result
-    aws-access-key = var.aws_access_key
-    aws-secret-access-key = var.aws_secret_access_key
+    secret = random_password.secret_demo.result
   }
 }
 
-resource "kubernetes_manifest" "routing_4ecommerce" {
+resource "kubernetes_manifest" "routing_demo" {
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
@@ -224,7 +222,7 @@ resource "kubernetes_manifest" "routing_4ecommerce" {
       routes = [
         {
           kind = "Rule"
-          match = "Host(`auth-4ecommerce.arminek.xyz`) && PathPrefix(`/`)"
+          match = "Host(`auth-demo.arminek.xyz`) && PathPrefix(`/`)"
           services = [
             {
               name = local.app_name

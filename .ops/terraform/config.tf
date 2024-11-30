@@ -3,7 +3,7 @@ terraform {
     organization = "rocket-arminek"
 
     workspaces {
-      name = "auth-api-rust"
+      name = "auth-api-rust-demo"
     }
   }
 }
