@@ -11,6 +11,8 @@ services:
       PASSWORD_HASHING_SCHEME: 'bcrypt_low'
       SECRET: "secret"
       RABBITMQ_URL: amqp://rabbit:5672
+      VERIFICATION_REQUIRED: true
+      EVENT_DRIVEN: true
     ports:
       - "8080:8080"
 
