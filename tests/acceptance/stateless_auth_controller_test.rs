@@ -23,6 +23,7 @@ async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
 
@@ -47,6 +48,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -84,6 +86,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
         at_duration,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -140,6 +143,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
         60,
         rt_duration,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -194,6 +198,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -237,6 +242,7 @@ async fn it_verifies_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -300,6 +306,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -348,6 +355,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -415,6 +423,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -454,6 +463,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -502,6 +512,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());
@@ -549,6 +560,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         60,
         60,
         true,
+        "nebula.auth.test".to_string(),
     )
     .await;
     let repository = MysqlUserRepository::new(pool.clone());

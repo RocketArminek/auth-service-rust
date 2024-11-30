@@ -5,12 +5,10 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum UserEvents {
     #[serde(rename = "user.created")]
-    Created {
-        user: UserDTO,
-    },
-    Deleted {
-        user: UserDTO,
-    },
+    Created { user: UserDTO },
+    #[serde(rename = "user.deleted")]
+    Deleted { user: UserDTO },
+    #[serde(rename = "user.updated")]
     Updated {
         #[serde(rename = "oldUser")]
         old_user: UserDTO,

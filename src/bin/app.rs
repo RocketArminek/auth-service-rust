@@ -3,25 +3,18 @@ use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_mysql_pool;
-use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
+use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use auth_service::infrastructure::rabbitmq_message_publisher::{
-    create_rabbitmq_connection, RabbitmqMessagePublisher,
-};
+use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use clap::{Parser, Subcommand};
 use dotenv::{dotenv, from_filename};
 use futures_lite::StreamExt;
-use lapin::options::{
-    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
-    QueueDeclareOptions,
-};
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
-use lapin::ExchangeKind;
 use regex::{Error, Regex};
 use sqlx::sqlx_macros::migrate;
 use std::env;
@@ -364,33 +357,7 @@ async fn main() {
             println!("Role deleted for {}", name);
         }
         Some(Commands::CheckRabbitmqConnection) => {
-            let conn = create_rabbitmq_connection().await;
-
-            let rabbitmq_message_publisher = RabbitmqMessagePublisher::new(
-                &conn,
-                "nebula.auth.cli_test".to_string(),
-                ExchangeKind::Fanout,
-                ExchangeDeclareOptions {
-                    durable: false,
-                    auto_delete: true,
-                    ..ExchangeDeclareOptions::default()
-                },
-            )
-            .await
-            .unwrap();
-
-            let message = UserEvents::Created {
-                user: UserDTO {
-                    id: uuid::Uuid::new_v4(),
-                    email: "some@test.com".to_string(),
-                    last_name: None,
-                    first_name: None,
-                    roles: vec![],
-                    avatar_path: None,
-                },
-            };
-
-            rabbitmq_message_publisher.publish(&message).await.unwrap();
+            create_rabbitmq_connection().await;
         }
         Some(Commands::ConsumeRabbitmqMessages {
             exchange_name,
@@ -403,20 +370,6 @@ async fn main() {
                 .await
                 .expect("Failed to create channel");
             let dry_run = dry_run.unwrap_or(false);
-
-            channel
-                .exchange_declare(
-                    &exchange_name,
-                    ExchangeKind::Fanout,
-                    ExchangeDeclareOptions {
-                        durable: false,
-                        auto_delete: true,
-                        ..ExchangeDeclareOptions::default()
-                    },
-                    FieldTable::default(),
-                )
-                .await
-                .expect("Failed to declare exchange");
 
             let queue = channel
                 .queue_declare(
@@ -433,7 +386,7 @@ async fn main() {
 
             let queue_name = queue.name().to_string();
 
-            channel
+            let r = channel
                 .queue_bind(
                     &queue_name,
                     &exchange_name,
@@ -441,8 +394,12 @@ async fn main() {
                     QueueBindOptions::default(),
                     FieldTable::default(),
                 )
-                .await
-                .expect("Failed to bind queue");
+                .await;
+
+            if r.is_err() {
+                println!("Could not bind queue");
+                return;
+            }
 
             let mut consumer = channel
                 .basic_consume(

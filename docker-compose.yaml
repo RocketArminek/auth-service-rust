@@ -1,7 +1,10 @@
 services:
   app:
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,9 +26,21 @@ services:
       MYSQL_DATABASE: auth_service_dev
     ports:
       - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   rabbit:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

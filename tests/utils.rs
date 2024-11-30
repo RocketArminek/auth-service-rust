@@ -28,22 +28,20 @@ pub async fn create_test_server(
     at_duration_in_seconds: i64,
     rt_duration_in_seconds: i64,
     verification_required: bool,
+    exchange_name: String,
 ) -> TestServer {
     let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
     let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
     let restricted_role_pattern =
         parse_restricted_pattern(&restricted_pattern.unwrap_or("ADMIN".to_string())).unwrap();
     let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
-    let rabbitmq_exchange_name =
-        env::var("RABBITMQ_EXCHANGE_NAME").unwrap_or("nebula.auth.test.".to_string());
 
     let rabbitmq_conn = Connection::connect(&rabbitmq_url, ConnectionProperties::default())
         .await
         .expect("Can't connect to RabbitMQ");
-    let id = uuid::Uuid::new_v4();
     let message_publisher = RabbitmqMessagePublisher::new(
         &rabbitmq_conn,
-        format!("{}.{}", rabbitmq_exchange_name, id),
+        exchange_name,
         ExchangeKind::Fanout,
         ExchangeDeclareOptions {
             durable: false,

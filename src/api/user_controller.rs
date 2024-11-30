@@ -3,12 +3,14 @@ use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, Updat
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
+use crate::domain::event::UserEvents;
 use crate::domain::jwt::UserDTO;
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use std::string::ToString;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
@@ -73,6 +75,7 @@ pub async fn create_user(
 
             tokio::task::spawn(async move {
                 user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
+                user = user.with_roles(vec![existing_role.clone()]);
                 match state
                     .user_repository
                     .lock()
@@ -80,7 +83,32 @@ pub async fn create_user(
                     .add_with_role(&user, existing_role.id)
                     .await
                 {
-                    Ok(_) => tracing::info!("User created: {}", user.email),
+                    Ok(_) => {
+                        tracing::info!("User created: {}", user.email);
+                        let result = state
+                            .message_publisher
+                            .lock()
+                            .await
+                            .publish(&UserEvents::Created {
+                                user: UserDTO {
+                                    id: user.id,
+                                    email: user.email,
+                                    first_name: user.first_name,
+                                    last_name: user.last_name,
+                                    avatar_path: user.avatar_path,
+                                    roles: user
+                                        .roles
+                                        .iter()
+                                        .map(|role| role.name.clone())
+                                        .collect(),
+                                },
+                            })
+                            .await;
+
+                        if result.is_err() {
+                            tracing::error!("Error publishing user created event: {:?}", result);
+                        }
+                    }
                     Err(error) => tracing::error!("Failed to create user {:?}", error),
                 }
             });
@@ -154,25 +182,50 @@ pub async fn update_profile(
             }),
         )
             .into_response(),
-        Some(user) => {
-            let mut user = user.clone();
+        Some(old_user) => {
+            let mut user = old_user.clone();
             user.first_name = Some(first_name);
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
             match state.user_repository.lock().await.update(&user).await {
-                Ok(_) => (
-                    StatusCode::OK,
-                    Json(UserDTO {
+                Ok(_) => {
+                    let user_dto = UserDTO {
                         id: user.id,
                         email: user.email,
                         first_name: user.first_name,
                         last_name: user.last_name,
                         avatar_path: user.avatar_path,
                         roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                    }),
-                )
-                    .into_response(),
+                    };
+
+                    let result = state
+                        .message_publisher
+                        .lock()
+                        .await
+                        .publish(&UserEvents::Updated {
+                            old_user: UserDTO {
+                                id: old_user.id,
+                                email: old_user.email,
+                                first_name: old_user.first_name,
+                                last_name: old_user.last_name,
+                                avatar_path: old_user.avatar_path,
+                                roles: old_user
+                                    .roles
+                                    .iter()
+                                    .map(|role| role.name.clone())
+                                    .collect(),
+                            },
+                            new_user: user_dto.clone(),
+                        })
+                        .await;
+
+                    if result.is_err() {
+                        tracing::error!("Error publishing user created event: {:?}", result);
+                    }
+
+                    (StatusCode::OK, Json(user_dto)).into_response()
+                }
                 Err(e) => {
                     tracing::error!("Failed to update user: {:?}", e);
                     (
