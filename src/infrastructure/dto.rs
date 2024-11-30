@@ -1,7 +1,7 @@
+use crate::domain::user::User;
+use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::domain::user::User;
 
 #[derive(FromRow, Debug, Clone)]
 pub struct UserRow {

@@ -24,13 +24,13 @@ uuid = { version = "1.11.0", features = ["v4", "v7", "fast-rng", "macro-diagnost
 sqlx = { version = "0.8.2", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
 dotenv = "0.15.0"
 serde_json = "1.0.133"
-tower-http = { version = "0.6.1", features = ["trace"] }
+tower-http = { version = "0.6.2", features = ["trace"] }
 tower = { version = "0.5.1", features = ["util"] }
-tracing = "0.1.40"
+tracing = "0.1.41"
 argon2 = "0.6.0-pre.1"
 lazy-regex = "3.3.0"
 regex = "1.11.1"
-bcrypt = "0.15.1"
+bcrypt = "0.16.0"
 jsonwebtoken = "9.3.0"
 utoipa-swagger-ui = { version = "8.0.3", features = ["axum"] }
 lapin = "2.5.0"

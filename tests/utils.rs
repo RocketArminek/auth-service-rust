@@ -1,21 +1,24 @@
-use std::sync::Arc;
-use axum_test::TestServer;
-use sqlx::{MySql, Pool};
-use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::crypto::HashingScheme;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use tokio::time::sleep;
-use std::time::Duration;
-use std::env;
-use futures_lite::StreamExt;
-use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
-use serde::{Deserialize, Serialize};
 use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
+use axum_test::TestServer;
+use futures_lite::StreamExt;
+use lapin::options::{
+    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
+    QueueDeclareOptions,
+};
+use lapin::types::FieldTable;
+use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
+use serde::{Deserialize, Serialize};
+use sqlx::{MySql, Pool};
+use std::env;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 pub async fn create_test_server(
     secret: String,
@@ -26,24 +29,17 @@ pub async fn create_test_server(
     rt_duration_in_seconds: i64,
     verification_required: bool,
 ) -> TestServer {
-    let user_repository = Arc::new(
-        Mutex::new(MysqlUserRepository::new(pool.clone()))
-    );
-    let role_repository = Arc::new(
-        Mutex::new(MysqlRoleRepository::new(pool.clone()))
-    );
-    let restricted_role_pattern = parse_restricted_pattern(
-        &restricted_pattern.unwrap_or("ADMIN".to_string())
-    ).unwrap();
-    let rabbitmq_url = env::var("RABBITMQ_URL")
-        .unwrap_or("amqp://localhost:5672".to_string());
-    let rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME")
-        .unwrap_or("nebula.auth.test.".to_string());
+    let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
+    let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
+    let restricted_role_pattern =
+        parse_restricted_pattern(&restricted_pattern.unwrap_or("ADMIN".to_string())).unwrap();
+    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
+    let rabbitmq_exchange_name =
+        env::var("RABBITMQ_EXCHANGE_NAME").unwrap_or("nebula.auth.test.".to_string());
 
-    let rabbitmq_conn = Connection::connect(
-        &rabbitmq_url,
-        ConnectionProperties::default()
-    ).await.expect("Can't connect to RabbitMQ");
+    let rabbitmq_conn = Connection::connect(&rabbitmq_url, ConnectionProperties::default())
+        .await
+        .expect("Can't connect to RabbitMQ");
     let id = uuid::Uuid::new_v4();
     let message_publisher = RabbitmqMessagePublisher::new(
         &rabbitmq_conn,
@@ -53,12 +49,12 @@ pub async fn create_test_server(
             durable: false,
             auto_delete: true,
             ..ExchangeDeclareOptions::default()
-        }
-    ).await.expect("Failed to create RabbitMQ message publisher");
+        },
+    )
+    .await
+    .expect("Failed to create RabbitMQ message publisher");
 
-    let message_publisher = Arc::new(
-        Mutex::new(message_publisher)
-    );
+    let message_publisher = Arc::new(Mutex::new(message_publisher));
 
     let state = ServerState {
         secret,
@@ -69,27 +65,26 @@ pub async fn create_test_server(
         verification_required,
         user_repository,
         role_repository,
-        message_publisher
+        message_publisher,
     };
 
     TestServer::new(routes(state)).unwrap()
 }
 
-pub async fn setup_test_consumer(exchange_name: &str) -> (
-    Channel,
-    Consumer,
-    String,
-) {
+pub async fn setup_test_consumer(exchange_name: &str) -> (Channel, Consumer, String) {
     let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://127.0.0.1:5672".to_string());
 
     let conn = Connection::connect(
         &rabbitmq_url,
         ConnectionProperties::default().with_connection_name("test_consumer".into()),
     )
-        .await
-        .expect("Failed to connect to RabbitMQ");
+    .await
+    .expect("Failed to connect to RabbitMQ");
 
-    let channel = conn.create_channel().await.expect("Failed to create channel");
+    let channel = conn
+        .create_channel()
+        .await
+        .expect("Failed to create channel");
 
     channel
         .exchange_declare(
@@ -187,7 +182,5 @@ where
 #[serde(tag = "type")]
 pub enum TestEvent {
     #[serde(rename = "test.something")]
-    Something {
-        name: String
-    },
+    Something { name: String },
 }

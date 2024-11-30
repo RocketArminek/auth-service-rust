@@ -1,6 +1,6 @@
-use sqlx::{Error, MySql, Pool, query, query_as};
-use uuid::Uuid;
 use crate::domain::role::Role;
+use sqlx::{query, query_as, Error, MySql, Pool};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {

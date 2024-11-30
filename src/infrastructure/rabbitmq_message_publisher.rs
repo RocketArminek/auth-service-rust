@@ -1,13 +1,13 @@
-use std::env;
-use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
-use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
-use std::error::Error;
-use std::sync::Arc;
-use lapin::types::FieldTable;
-use axum::async_trait;
-use tokio::sync::Mutex;
 use crate::domain::event::UserEvents;
 use crate::infrastructure::message_publisher::MessagePublisher;
+use axum::async_trait;
+use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
+use lapin::types::FieldTable;
+use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use std::env;
+use std::error::Error;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -24,21 +24,25 @@ impl RabbitmqMessagePublisher {
     ) -> Result<RabbitmqMessagePublisher, Box<dyn Error>> {
         let channel = connection.create_channel().await?;
 
-        channel.exchange_declare(
-            &exchange_name,
-            exchange_kind,
-            exchange_declare_options,
-            FieldTable::default(),
-        ).await?;
+        channel
+            .exchange_declare(
+                &exchange_name,
+                exchange_kind,
+                exchange_declare_options,
+                FieldTable::default(),
+            )
+            .await?;
 
-        Ok(RabbitmqMessagePublisher { channel, exchange_name })
+        Ok(RabbitmqMessagePublisher {
+            channel,
+            exchange_name,
+        })
     }
 }
 
 #[async_trait]
 impl MessagePublisher for RabbitmqMessagePublisher {
-    async fn publish(&self, event: &UserEvents) -> Result<(), Box<dyn Error>>
-    {
+    async fn publish(&self, event: &UserEvents) -> Result<(), Box<dyn Error>> {
         let payload = serde_json::to_vec(event)?;
 
         self.channel
@@ -59,22 +63,23 @@ impl MessagePublisher for RabbitmqMessagePublisher {
 }
 
 pub async fn create_rabbitmq_connection() -> Connection {
-    let rabbitmq_url = env::var("RABBITMQ_URL")
-        .unwrap_or("amqp://localhost:5672".to_string());
+    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
 
-    Connection::connect(
-        &rabbitmq_url,
-        ConnectionProperties::default(),
-    ).await.expect("Failed to connect to rabbitmq")
+    Connection::connect(&rabbitmq_url, ConnectionProperties::default())
+        .await
+        .expect("Failed to connect to rabbitmq")
 }
 
 pub async fn create_rabbitmq_message_publisher() -> Arc<Mutex<dyn MessagePublisher + Send + Sync>> {
     tracing::info!("Event driven is turned on");
-    let rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME")
-        .unwrap_or("nebula.auth.events".to_string());
+    let rabbitmq_exchange_name =
+        env::var("RABBITMQ_EXCHANGE_NAME").unwrap_or("nebula.auth.events".to_string());
     let conn = create_rabbitmq_connection().await;
 
-    tracing::info!("Rabbitmq publishing method configured: exchange={}", &rabbitmq_exchange_name);
+    tracing::info!(
+        "Rabbitmq publishing method configured: exchange={}",
+        &rabbitmq_exchange_name
+    );
 
     let message_publisher = RabbitmqMessagePublisher::new(
         &conn,
@@ -84,8 +89,10 @@ pub async fn create_rabbitmq_message_publisher() -> Arc<Mutex<dyn MessagePublish
             durable: true,
             auto_delete: false,
             ..ExchangeDeclareOptions::default()
-        }
-    ).await.expect("Failed to create message publisher");
+        },
+    )
+    .await
+    .expect("Failed to create message publisher");
 
     Arc::new(Mutex::new(message_publisher))
 }

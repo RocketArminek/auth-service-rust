@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use regex::{Error, Regex};
-use tokio::sync::Mutex;
 use crate::domain::crypto::HashingScheme;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
+use regex::{Error, Regex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct ServerState {

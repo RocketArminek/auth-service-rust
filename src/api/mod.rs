@@ -1,9 +1,9 @@
-pub mod routes;
+pub mod acl_mw;
 pub mod axum_extractor;
+pub mod dto;
+pub mod restricted_controller;
+pub mod routes;
+pub mod server_state;
+pub mod stateless_auth_controller;
 pub mod user_controller;
 pub mod utils_controller;
-pub mod dto;
-pub mod stateless_auth_controller;
-pub mod server_state;
-pub mod acl_mw;
-pub mod restricted_controller;

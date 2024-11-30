@@ -1,8 +1,8 @@
+use crate::domain::role::Role;
 use crate::domain::user::User;
+use crate::infrastructure::dto::UserRow;
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
-use crate::domain::role::Role;
-use crate::infrastructure::dto::UserRow;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {
@@ -56,13 +56,14 @@ impl MysqlUserRepository {
     pub async fn add_with_role(&self, user: &User, role_id: Uuid) -> Result<(), Error> {
         let mut tx = self.pool.begin().await?;
 
-        let user_query = query("INSERT INTO users (id, email, password, created_at) VALUES (?, ?, ?, ?)")
-            .bind(&user.id)
-            .bind(&user.email)
-            .bind(&user.password)
-            .bind(&user.created_at)
-            .execute(&mut *tx)
-            .await;
+        let user_query =
+            query("INSERT INTO users (id, email, password, created_at) VALUES (?, ?, ?, ?)")
+                .bind(&user.id)
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(&user.created_at)
+                .execute(&mut *tx)
+                .await;
 
         let role_query = query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
             .bind(&user.id)
@@ -76,17 +77,17 @@ impl MysqlUserRepository {
                 tx.rollback().await?;
 
                 Err(uce)
-            },
+            }
             (Ok(_), Err(rce)) => {
                 tx.rollback().await?;
 
                 Err(rce)
-            },
+            }
             (Err(uce), Ok(_)) => {
                 tx.rollback().await?;
 
                 Err(uce)
-            },
+            }
         }
     }
 
@@ -131,16 +132,19 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<UserRow>, i32), sqlx::Error> {
+    pub async fn find_all(
+        &self,
+        page: i32,
+        limit: i32,
+    ) -> Result<(Vec<UserRow>, i32), sqlx::Error> {
         let offset = (page - 1) * limit;
 
-        let users = query_as::<_, UserRow>(
-            "SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?"
-        )
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await?;
+        let users =
+            query_as::<_, UserRow>("SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?")
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(&self.pool)
+                .await?;
 
         let total: (i32,) = sqlx::query_as("SELECT COUNT(*) FROM users")
             .fetch_one(&self.pool)

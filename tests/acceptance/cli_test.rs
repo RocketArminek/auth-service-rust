@@ -260,7 +260,10 @@ fn it_assign_role_to_user() {
         .arg(&role_name)
         .assert()
         .success()
-        .stdout(predicate::str::contains(format!("roles (USER_CLI_{})", &role_suffix)));
+        .stdout(predicate::str::contains(format!(
+            "roles (USER_CLI_{})",
+            &role_suffix
+        )));
 
     delete_cmd
         .arg("delete-user-by-email")
@@ -312,8 +315,7 @@ fn it_initializes_auth_owner_role() {
     let mut get_role_cmd = Command::cargo_bin("app").unwrap();
     let role_name = format!("USER_CLI_{}", uuid::Uuid::new_v4());
 
-    cmd
-        .arg("init-restricted-role")
+    cmd.arg("init-restricted-role")
         .env("RESTRICTED_ROLE_PREFIX", &role_name)
         .assert()
         .success();
@@ -330,18 +332,14 @@ fn it_initializes_auth_owner_role() {
 fn it_checks_rabbitmq_connection() {
     let mut cmd = Command::cargo_bin("app").unwrap();
 
-    cmd
-        .arg("check-rabbitmq-connection")
-        .assert()
-        .success();
+    cmd.arg("check-rabbitmq-connection").assert().success();
 }
 
 #[test]
 fn it_consumes_rabbitmq_messages() {
     let mut cmd = Command::cargo_bin("app").unwrap();
 
-    cmd
-        .arg("consume-rabbitmq-messages")
+    cmd.arg("consume-rabbitmq-messages")
         .arg("-e")
         .arg("test_exchange")
         .arg("-d")

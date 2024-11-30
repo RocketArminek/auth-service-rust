@@ -1,10 +1,10 @@
+use crate::domain::event::UserEvents;
+use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_publisher;
+use axum::async_trait;
 use std::env;
 use std::error::Error;
 use std::sync::Arc;
-use axum::async_trait;
 use tokio::sync::Mutex;
-use crate::domain::event::UserEvents;
-use crate::infrastructure::rabbitmq_message_publisher::{create_rabbitmq_message_publisher};
 
 #[async_trait]
 pub trait MessagePublisher {

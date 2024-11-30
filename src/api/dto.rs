@@ -1,12 +1,12 @@
+use crate::domain::jwt::UserDTO;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::domain::jwt::UserDTO;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
-    pub role: String
+    pub role: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -29,7 +29,7 @@ pub struct LoginRequest {
 pub struct TokenResponse {
     pub value: String,
     #[serde(rename = "expiresAt")]
-    pub expires_at: usize
+    pub expires_at: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

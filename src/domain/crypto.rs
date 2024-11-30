@@ -87,7 +87,7 @@ impl SchemeAwareHasher {
         parts.is_some_and(|scheme| scheme.0 != self.current_scheme)
     }
 
-    fn extract_scheme_and_hash<'a>(&'a self, hash: &'a str) -> Option<(HashingScheme, &str)> {
+    fn extract_scheme_and_hash<'a>(&'a self, hash: &'a str) -> Option<(HashingScheme, &'a str)> {
         let parts: Vec<&str> = hash.splitn(2, '.').collect();
         if parts.len() != 2 {
             return None;
@@ -136,7 +136,9 @@ pub struct Argon2Hasher {
 
 impl Argon2Hasher {
     pub fn new() -> Self {
-        Argon2Hasher { argon2: get_argon2().clone() }
+        Argon2Hasher {
+            argon2: get_argon2().clone(),
+        }
     }
 }
 

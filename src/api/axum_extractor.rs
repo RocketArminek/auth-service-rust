@@ -1,8 +1,11 @@
-use axum::{async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
-use jsonwebtoken::{DecodingKey, Validation};
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::SecretAware;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use axum::{
+    async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode,
+    Json,
+};
+use jsonwebtoken::{DecodingKey, Validation};
 
 #[derive(Debug, Clone)]
 pub struct BearerToken(pub String);
@@ -30,14 +33,20 @@ where
                 } else {
                     tracing::warn!("Invalid Authorization header: {}", value);
 
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Missing bearer token")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Missing bearer token"),
+                        }),
+                    ))
                 }
             }
-            None => Err((StatusCode::UNAUTHORIZED, Json(
-                MessageResponse{message: String::from("Authorization header is missing")}
-            ))),
+            None => Err((
+                StatusCode::UNAUTHORIZED,
+                Json(MessageResponse {
+                    message: String::from("Authorization header is missing"),
+                }),
+            )),
         }
     }
 }
@@ -61,44 +70,53 @@ where
             Ok(decoded_token) => {
                 tracing::info!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
-                    TokenType::Access => {
-                        Ok(StatelessLoggedInUser(
-                            decoded_token.claims.user
-                        ))
-                    }
-                    _ => {
-                        Err((StatusCode::UNAUTHORIZED, Json(
-                            MessageResponse{message: String::from("Invalid token")}
-                        )))
-                    }
+                    TokenType::Access => Ok(StatelessLoggedInUser(decoded_token.claims.user)),
+                    _ => Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    )),
                 }
             }
             Err(error) => match error.kind() {
                 jsonwebtoken::errors::ErrorKind::InvalidToken => {
                     tracing::info!("Invalid token: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Invalid token")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    ))
                 }
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
                     tracing::info!("Invalid signature: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Invalid signature")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid signature"),
+                        }),
+                    ))
                 }
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
                     tracing::info!("Expired token: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Expired token")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Expired token"),
+                        }),
+                    ))
                 }
                 _ => {
                     tracing::info!("Unknown error: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Unknown error")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Unknown error"),
+                        }),
+                    ))
                 }
-            }
+            },
         }
     }
 }
@@ -122,44 +140,53 @@ where
             Ok(decoded_token) => {
                 tracing::info!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
-                    TokenType::Refresh => {
-                        Ok(RefreshRequest (
-                            decoded_token.claims.user
-                        ))
-                    }
-                    _ => {
-                        Err((StatusCode::UNAUTHORIZED, Json(
-                            MessageResponse{message: String::from("Invalid token")}
-                        )))
-                    }
+                    TokenType::Refresh => Ok(RefreshRequest(decoded_token.claims.user)),
+                    _ => Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    )),
                 }
             }
             Err(error) => match error.kind() {
                 jsonwebtoken::errors::ErrorKind::InvalidToken => {
                     tracing::info!("Invalid token: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Invalid token")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    ))
                 }
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
                     tracing::info!("Invalid signature: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Invalid signature")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid signature"),
+                        }),
+                    ))
                 }
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
                     tracing::info!("Expired token: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Expired token")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Expired token"),
+                        }),
+                    ))
                 }
                 _ => {
                     tracing::info!("Unknown error: {:?}", error);
-                    Err((StatusCode::UNAUTHORIZED, Json(
-                        MessageResponse{message: String::from("Unknown error")}
-                    )))
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Unknown error"),
+                        }),
+                    ))
                 }
-            }
+            },
         }
     }
 }

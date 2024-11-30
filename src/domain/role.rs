@@ -1,7 +1,7 @@
+use crate::domain::error::RoleError;
 use chrono::{DateTime, Timelike, Utc};
 use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
-use crate::domain::error::RoleError;
 
 #[derive(FromRow, Debug, Clone, PartialEq, Eq)]
 pub struct Role {
@@ -15,7 +15,11 @@ impl Role {
         if name.is_empty() {
             Err(RoleError::Empty)
         } else {
-            Ok(Role { id, name, created_at })
+            Ok(Role {
+                id,
+                name,
+                created_at,
+            })
         }
     }
 

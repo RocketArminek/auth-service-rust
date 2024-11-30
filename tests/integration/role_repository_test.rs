@@ -1,6 +1,6 @@
-use sqlx::{MySql, Pool};
 use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use sqlx::{MySql, Pool};
 
 #[sqlx::test]
 async fn it_can_add_role(pool: Pool<MySql>) {

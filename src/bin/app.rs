@@ -1,28 +1,33 @@
-use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
-use auth_service::domain::error::UserError;
-use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::database::create_mysql_pool;
-use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use clap::{Parser, Subcommand};
-use dotenv::{dotenv, from_filename};
-use sqlx::sqlx_macros::migrate;
-use std::env;
-use std::sync::Arc;
-use futures_lite::StreamExt;
-use lapin::{ExchangeKind};
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
-use regex::{Error, Regex};
-use tokio::signal;
-use tokio::sync::Mutex;
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
+use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
+use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
-use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::domain::user::{PasswordHandler, User};
+use auth_service::infrastructure::database::create_mysql_pool;
 use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
-use auth_service::infrastructure::rabbitmq_message_publisher::{create_rabbitmq_connection, RabbitmqMessagePublisher};
+use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
+use auth_service::infrastructure::rabbitmq_message_publisher::{
+    create_rabbitmq_connection, RabbitmqMessagePublisher,
+};
+use clap::{Parser, Subcommand};
+use dotenv::{dotenv, from_filename};
+use futures_lite::StreamExt;
+use lapin::options::{
+    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
+    QueueDeclareOptions,
+};
+use lapin::types::FieldTable;
+use lapin::ExchangeKind;
+use regex::{Error, Regex};
+use sqlx::sqlx_macros::migrate;
+use std::env;
+use std::sync::Arc;
+use tokio::signal;
+use tokio::sync::Mutex;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -85,7 +90,7 @@ enum Commands {
     },
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads=4)]
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
     let cli = Cli::parse();
     from_filename(".env.local").or(dotenv()).ok();
@@ -98,11 +103,10 @@ async fn main() {
     let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
     tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
 
-    let at_duration_in_seconds =
-        env::var("AT_DURATION_IN_SECONDS")
-            .unwrap_or("300".to_string())
-            .parse::<i64>()
-            .unwrap();
+    let at_duration_in_seconds = env::var("AT_DURATION_IN_SECONDS")
+        .unwrap_or("300".to_string())
+        .parse::<i64>()
+        .unwrap();
 
     tracing::info!(
         "Configured access token duration in seconds: {} ({} m)",
@@ -110,11 +114,10 @@ async fn main() {
         &at_duration_in_seconds / 60
     );
 
-    let rt_duration_in_seconds =
-        env::var("RT_DURATION_IN_SECONDS")
-            .unwrap_or("2592000".to_string())
-            .parse::<i64>()
-            .unwrap();
+    let rt_duration_in_seconds = env::var("RT_DURATION_IN_SECONDS")
+        .unwrap_or("2592000".to_string())
+        .parse::<i64>()
+        .unwrap();
 
     tracing::info!(
         "Configured refresh token duration in seconds: {} ({} d)",
@@ -123,19 +126,17 @@ async fn main() {
     );
 
     let verification_required = env::var("VERIFICATION_REQUIRED")
-        .unwrap_or("true".to_string()).parse::<bool>().unwrap();
+        .unwrap_or("true".to_string())
+        .parse::<bool>()
+        .unwrap();
 
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
     let pool = create_mysql_pool().await.unwrap();
     migrate_db(&pool).await;
 
-    let user_repository = Arc::new(
-        Mutex::new(MysqlUserRepository::new(pool.clone()))
-    );
-    let role_repository = Arc::new(
-        Mutex::new(MysqlRoleRepository::new(pool.clone()))
-    );
-    
+    let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
+    let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
+
     let message_publisher = create_message_publisher().await;
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
@@ -171,26 +172,28 @@ async fn main() {
                 }
             }
         }
-        Some(Commands::CreateUser { email, password, role }) => {
-            let user = User::now_with_email_and_password(
-                email.clone(),
-                password.clone(),
-                None,
-                None,
-            );
+        Some(Commands::CreateUser {
+            email,
+            password,
+            role,
+        }) => {
+            let user =
+                User::now_with_email_and_password(email.clone(), password.clone(), None, None);
 
             match user {
                 Ok(mut user) => {
                     let role = role.to_owned().unwrap_or("USER".to_string());
                     let existing_role = role_repository
-                        .lock().await
+                        .lock()
+                        .await
                         .get_by_name(&role)
                         .await
                         .unwrap();
                     user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme));
                     user.add_role(existing_role.clone());
                     user_repository
-                        .lock().await
+                        .lock()
+                        .await
                         .add_with_role(&user, existing_role.id)
                         .await
                         .unwrap();
@@ -200,7 +203,11 @@ async fn main() {
                         user.id,
                         user.email,
                         user.created_at.format("%Y-%m-%d %H:%M:%S"),
-                        user.roles.iter().map(|r| r.name.clone()).collect::<Vec<String>>().join(", ")
+                        user.roles
+                            .iter()
+                            .map(|r| r.name.clone())
+                            .collect::<Vec<String>>()
+                            .join(", ")
                     );
                 }
                 Err(error) => match error {
@@ -213,8 +220,11 @@ async fn main() {
                     UserError::EncryptionFailed => {
                         panic!("Encryption failed");
                     }
-                    UserError::InvalidPassword { reason} => {
-                        panic!("Invalid password format reason: {}", reason.unwrap_or("unknown".to_string()));
+                    UserError::InvalidPassword { reason } => {
+                        panic!(
+                            "Invalid password format reason: {}",
+                            reason.unwrap_or("unknown".to_string())
+                        );
                     }
                     UserError::SchemeNotSupported => {
                         panic!("Password hashing scheme not supported");
@@ -230,15 +240,17 @@ async fn main() {
                     println!("User not found for {}", email);
                 }
                 Some(user) => {
-                    println!(
-                        "User found: {:?}",
-                        user
-                    );
+                    println!("User found: {:?}", user);
                 }
             }
         }
         Some(Commands::DeleteUserByEmail { email }) => {
-            user_repository.lock().await.delete_by_email(email).await.unwrap();
+            user_repository
+                .lock()
+                .await
+                .delete_by_email(email)
+                .await
+                .unwrap();
 
             println!("User deleted for {}", email);
         }
@@ -281,7 +293,8 @@ async fn main() {
                         }
                         Some(role) => {
                             user_repository
-                                .lock().await
+                                .lock()
+                                .await
                                 .add_role(user.id, role.id)
                                 .await
                                 .unwrap();
@@ -293,18 +306,18 @@ async fn main() {
             }
         }
         Some(Commands::InitRestrictedRole) => {
-            let restricted_role_prefix = env::var("RESTRICTED_ROLE_PREFIX")
-                .unwrap_or("ADMIN".to_string());
-            let role = role_repository.lock().await.get_by_name(&restricted_role_prefix).await;
+            let restricted_role_prefix =
+                env::var("RESTRICTED_ROLE_PREFIX").unwrap_or("ADMIN".to_string());
+            let role = role_repository
+                .lock()
+                .await
+                .get_by_name(&restricted_role_prefix)
+                .await;
 
             match role {
                 None => {
                     let role = Role::now(restricted_role_prefix).unwrap();
-                    role_repository
-                        .lock().await
-                        .add(&role)
-                        .await
-                        .unwrap();
+                    role_repository.lock().await.add(&role).await.unwrap();
 
                     println!(
                         "Created initial restricted role base on pattern: {}, {}, {}",
@@ -320,11 +333,7 @@ async fn main() {
         }
         Some(Commands::CreateRole { name }) => {
             let role = Role::now(name.to_owned()).unwrap();
-            role_repository
-                .lock().await
-                .add(&role)
-                .await
-                .unwrap();
+            role_repository.lock().await.add(&role).await.unwrap();
 
             println!(
                 "Created role: {}, {}, {}",
@@ -345,7 +354,12 @@ async fn main() {
             }
         }
         Some(Commands::DeleteRole { name }) => {
-            role_repository.lock().await.delete_by_name(name).await.unwrap();
+            role_repository
+                .lock()
+                .await
+                .delete_by_name(name)
+                .await
+                .unwrap();
 
             println!("Role deleted for {}", name);
         }
@@ -360,8 +374,10 @@ async fn main() {
                     durable: false,
                     auto_delete: true,
                     ..ExchangeDeclareOptions::default()
-                }
-            ).await.unwrap();
+                },
+            )
+            .await
+            .unwrap();
 
             let message = UserEvents::Created {
                 user: UserDTO {
@@ -370,16 +386,22 @@ async fn main() {
                     last_name: None,
                     first_name: None,
                     roles: vec![],
-                    avatar_path: None
-                }
+                    avatar_path: None,
+                },
             };
 
             rabbitmq_message_publisher.publish(&message).await.unwrap();
         }
-        Some(Commands::ConsumeRabbitmqMessages { exchange_name, dry_run }) => {
+        Some(Commands::ConsumeRabbitmqMessages {
+            exchange_name,
+            dry_run,
+        }) => {
             let conn = create_rabbitmq_connection().await;
             let exchange_name = exchange_name.to_owned();
-            let channel = conn.create_channel().await.expect("Failed to create channel");
+            let channel = conn
+                .create_channel()
+                .await
+                .expect("Failed to create channel");
             let dry_run = dry_run.unwrap_or(false);
 
             channel
@@ -446,7 +468,8 @@ async fn main() {
                             println!("Cannot deserialize event: {:?}", delivery);
                         }
 
-                        delivery.ack(BasicAckOptions::default())
+                        delivery
+                            .ack(BasicAckOptions::default())
                             .await
                             .expect("Failed to ack message");
                     }
@@ -461,9 +484,7 @@ async fn main() {
 
 async fn shutdown_signal() {
     let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .unwrap();
+        signal::ctrl_c().await.unwrap();
     };
 
     #[cfg(unix)]
@@ -481,20 +502,31 @@ async fn shutdown_signal() {
 }
 
 async fn init_roles(role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Result<Regex, Error> {
-    init_role(&"REGULAR_ROLE_PREFIX".to_string(), "USER".to_string(), role_repository).await;
-    let restricted_role = init_role(&"RESTRICTED_ROLE_PREFIX".to_string(), "ADMIN".to_string(), role_repository).await;
+    init_role(
+        &"REGULAR_ROLE_PREFIX".to_string(),
+        "USER".to_string(),
+        role_repository,
+    )
+    .await;
+    let restricted_role = init_role(
+        &"RESTRICTED_ROLE_PREFIX".to_string(),
+        "ADMIN".to_string(),
+        role_repository,
+    )
+    .await;
 
     parse_restricted_pattern(restricted_role.name.as_str())
 }
 
-async fn init_role(role_env_var: &String, default: String, role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Role {
-    let role_prefix = env::var(role_env_var)
-        .unwrap_or(default);
+async fn init_role(
+    role_env_var: &String,
+    default: String,
+    role_repository: &Arc<Mutex<MysqlRoleRepository>>,
+) -> Role {
+    let role_prefix = env::var(role_env_var).unwrap_or(default);
 
     tracing::info!("Configured {} with: {}", role_env_var, role_prefix);
-    let existing_role = role_repository.lock()
-        .await.get_by_name(&role_prefix)
-        .await;
+    let existing_role = role_repository.lock().await.get_by_name(&role_prefix).await;
 
     if existing_role.is_some() {
         let existing_role = existing_role.clone().unwrap();
@@ -508,12 +540,9 @@ async fn init_role(role_env_var: &String, default: String, role_repository: &Arc
         return existing_role;
     }
 
-    let role = Role::now(role_prefix.to_string())
-        .unwrap();
+    let role = Role::now(role_prefix.to_string()).unwrap();
 
-    role_repository.lock()
-        .await.add(&role)
-        .await.unwrap();
+    role_repository.lock().await.add(&role).await.unwrap();
 
     tracing::info!(
         "Created role: {}, {}, {}",

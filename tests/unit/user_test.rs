@@ -1,8 +1,8 @@
 use auth_service::domain::crypto::SchemeAwareHasher;
-use auth_service::domain::user::{PasswordHandler, User};
-use chrono::{Utc};
-use uuid::Uuid;
 use auth_service::domain::role::Role;
+use auth_service::domain::user::{PasswordHandler, User};
+use chrono::Utc;
+use uuid::Uuid;
 
 #[test]
 fn it_can_be_created() {
@@ -13,7 +13,8 @@ fn it_can_be_created() {
         Some(String::from("Jon")),
         Some(String::from("Snow")),
         Utc::now(),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(user.email, String::from("test@test.com"));
     assert_eq!(user.id.is_nil(), false);
@@ -25,7 +26,7 @@ fn it_cannot_be_created_with_empty_email() {
         String::from(""),
         String::from("password"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -38,7 +39,7 @@ fn it_cannot_be_created_with_empty_password() {
         String::from("test@test.com"),
         String::from(""),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -51,7 +52,7 @@ fn it_cannot_be_created_with_invalid_email() {
         String::from("invalid-email"),
         String::from("password"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -64,7 +65,7 @@ fn it_cannot_be_created_without_special_character() {
         String::from("test@test.com"),
         String::from("Password1"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -77,7 +78,7 @@ fn it_cannot_be_created_without_uppercase_character() {
         String::from("test@test.com"),
         String::from("password1#"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -90,7 +91,7 @@ fn it_cannot_be_created_without_lowercase_character() {
         String::from("test@test.com"),
         String::from("PASSWORD1#"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -103,7 +104,7 @@ fn it_can_verify_password_using_hasher() {
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
+        Some(String::from("Snow")),
     )
     .unwrap();
     let hasher = SchemeAwareHasher::default();
@@ -118,8 +119,9 @@ fn user_has_roles() {
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
-    ).unwrap();
+        Some(String::from("Snow")),
+    )
+    .unwrap();
     let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
 
     user.add_role(role);
@@ -135,8 +137,9 @@ fn user_does_not_have_roles_by_default() {
         String::from("test@test.com"),
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
-        Some(String::from("Snow"))
-    ).unwrap();
+        Some(String::from("Snow")),
+    )
+    .unwrap();
 
     assert_eq!(user.roles.len(), 0);
 }

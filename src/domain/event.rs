@@ -1,20 +1,20 @@
-use serde::{Deserialize, Serialize};
 use crate::domain::jwt::UserDTO;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum UserEvents {
     #[serde(rename = "user.created")]
     Created {
-        user: UserDTO
+        user: UserDTO,
     },
     Deleted {
-        user: UserDTO
+        user: UserDTO,
     },
     Updated {
-        #[serde(rename="oldUser")]
+        #[serde(rename = "oldUser")]
         old_user: UserDTO,
-        #[serde(rename="newUser")]
-        new_user: UserDTO
-    }
+        #[serde(rename = "newUser")]
+        new_user: UserDTO,
+    },
 }

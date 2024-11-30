@@ -12,16 +12,16 @@ pub enum TokenType {
 pub struct Claims {
     pub exp: usize,
     pub user: UserDTO,
-    pub token_type: TokenType
+    pub token_type: TokenType,
 }
 
 impl Claims {
-    pub fn new(
-        exp: usize,
-        user: UserDTO,
-        token_type: TokenType
-    ) -> Self {
-        Self { exp, user, token_type }
+    pub fn new(exp: usize, user: UserDTO, token_type: TokenType) -> Self {
+        Self {
+            exp,
+            user,
+            token_type,
+        }
     }
 }
 
