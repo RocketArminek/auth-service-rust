@@ -1,16 +1,16 @@
-name: Rust auth api infra changes
-
-on:
-  workflow_dispatch: ~
-  push:
-    paths:
-      - ".ops/**"
-    branches:
-      - "main"
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: rocketarminek/auth-api-rust
+#name: Rust auth api infra changes
+#
+#on:
+#  workflow_dispatch: ~
+#  push:
+#    paths:
+#      - ".ops/**"
+#    branches:
+#      - "main"
+#
+#env:
+#  REGISTRY: ghcr.io
+#  IMAGE_NAME: rocketarminek/auth-api-rust
 
 #jobs:
 #  plan:
