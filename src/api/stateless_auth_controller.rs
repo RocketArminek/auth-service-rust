@@ -76,16 +76,14 @@ pub async fn login(
                     }
                 });
             }
-            if state.verification_required {
-                if !user.is_verified {
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("User is not verified!"),
-                        }),
-                    )
-                        .into_response();
-                }
+            if state.verification_required && !user.is_verified {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(MessageResponse {
+                        message: String::from("User is not verified!"),
+                    }),
+                )
+                    .into_response();
             }
 
             let user_response = UserDTO {

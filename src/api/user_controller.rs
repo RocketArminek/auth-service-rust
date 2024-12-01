@@ -311,6 +311,24 @@ pub async fn verify_user(
         )
             .into_response(),
         Some(mut user) => {
+            if !state.verification_required {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(MessageResponse {
+                        message: "Verification is not required!".to_string(),
+                    }),
+                )
+                    .into_response()
+            }
+            if user.is_verified {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(MessageResponse {
+                        message: "User is already verified!".to_string(),
+                    }),
+                )
+                    .into_response()
+            }
             user.verify();
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
