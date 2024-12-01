@@ -1,15 +1,18 @@
-use crate::api::axum_extractor::StatelessLoggedInUser;
+use crate::api::axum_extractor::{StatelessLoggedInUser, VerificationRequest};
 use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, UpdateUserRequest};
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
-use crate::domain::jwt::UserDTO;
+use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{encode, EncodingKey, Header};
+use std::ops::Add;
 use std::string::ToString;
 
 #[utoipa::path(post, path = "/v1/users",
@@ -67,7 +70,8 @@ pub async fn create_user(
     }
     let existing_role = existing_role.unwrap();
 
-    let user = User::now_with_email_and_password(email, password, None, None);
+    let is_verified = !state.verification_required;
+    let user = User::now_with_email_and_password(email, password, None, None, Some(is_verified));
 
     match user {
         Ok(mut user) => {
@@ -84,29 +88,71 @@ pub async fn create_user(
                     .await
                 {
                     Ok(_) => {
-                        tracing::info!("User created: {}", user.email);
+                        tracing::info!("User created: {}", &user.email);
+                        let user_dto = UserDTO {
+                            id: user.id,
+                            email: user.email,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            avatar_path: user.avatar_path,
+                            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                            is_verified: user.is_verified,
+                        };
+                        let user_created = UserEvents::Created {
+                            user: user_dto.clone(),
+                        };
+                        let mut events = vec![&user_created];
+
+                        if !user.is_verified {
+                            let now = Utc::now();
+                            let vr_duration =
+                                Duration::new(state.vr_duration_in_seconds, 0).unwrap_or_default();
+                            let vr_exp = now.add(vr_duration);
+
+                            let vr_body = Claims::new(
+                                vr_exp.timestamp() as usize,
+                                user_dto.clone(),
+                                TokenType::Verification,
+                            );
+
+                            let token = encode(
+                                &Header::default(),
+                                &vr_body,
+                                &EncodingKey::from_secret(state.secret.as_ref()),
+                            );
+
+                            if let Ok(token) = token {
+                                let verification_requested = UserEvents::VerificationRequested {
+                                    user: user_dto,
+                                    token,
+                                };
+
+                                events.push(&verification_requested);
+
+                                let result = state
+                                    .message_publisher
+                                    .lock()
+                                    .await
+                                    .publish_all(events)
+                                    .await;
+
+                                if result.is_err() {
+                                    tracing::error!("Error publishing user events: {:?}", result);
+                                }
+
+                                return;
+                            }
+                        }
+
                         let result = state
                             .message_publisher
                             .lock()
                             .await
-                            .publish(&UserEvents::Created {
-                                user: UserDTO {
-                                    id: user.id,
-                                    email: user.email,
-                                    first_name: user.first_name,
-                                    last_name: user.last_name,
-                                    avatar_path: user.avatar_path,
-                                    roles: user
-                                        .roles
-                                        .iter()
-                                        .map(|role| role.name.clone())
-                                        .collect(),
-                                },
-                            })
+                            .publish_all(events)
                             .await;
 
                         if result.is_err() {
-                            tracing::error!("Error publishing user created event: {:?}", result);
+                            tracing::error!("Error publishing user events: {:?}", result);
                         }
                     }
                     Err(error) => tracing::error!("Failed to create user {:?}", error),
@@ -154,9 +200,6 @@ pub async fn create_user(
 #[utoipa::path(put, path = "/v1/me",
     request_body = UpdateUserRequest,
     tag="user",
-    params(
-        ("id" = String, Path, description = "User ID")
-    ),
     responses(
         (status = 200, description = "User updated", content_type = "application/json", body = UserDTO),
         (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
@@ -197,6 +240,7 @@ pub async fn update_profile(
                         last_name: user.last_name,
                         avatar_path: user.avatar_path,
                         roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                        is_verified: user.is_verified,
                     };
 
                     let result = state
@@ -215,13 +259,82 @@ pub async fn update_profile(
                                     .iter()
                                     .map(|role| role.name.clone())
                                     .collect(),
+                                is_verified: old_user.is_verified,
                             },
                             new_user: user_dto.clone(),
                         })
                         .await;
 
                     if result.is_err() {
-                        tracing::error!("Error publishing user created event: {:?}", result);
+                        tracing::error!("Error publishing user updated event: {:?}", result);
+                    }
+
+                    (StatusCode::OK, Json(user_dto)).into_response()
+                }
+                Err(e) => {
+                    tracing::error!("Failed to update user: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(MessageResponse {
+                            message: "Failed to update user".to_string(),
+                        }),
+                    )
+                        .into_response()
+                }
+            }
+        }
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/me/verify",
+    tag="user",
+    responses(
+        (status = 200, description = "User verified", content_type = "application/json", body = UserDTO),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 422, description = "Unprocessable entity"),
+    )
+)]
+pub async fn verify_user(
+    State(state): State<ServerState>,
+    VerificationRequest(user): VerificationRequest,
+) -> impl IntoResponse {
+    let user = state.user_repository.lock().await.get_by_id(user.id).await;
+    match user {
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(MessageResponse {
+                message: "User not found".to_string(),
+            }),
+        )
+            .into_response(),
+        Some(mut user) => {
+            user.verify();
+            match state.user_repository.lock().await.update(&user).await {
+                Ok(_) => {
+                    let user_dto = UserDTO {
+                        id: user.id,
+                        email: user.email,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        avatar_path: user.avatar_path,
+                        roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                        is_verified: user.is_verified,
+                    };
+
+                    let result = state
+                        .message_publisher
+                        .lock()
+                        .await
+                        .publish(&UserEvents::Verified {
+                            user: user_dto.clone(),
+                        })
+                        .await;
+
+                    if result.is_err() {
+                        tracing::error!("Error publishing user verified event: {:?}", result);
                     }
 
                     (StatusCode::OK, Json(user_dto)).into_response()

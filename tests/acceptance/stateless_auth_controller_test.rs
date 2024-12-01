@@ -23,6 +23,7 @@ async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -48,6 +49,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -58,6 +60,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -86,6 +89,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
         at_duration,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -96,8 +100,53 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(false),
     )
     .unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    repository.add(&user).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+        }))
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+
+    let body = response.json::<MessageResponse>();
+
+    assert_eq!(body.message, "User is not verified!")
+}
+
+#[sqlx::test]
+async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let at_duration = 60;
+    let server = create_test_server(
+        secret.clone(),
+        pool.clone(),
+        HashingScheme::BcryptLow,
+        None,
+        at_duration,
+        60,
+        true,
+        172800,
+        "nebula.auth.test".to_string(),
+    )
+        .await;
+    let repository = MysqlUserRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user = User::now_with_email_and_password(
+        email.clone(),
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        Some(true),
+    )
+        .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -124,7 +173,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     )
-    .unwrap();
+        .unwrap();
 
     assert_eq!(token.claims.user.id, user.id);
     assert_eq!(token.claims.user.email, user.email);
@@ -143,6 +192,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
         60,
         rt_duration,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -153,6 +203,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -198,6 +249,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -208,6 +260,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt));
@@ -241,7 +294,8 @@ async fn it_verifies_token(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -253,6 +307,73 @@ async fn it_verifies_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
+    )
+    .unwrap();
+    user.hash_password(&SchemeAwareHasher::default());
+    let role = Role::now("user".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    repository.add_with_role(&user, role.id).await.unwrap();
+
+    let response = server
+        .post("/v1/stateless/login")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+        }))
+        .await;
+    let body = response.json::<LoginResponse>();
+
+    let response = server
+        .get("/v1/stateless/verify")
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+        )
+        .await;
+
+    let user_id_from_header = response
+        .headers()
+        .get("X-User-Id")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let roles_from_header = response
+        .headers()
+        .get("X-User-Roles")
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+    assert_eq!(user_id_from_header, user.id.to_string());
+    assert!(roles_from_header.contains("user"));
+}
+
+#[sqlx::test]
+async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
+    let secret = "secret".to_string();
+    let server = create_test_server(
+        secret.clone(),
+        pool.clone(),
+        HashingScheme::BcryptLow,
+        None,
+        60,
+        60,
+        true,
+        172800,
+        "nebula.auth.test".to_string(),
+    )
+    .await;
+    let repository = MysqlUserRepository::new(pool.clone());
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let email = String::from("jon@snow.test");
+    let mut user = User::now_with_email_and_password(
+        email.clone(),
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -306,6 +427,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -317,6 +439,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -355,6 +478,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -366,6 +490,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -423,6 +548,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -434,6 +560,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -463,6 +590,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -474,6 +602,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -512,6 +641,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -522,6 +652,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -560,6 +691,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -570,6 +702,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -587,6 +720,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
             avatar_path: user.avatar_path.clone(),
+            is_verified: user.is_verified,
         },
         TokenType::Access,
     );

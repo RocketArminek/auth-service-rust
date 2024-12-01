@@ -76,6 +76,17 @@ pub async fn login(
                     }
                 });
             }
+            if state.verification_required {
+                if !user.is_verified {
+                    return (
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("User is not verified!"),
+                        }),
+                    )
+                        .into_response();
+                }
+            }
 
             let user_response = UserDTO {
                 id: user.id,
@@ -84,6 +95,7 @@ pub async fn login(
                 avatar_path: user.avatar_path,
                 first_name: user.first_name,
                 last_name: user.last_name,
+                is_verified: user.is_verified,
             };
 
             let now = Utc::now();
@@ -181,6 +193,7 @@ pub async fn verify(StatelessLoggedInUser(user): StatelessLoggedInUser) -> impl 
             last_name: user.last_name,
             avatar_path: user.avatar_path,
             roles: user.roles,
+            is_verified: user.is_verified,
         }),
     )
         .into_response()
@@ -214,6 +227,7 @@ pub async fn refresh(
                 avatar_path: user.avatar_path,
                 first_name: user.first_name,
                 last_name: user.last_name,
+                is_verified: user.is_verified,
             };
 
             let now = Utc::now();

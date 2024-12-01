@@ -12,6 +12,7 @@ pub struct UserRow {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub avatar_path: Option<String>,
+    pub is_verified: bool,
 }
 
 impl From<UserRow> for User {
@@ -25,6 +26,7 @@ impl From<UserRow> for User {
             created_at: row.created_at,
             roles: vec![],
             avatar_path: row.avatar_path,
+            is_verified: row.is_verified,
         }
     }
 }

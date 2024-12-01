@@ -28,6 +28,7 @@ pub async fn create_test_server(
     at_duration_in_seconds: i64,
     rt_duration_in_seconds: i64,
     verification_required: bool,
+    vr_duration_in_seconds: i64,
     exchange_name: String,
 ) -> TestServer {
     let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
@@ -61,6 +62,7 @@ pub async fn create_test_server(
         at_duration_in_seconds,
         rt_duration_in_seconds,
         verification_required,
+        vr_duration_in_seconds,
         user_repository,
         role_repository,
         message_publisher,
@@ -138,7 +140,7 @@ pub async fn setup_test_consumer(exchange_name: &str) -> (Channel, Consumer, Str
 }
 
 pub async fn wait_for_event<T: std::fmt::Debug>(
-    mut consumer: lapin::Consumer,
+    mut consumer: Consumer,
     timeout_secs: u64,
     predicate: impl Fn(&T) -> bool,
 ) -> Option<T>

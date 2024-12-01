@@ -1,5 +1,4 @@
 use crate::utils;
-use crate::utils::TestEvent;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
 use auth_service::infrastructure::message_publisher::{MessagePublisher, NullPublisher};
@@ -39,6 +38,7 @@ async fn it_dispatches_messages_into_queue() {
                 first_name: None,
                 roles: vec![],
                 avatar_path: None,
+                is_verified: false,
             },
         })
         .await
@@ -69,12 +69,13 @@ async fn it_does_nothing() {
                 first_name: None,
                 roles: vec![],
                 avatar_path: None,
+                is_verified: false,
             },
         })
         .await
         .unwrap();
 
-    let event = utils::wait_for_event::<TestEvent>(consumer, 5, |_| true).await;
+    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |_| true).await;
 
     assert!(event.is_none(), "Should not receive any message");
 }

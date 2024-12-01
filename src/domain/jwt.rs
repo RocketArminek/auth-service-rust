@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub enum TokenType {
     Access,
     Refresh,
+    Verification,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,4 +37,6 @@ pub struct UserDTO {
     #[serde(rename = "avatarPath")]
     pub avatar_path: Option<String>,
     pub roles: Vec<String>,
+    #[serde(rename = "isVerified")]
+    pub is_verified: bool,
 }

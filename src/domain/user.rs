@@ -15,6 +15,7 @@ pub struct User {
     pub created_at: DateTime<Utc>,
     pub roles: Vec<Role>,
     pub avatar_path: Option<String>,
+    pub is_verified: bool,
 }
 
 impl User {
@@ -25,12 +26,14 @@ impl User {
         first_name: Option<String>,
         last_name: Option<String>,
         created_at: DateTime<Utc>,
+        is_verified: Option<bool>,
     ) -> Result<Self, UserError> {
         let email_regex = regex!(r#"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$"#);
         let password_digit_check = regex!(r#"\d"#);
         let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
         let password_uppercase_check = regex!(r#"[A-Z]"#);
         let password_lowercase_check = regex!(r#"[a-z]"#);
+        let is_verified = is_verified.unwrap_or(false);
 
         if email.is_empty() {
             Err(UserError::InvalidEmail { email })
@@ -68,6 +71,7 @@ impl User {
                 created_at,
                 roles: vec![],
                 avatar_path: None,
+                is_verified,
             })
         }
     }
@@ -77,6 +81,7 @@ impl User {
         password: String,
         first_name: Option<String>,
         last_name: Option<String>,
+        is_verified: Option<bool>,
     ) -> Result<Self, UserError> {
         let now = Utc::now();
         let timestamp = Timestamp::from_unix(NoContext, now.timestamp() as u64, now.nanosecond());
@@ -88,6 +93,7 @@ impl User {
             first_name,
             last_name,
             now,
+            is_verified,
         )
     }
 
@@ -98,6 +104,14 @@ impl User {
 
     pub fn add_role(&mut self, role: Role) {
         self.roles.push(role);
+    }
+
+    pub fn verify(&mut self) {
+        self.is_verified = true;
+    }
+
+    pub fn revoke_verification(&mut self) {
+        self.is_verified = false;
     }
 
     pub fn add_roles(&mut self, mut roles: Vec<Role>) {

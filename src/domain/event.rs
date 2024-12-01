@@ -15,4 +15,8 @@ pub enum UserEvents {
         #[serde(rename = "newUser")]
         new_user: UserDTO,
     },
+    #[serde(rename = "user.verificationRequested")]
+    VerificationRequested { user: UserDTO, token: String },
+    #[serde(rename = "user.verified")]
+    Verified { user: UserDTO },
 }

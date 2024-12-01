@@ -11,6 +11,7 @@ async fn it_can_add_user(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool);
@@ -27,6 +28,7 @@ async fn it_can_get_user_by_email(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool);
@@ -43,6 +45,7 @@ async fn it_deletes_user_by_email(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool);
@@ -63,6 +66,7 @@ async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool.clone());
@@ -86,6 +90,7 @@ async fn it_can_be_created_with_role(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool.clone());
@@ -107,6 +112,7 @@ async fn it_cannot_be_created_with_not_existing_role(pool: Pool<MySql>) {
         "Iknow#othing1".to_string(),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let repository = MysqlUserRepository::new(pool.clone());

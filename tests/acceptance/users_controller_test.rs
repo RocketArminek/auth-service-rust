@@ -1,5 +1,5 @@
 use crate::utils;
-use crate::utils::{create_test_server, TestEvent};
+use crate::utils::create_test_server;
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse, UserListResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
@@ -25,7 +25,8 @@ async fn it_creates_new_user(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -58,7 +59,139 @@ async fn it_creates_new_user(pool: Pool<MySql>) {
         assert_eq!(user.last_name, None);
         assert_eq!(user.avatar_path, None);
         assert_eq!(user.roles, vec!["user".to_string()]);
+        assert_eq!(user.is_verified, true);
     }
+}
+
+#[sqlx::test]
+async fn it_creates_not_verified_user(pool: Pool<MySql>) {
+    let id = Uuid::new_v4();
+    let exchange_name = format!("nebula.auth.test-{}", id);
+    let (_channel, consumer, _queue_name) = utils::setup_test_consumer(&exchange_name).await;
+    let server = create_test_server(
+        "secret".to_string(),
+        pool.clone(),
+        HashingScheme::BcryptLow,
+        None,
+        60,
+        60,
+        true,
+        172800,
+        exchange_name,
+    )
+    .await;
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let role = Role::now("user".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    let email = String::from("jon@snow.test");
+
+    let response = server
+        .post("/v1/users")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+            "role": "user",
+        }))
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::CREATED);
+
+    let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
+        matches!(event, UserEvents::Created { .. })
+    })
+    .await;
+
+    assert!(event.is_some(), "Should have received some event");
+
+    if let Some(UserEvents::Created { user }) = event {
+        assert_eq!(user.email, email);
+        assert_eq!(user.first_name, None);
+        assert_eq!(user.last_name, None);
+        assert_eq!(user.avatar_path, None);
+        assert_eq!(user.roles, vec!["user".to_string()]);
+        assert_eq!(user.is_verified, false);
+    }
+
+    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
+        matches!(event, UserEvents::VerificationRequested { .. })
+    })
+    .await;
+
+    assert!(event.is_some(), "Should have received some event");
+
+    if let Some(UserEvents::VerificationRequested { user, token }) = event {
+        assert_eq!(user.email, email);
+        assert_eq!(user.first_name, None);
+        assert_eq!(user.last_name, None);
+        assert_eq!(user.avatar_path, None);
+        assert_eq!(user.roles, vec!["user".to_string()]);
+        assert_eq!(user.is_verified, false);
+        assert_eq!(token.is_empty(), false);
+    }
+}
+
+#[sqlx::test]
+async fn it_verifies_user(pool: Pool<MySql>) {
+    let id = Uuid::new_v4();
+    let exchange_name = format!("nebula.auth.test-{}", id);
+    let (_channel, consumer, _queue_name) = utils::setup_test_consumer(&exchange_name).await;
+    let server = create_test_server(
+        "secret".to_string(),
+        pool.clone(),
+        HashingScheme::BcryptLow,
+        None,
+        60,
+        60,
+        true,
+        172800,
+        exchange_name,
+    )
+    .await;
+    let role_repository = MysqlRoleRepository::new(pool.clone());
+    let role = Role::now("user".to_string()).unwrap();
+    role_repository.add(&role).await.unwrap();
+    let email = String::from("jon@snow.test");
+
+    let _ = server
+        .post("/v1/users")
+        .json(&json!({
+            "email": &email,
+            "password": "Iknow#othing1",
+            "role": "user",
+        }))
+        .await;
+
+    let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
+        matches!(event, UserEvents::VerificationRequested { .. })
+    })
+    .await;
+
+    let Some(UserEvents::VerificationRequested { token, .. }) = event else {
+        panic!("Should have received verification requested event")
+    };
+
+    let response = server
+        .patch("/v1/me/verify")
+        .add_header(
+            HeaderName::try_from("Authorization").unwrap(),
+            HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+        )
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let body = response.json::<UserDTO>();
+
+    assert_eq!(body.is_verified, true);
+    assert_eq!(body.email, email);
+    assert_eq!(body.roles, vec!["user".to_string()]);
+
+    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
+        matches!(event, UserEvents::Verified { .. })
+    })
+        .await;
+
+    assert!(event.is_some(), "Should have received some event");
 }
 
 #[sqlx::test]
@@ -73,7 +206,8 @@ async fn it_does_not_create_user_with_invalid_password(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -93,7 +227,7 @@ async fn it_does_not_create_user_with_invalid_password(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
 
-    let event = utils::wait_for_event::<TestEvent>(consumer, 5, |_| true).await;
+    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |_| true).await;
     assert!(event.is_none(), "Should not receive any message");
 }
 
@@ -106,7 +240,8 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -117,6 +252,7 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     repository.add(&user).await.unwrap();
@@ -145,7 +281,8 @@ async fn it_returns_bad_request_if_roles_does_not_exists(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -177,7 +314,8 @@ async fn it_returns_bad_request_if_role_is_restricted(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -206,7 +344,8 @@ async fn it_returns_bad_request_if_role_is_restricted_2(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -235,7 +374,8 @@ async fn it_returns_bad_request_if_role_restricted_another(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -270,7 +410,8 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -280,6 +421,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -326,6 +468,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         assert_eq!(user.email, email);
         assert_eq!(user.avatar_path, None);
         assert_eq!(user.roles, vec!["ADMIN_USER".to_string()]);
+        assert_eq!(user.is_verified, true);
     }
 }
 
@@ -341,7 +484,8 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -351,6 +495,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -383,7 +528,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
 
-    let event = utils::wait_for_event::<TestEvent>(consumer, 5, |_| true).await;
+    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |_| true).await;
     assert!(event.is_none(), "Should not receive any message");
 }
 
@@ -396,7 +541,8 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -406,6 +552,7 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -452,7 +599,8 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -463,6 +611,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         String::from("Admin#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -476,6 +625,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         String::from("User#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     repository.add(&user).await.unwrap();
@@ -514,7 +664,8 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -525,6 +676,7 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
         String::from("Admin#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -538,6 +690,7 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
         String::from("User#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     repository.add(&user).await.unwrap();
@@ -589,7 +742,8 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -600,6 +754,7 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
         String::from("Admin#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -641,7 +796,8 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -653,6 +809,7 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
         String::from("User#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
@@ -727,7 +884,8 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
         None,
         60,
         60,
-        true,
+        false,
+        172800,
         exchange_name,
     )
     .await;
@@ -738,6 +896,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
         String::from("Admin#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
@@ -751,6 +910,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
         String::from("User#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     repository.add(&user).await.unwrap();
@@ -817,7 +977,8 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
         Some("ADMIN".to_string()),
         60,
         60,
-        true,
+        false,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -828,6 +989,7 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
         String::from("Admin#pass1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());

@@ -14,6 +14,7 @@ async fn it_returns_health_check_result(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -34,6 +35,7 @@ async fn it_returns_open_api_docs(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;
@@ -54,6 +56,7 @@ async fn it_returns_swagger_ui(pool: Pool<MySql>) {
         60,
         60,
         true,
+        172800,
         "nebula.auth.test".to_string(),
     )
     .await;

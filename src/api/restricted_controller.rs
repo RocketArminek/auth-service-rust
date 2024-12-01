@@ -62,7 +62,7 @@ pub async fn create_restricted_user(
     }
     let existing_role = existing_role.unwrap();
 
-    let user = User::now_with_email_and_password(email, password, None, None);
+    let user = User::now_with_email_and_password(email, password, None, None, Some(true));
 
     match user {
         Ok(mut user) => {
@@ -96,6 +96,7 @@ pub async fn create_restricted_user(
                                         .iter()
                                         .map(|role| role.name.clone())
                                         .collect(),
+                                    is_verified: user.is_verified,
                                 },
                             })
                             .await;
@@ -177,6 +178,7 @@ pub async fn get_all_users(
                     last_name: user.last_name,
                     avatar_path: user.avatar_path,
                     roles: vec![],
+                    is_verified: user.is_verified,
                 })
                 .collect();
 
@@ -228,6 +230,7 @@ pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) ->
                 last_name: user.last_name,
                 avatar_path: user.avatar_path,
                 roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                is_verified: user.is_verified,
             }),
         )
             .into_response(),
@@ -274,6 +277,7 @@ pub async fn delete_user(
                             last_name: user.last_name,
                             avatar_path: user.avatar_path,
                             roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                            is_verified: user.is_verified,
                         },
                     })
                     .await;
@@ -356,6 +360,7 @@ pub async fn update_user(
                         last_name: user.last_name,
                         avatar_path: user.avatar_path,
                         roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+                        is_verified: user.is_verified,
                     };
 
                     let result = state
@@ -374,6 +379,7 @@ pub async fn update_user(
                                     .iter()
                                     .map(|role| role.name.clone())
                                     .collect(),
+                                is_verified: old_user.is_verified,
                             },
                             new_user: user_dto.clone(),
                         })

@@ -1,5 +1,5 @@
 use crate::api::acl_mw::restricted_acl;
-use axum::routing::{any, post, put};
+use axum::routing::{any, patch, post, put};
 use axum::{middleware, routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -20,6 +20,7 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
         .route("/v1/me", put(update_profile))
+        .route("/v1/me/verify", patch(verify_user))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/verify", any(verify))
         .route("/v1/stateless/refresh", post(refresh))
@@ -65,6 +66,7 @@ pub fn routes(state: ServerState) -> Router {
         refresh,
         update_profile,
         update_user,
+        verify_user,
     ),
     components(
         schemas(

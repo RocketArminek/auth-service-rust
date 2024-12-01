@@ -14,6 +14,7 @@ pub struct ServerState {
     pub at_duration_in_seconds: i64,
     pub rt_duration_in_seconds: i64,
     pub verification_required: bool,
+    pub vr_duration_in_seconds: i64,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
     pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
     pub message_publisher: Arc<Mutex<dyn MessagePublisher + Send + Sync>>,
@@ -23,9 +24,19 @@ pub trait SecretAware {
     fn get_secret(&self) -> String;
 }
 
+pub trait VerificationRequired {
+    fn get_verification_required(&self) -> bool;
+}
+
 impl SecretAware for ServerState {
     fn get_secret(&self) -> String {
         self.secret.clone()
+    }
+}
+
+impl VerificationRequired for ServerState {
+    fn get_verification_required(&self) -> bool {
+        self.verification_required
     }
 }
 

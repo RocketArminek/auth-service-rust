@@ -9,6 +9,7 @@ use tokio::sync::Mutex;
 #[async_trait]
 pub trait MessagePublisher {
     async fn publish(&self, event: &UserEvents) -> Result<(), Box<dyn Error>>;
+    async fn publish_all(&self, events: Vec<&UserEvents>) -> Result<(), Box<dyn Error>>;
 }
 
 #[derive(Clone)]
@@ -17,6 +18,9 @@ pub struct NullPublisher {}
 #[async_trait]
 impl MessagePublisher for NullPublisher {
     async fn publish(&self, _event: &UserEvents) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+    async fn publish_all(&self, _events: Vec<&UserEvents>) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 }

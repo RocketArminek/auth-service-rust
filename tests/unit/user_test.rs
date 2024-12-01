@@ -13,6 +13,7 @@ fn it_can_be_created() {
         Some(String::from("Jon")),
         Some(String::from("Snow")),
         Utc::now(),
+        Some(true),
     )
     .unwrap();
 
@@ -31,7 +32,10 @@ fn it_can_be_created_with_roles() {
         Some(String::from("Jon")),
         Some(String::from("Snow")),
         now.clone(),
-    ).unwrap().with_roles(vec![role.clone()]);
+        Some(true),
+    )
+    .unwrap()
+    .with_roles(vec![role.clone()]);
 
     assert_eq!(user.id.is_nil(), false);
     assert_eq!(user.email, String::from("test@test.com"));
@@ -48,6 +52,7 @@ fn it_cannot_be_created_with_empty_email() {
         String::from("password"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -61,6 +66,7 @@ fn it_cannot_be_created_with_empty_password() {
         String::from(""),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -74,6 +80,7 @@ fn it_cannot_be_created_with_invalid_email() {
         String::from("password"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -87,6 +94,7 @@ fn it_cannot_be_created_without_special_character() {
         String::from("Password1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -100,6 +108,7 @@ fn it_cannot_be_created_without_uppercase_character() {
         String::from("password1#"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -113,6 +122,7 @@ fn it_cannot_be_created_without_lowercase_character() {
         String::from("PASSWORD1#"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     ) {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
@@ -126,6 +136,7 @@ fn it_can_verify_password_using_hasher() {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let hasher = SchemeAwareHasher::default();
@@ -141,6 +152,7 @@ fn it_has_roles() {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
     let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
@@ -159,8 +171,9 @@ fn it_can_add_multiple_roles() {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
-        .unwrap();
+    .unwrap();
     let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
 
     user.add_roles(vec![role]);
@@ -177,8 +190,24 @@ fn it_does_not_have_roles_by_default() {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
+        Some(true),
     )
     .unwrap();
 
     assert_eq!(user.roles.len(), 0);
+}
+
+#[test]
+fn it_is_not_verified_by_default() {
+    let user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(user.email, String::from("test@test.com"));
+    assert_eq!(user.is_verified, false);
 }

@@ -60,6 +60,27 @@ impl MessagePublisher for RabbitmqMessagePublisher {
 
         Ok(())
     }
+
+    async fn publish_all(&self, events: Vec<&UserEvents>) -> Result<(), Box<dyn Error>> {
+        for event in events {
+            let payload = serde_json::to_vec(event)?;
+
+            self.channel
+                .basic_publish(
+                    &self.exchange_name,
+                    "",
+                    BasicPublishOptions::default(),
+                    &payload,
+                    BasicProperties::default()
+                        .with_content_type("application/json".into())
+                        .with_delivery_mode(2), // persistent delivery
+                )
+                .await?
+                .await?;
+        }
+
+        Ok(())
+    }
 }
 
 pub async fn create_rabbitmq_connection() -> Connection {

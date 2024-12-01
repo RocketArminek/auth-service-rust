@@ -123,6 +123,17 @@ async fn main() {
         .parse::<bool>()
         .unwrap();
 
+    let vr_duration_in_seconds = env::var("VR_DURATION_IN_SECONDS")
+        .unwrap_or("172800".to_string())
+        .parse::<i64>()
+        .unwrap();
+
+    tracing::info!(
+        "Configured verification token duration in seconds: {} ({} d)",
+        &vr_duration_in_seconds,
+        &vr_duration_in_seconds / 60 / 60 / 24
+    );
+
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
     let pool = create_mysql_pool().await.unwrap();
     migrate_db(&pool).await;
@@ -147,6 +158,7 @@ async fn main() {
                 at_duration_in_seconds,
                 rt_duration_in_seconds,
                 verification_required,
+                vr_duration_in_seconds,
                 user_repository,
                 role_repository,
                 message_publisher,
@@ -170,8 +182,13 @@ async fn main() {
             password,
             role,
         }) => {
-            let user =
-                User::now_with_email_and_password(email.clone(), password.clone(), None, None);
+            let user = User::now_with_email_and_password(
+                email.clone(),
+                password.clone(),
+                None,
+                None,
+                Some(true),
+            );
 
             match user {
                 Ok(mut user) => {
