@@ -70,7 +70,7 @@ pub async fn create_restricted_user(
 
             tokio::task::spawn(async move {
                 user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
-                user = user.with_roles(vec![existing_role.clone()]);
+                user.add_roles(vec![existing_role.clone()]);
                 match state
                     .user_repository
                     .lock()

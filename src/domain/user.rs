@@ -100,6 +100,10 @@ impl User {
         self.roles.push(role);
     }
 
+    pub fn add_roles(&mut self, mut roles: Vec<Role>) {
+        self.roles.append(&mut roles);
+    }
+
     pub fn has_role(&self, role_name: String) -> bool {
         self.roles.iter().any(|role| role.name == role_name)
     }
