@@ -6,7 +6,7 @@ use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_mysql_pool;
-use auth_service::infrastructure::message_publisher::create_message_publisher;
+use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
@@ -141,7 +141,8 @@ async fn main() {
     let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
     let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
 
-    let message_publisher = create_message_publisher().await;
+    let message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>> =
+        create_message_publisher().await;
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
 

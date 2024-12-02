@@ -189,7 +189,7 @@ async fn it_verifies_user(pool: Pool<MySql>) {
     let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
         matches!(event, UserEvents::Verified { .. })
     })
-        .await;
+    .await;
 
     assert!(event.is_some(), "Should have received some event");
 }

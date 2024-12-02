@@ -1,4 +1,5 @@
 use crate::domain::crypto::HashingScheme;
+use crate::domain::event::UserEvents;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
@@ -17,7 +18,7 @@ pub struct ServerState {
     pub vr_duration_in_seconds: i64,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
     pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
-    pub message_publisher: Arc<Mutex<dyn MessagePublisher + Send + Sync>>,
+    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>>,
 }
 
 pub trait SecretAware {

@@ -318,7 +318,7 @@ pub async fn verify_user(
                         message: "Verification is not required!".to_string(),
                     }),
                 )
-                    .into_response()
+                    .into_response();
             }
             if user.is_verified {
                 return (
@@ -327,7 +327,7 @@ pub async fn verify_user(
                         message: "User is already verified!".to_string(),
                     }),
                 )
-                    .into_response()
+                    .into_response();
             }
             user.verify();
             match state.user_repository.lock().await.update(&user).await {

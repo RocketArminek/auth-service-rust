@@ -1,9 +1,9 @@
-use crate::domain::event::UserEvents;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use axum::async_trait;
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use serde::Serialize;
 use std::env;
 use std::error::Error;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ impl RabbitmqMessagePublisher {
         exchange_name: String,
         exchange_kind: ExchangeKind,
         exchange_declare_options: ExchangeDeclareOptions,
-    ) -> Result<RabbitmqMessagePublisher, Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         let channel = connection.create_channel().await?;
 
         channel
@@ -33,7 +33,7 @@ impl RabbitmqMessagePublisher {
             )
             .await?;
 
-        Ok(RabbitmqMessagePublisher {
+        Ok(Self {
             channel,
             exchange_name,
         })
@@ -41,8 +41,8 @@ impl RabbitmqMessagePublisher {
 }
 
 #[async_trait]
-impl MessagePublisher for RabbitmqMessagePublisher {
-    async fn publish(&self, event: &UserEvents) -> Result<(), Box<dyn Error>> {
+impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublisher {
+    async fn publish(&self, event: &T) -> Result<(), Box<dyn Error>> {
         let payload = serde_json::to_vec(event)?;
 
         self.channel
@@ -61,22 +61,9 @@ impl MessagePublisher for RabbitmqMessagePublisher {
         Ok(())
     }
 
-    async fn publish_all(&self, events: Vec<&UserEvents>) -> Result<(), Box<dyn Error>> {
+    async fn publish_all(&self, events: Vec<&T>) -> Result<(), Box<dyn Error>> {
         for event in events {
-            let payload = serde_json::to_vec(event)?;
-
-            self.channel
-                .basic_publish(
-                    &self.exchange_name,
-                    "",
-                    BasicPublishOptions::default(),
-                    &payload,
-                    BasicProperties::default()
-                        .with_content_type("application/json".into())
-                        .with_delivery_mode(2), // persistent delivery
-                )
-                .await?
-                .await?;
+            self.publish(event).await?;
         }
 
         Ok(())
@@ -91,7 +78,8 @@ pub async fn create_rabbitmq_connection() -> Connection {
         .expect("Failed to connect to rabbitmq")
 }
 
-pub async fn create_rabbitmq_message_publisher() -> Arc<Mutex<dyn MessagePublisher + Send + Sync>> {
+pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(
+) -> Arc<Mutex<dyn MessagePublisher<T> + Send + Sync>> {
     tracing::info!("Event driven is turned on");
     let rabbitmq_exchange_name =
         env::var("RABBITMQ_EXCHANGE_NAME").unwrap_or("nebula.auth.events".to_string());

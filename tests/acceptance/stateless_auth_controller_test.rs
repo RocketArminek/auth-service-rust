@@ -136,7 +136,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
         172800,
         "nebula.auth.test".to_string(),
     )
-        .await;
+    .await;
     let repository = MysqlUserRepository::new(pool.clone());
     let email = String::from("jon@snow.test");
     let mut user = User::now_with_email_and_password(
@@ -146,7 +146,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
     repository.add(&user).await.unwrap();
 
@@ -173,7 +173,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     )
-        .unwrap();
+    .unwrap();
 
     assert_eq!(token.claims.user.id, user.id);
     assert_eq!(token.claims.user.email, user.email);
