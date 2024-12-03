@@ -221,7 +221,7 @@ pub async fn get_all_users(
 )]
 pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) -> impl IntoResponse {
     match state.user_repository.lock().await.get_by_id(id).await {
-        Some(user) => (
+        Ok(Some(user)) => (
             StatusCode::OK,
             Json(UserDTO {
                 id: user.id,
@@ -234,13 +234,23 @@ pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) ->
             }),
         )
             .into_response(),
-        None => (
+        Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(MessageResponse {
                 message: "User not found".to_string(),
             }),
         )
             .into_response(),
+        e => {
+            tracing::error!("Failed to get user: {:?}, {:?}", id, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(MessageResponse {
+                    message: "Something went wrong!".to_string(),
+                }),
+            )
+                .into_response()
+        },
     }
 }
 
@@ -263,7 +273,7 @@ pub async fn delete_user(
     let user_repo = state.user_repository.lock().await;
 
     match user_repo.get_by_id(id).await {
-        Some(user) => match user_repo.delete_by_email(&user.email).await {
+        Ok(Some(user)) => match user_repo.delete_by_email(&user.email).await {
             Ok(_) => {
                 let result = state
                     .message_publisher
@@ -302,13 +312,23 @@ pub async fn delete_user(
             )
                 .into_response(),
         },
-        None => (
+        Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(MessageResponse {
                 message: "User not found".to_string(),
             }),
         )
             .into_response(),
+        e => {
+            tracing::error!("Failed to delete user: {:?}, {:?}", id, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(MessageResponse {
+                    message: "Failed to delete user".to_string(),
+                }),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -338,14 +358,14 @@ pub async fn update_user(
 
     let user = state.user_repository.lock().await.get_by_id(id).await;
     match user {
-        None => (
+        Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(MessageResponse {
                 message: "User not found".to_string(),
             }),
         )
             .into_response(),
-        Some(old_user) => {
+        Ok(Some(old_user)) => {
             let mut user = old_user.clone();
             user.first_name = Some(first_name);
             user.last_name = Some(last_name);
@@ -402,6 +422,16 @@ pub async fn update_user(
                         .into_response()
                 }
             }
+        }
+        e => {
+            tracing::error!("Failed to update user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(MessageResponse {
+                    message: "Failed to update user".to_string(),
+                }),
+            )
+                .into_response()
         }
     }
 }

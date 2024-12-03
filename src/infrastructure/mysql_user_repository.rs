@@ -3,6 +3,7 @@ use crate::domain::user::User;
 use crate::infrastructure::dto::{UserRow, UserWithRoleRow};
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
+use crate::infrastructure::repository::RepositoryError;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {
@@ -94,7 +95,7 @@ impl MysqlUserRepository {
         }
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Option<User> {
+    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<User>, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -118,10 +119,15 @@ impl MysqlUserRepository {
             .bind(id)
             .fetch_all(&self.pool)
             .await
-            .ok()?;
+            .map_err(|e| match e {
+                Error::RowNotFound => {
+                    RepositoryError::NotFound(format!("User not found with id: {}", id))
+                }
+                _ => RepositoryError::Database(e)
+            })?;
 
         if rows.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let first_row = &rows[0];
@@ -147,9 +153,9 @@ impl MysqlUserRepository {
                 })
             })
             .collect();
-        user.roles = roles;
 
-        Some(user)
+        user.roles = roles;
+        Ok(Some(user))
     }
 
     pub async fn get_by_email(&self, email: &String) -> Option<User> {

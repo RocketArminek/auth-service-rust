@@ -16,7 +16,7 @@ async fn it_can_add_user(pool: Pool<MySql>) {
     .unwrap();
     let repository = MysqlUserRepository::new(pool);
     repository.add(&user).await.unwrap();
-    let row = repository.get_by_id(user.id).await.unwrap();
+    let row = repository.get_by_id(user.id).await.unwrap().unwrap();
 
     assert_eq!(row.email, user.email);
 }
@@ -76,7 +76,7 @@ async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     role_repository.add(&role).await.unwrap();
     repository.add_role(user.id, role.id).await.unwrap();
-    let row = repository.get_by_id(user.id).await.unwrap();
+    let row = repository.get_by_id(user.id).await.unwrap().unwrap();
 
     assert_eq!(row.roles[0].id, role.id);
     assert_eq!(row.roles[0].name, role.name);
