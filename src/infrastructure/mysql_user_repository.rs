@@ -1,6 +1,6 @@
 use crate::domain::role::Role;
 use crate::domain::user::User;
-use crate::infrastructure::dto::UserRow;
+use crate::infrastructure::dto::{UserRow, UserWithRoleRow};
 use sqlx::{query, query_as, Error, MySql, Pool};
 use uuid::Uuid;
 
@@ -95,19 +95,61 @@ impl MysqlUserRepository {
     }
 
     pub async fn get_by_id(&self, id: Uuid) -> Option<User> {
-        let user_row = query_as::<_, UserRow>("SELECT * FROM users WHERE id = ?")
-            .bind(id)
-            .fetch_one(&self.pool)
-            .await
-            .ok();
-
-        let roles = query_as::<_, Role>("SELECT r.* FROM roles r JOIN user_roles ur ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id WHERE u.id = ?")
+        let rows = sqlx::query_as::<_, UserWithRoleRow>(
+            r#"
+            SELECT
+                u.id,
+                u.email,
+                u.password,
+                u.created_at,
+                u.first_name,
+                u.last_name,
+                u.avatar_path,
+                u.is_verified,
+                r.id as role_id,
+                r.name as role_name,
+                r.created_at as role_created_at
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id = ?
+            "#
+        )
             .bind(id)
             .fetch_all(&self.pool)
             .await
-            .unwrap_or(vec![]);
+            .ok()?;
 
-        user_row.map(|user| User::from(user).with_roles(roles))
+        if rows.is_empty() {
+            return None;
+        }
+
+        let first_row = &rows[0];
+        let mut user = User {
+            id: first_row.id,
+            email: first_row.email.clone(),
+            password: first_row.password.clone(),
+            first_name: first_row.first_name.clone(),
+            last_name: first_row.last_name.clone(),
+            created_at: first_row.created_at,
+            avatar_path: first_row.avatar_path.clone(),
+            is_verified: first_row.is_verified,
+            roles: Vec::new(),
+        };
+
+        let roles = rows
+            .iter()
+            .filter_map(|row| {
+                row.role_id.map(|role_id| Role {
+                    id: role_id,
+                    name: row.role_name.clone().unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                })
+            })
+            .collect();
+        user.roles = roles;
+
+        Some(user)
     }
 
     pub async fn get_by_email(&self, email: &String) -> Option<User> {

@@ -15,6 +15,21 @@ pub struct UserRow {
     pub is_verified: bool,
 }
 
+#[derive(sqlx::FromRow)]
+pub struct UserWithRoleRow {
+    pub id: Uuid,
+    pub email: String,
+    pub password: String,
+    pub created_at: DateTime<Utc>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub avatar_path: Option<String>,
+    pub is_verified: bool,
+    pub role_id: Option<Uuid>,
+    pub role_name: Option<String>,
+    pub role_created_at: Option<DateTime<Utc>>,
+}
+
 impl From<UserRow> for User {
     fn from(row: UserRow) -> Self {
         User {
