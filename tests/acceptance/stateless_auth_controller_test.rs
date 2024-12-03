@@ -325,7 +325,7 @@ async fn it_verifies_token(pool: Pool<MySql>) {
     let body = response.json::<LoginResponse>();
 
     let response = server
-        .get("/v1/stateless/verify")
+        .get("/v1/stateless/authenticate")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
             HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -391,7 +391,7 @@ async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
     let body = response.json::<LoginResponse>();
 
     let response = server
-        .get("/v1/stateless/verify")
+        .get("/v1/stateless/authenticate")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
             HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -457,7 +457,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
     let body = response.json::<LoginResponse>();
 
     let response = server
-        .get("/v1/stateless/verify")
+        .get("/v1/stateless/authenticate")
         .add_header(
             HeaderName::try_from("Authorization").unwrap(),
             HeaderValue::try_from(format!("Bearer {}", body.refresh_token.value)).unwrap(),
@@ -670,7 +670,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     body.access_token.value.push('1');
 
     let response = server
-        .get("/v1/stateless/verify")
+        .get("/v1/stateless/authenticate")
         .add_header(
             header::AUTHORIZATION,
             HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -732,7 +732,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     .unwrap();
 
     let response = server
-        .get("/v1/stateless/verify")
+        .get("/v1/stateless/authenticate")
         .add_header(
             header::AUTHORIZATION,
             HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),

@@ -160,7 +160,7 @@ pub async fn login(
     }
 }
 
-#[utoipa::path(get, path = "/v1/stateless/verify",
+#[utoipa::path(get, path = "/v1/stateless/authenticate",
     tag="stateless",
     responses(
         (status = 200, description = "Token verified", content_type = "application/json", body = UserDTO),
@@ -168,7 +168,7 @@ pub async fn login(
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
-pub async fn verify(StatelessLoggedInUser(user): StatelessLoggedInUser) -> impl IntoResponse {
+pub async fn authenticate(StatelessLoggedInUser(user): StatelessLoggedInUser) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id;
     let user_roles = user.roles.join(",");

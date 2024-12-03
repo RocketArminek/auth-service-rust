@@ -20,9 +20,9 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
         .route("/v1/me", put(update_profile))
-        .route("/v1/me/verify", patch(verify_user))
+        .route("/v1/me/verify", patch(verify))
         .route("/v1/stateless/login", post(login))
-        .route("/v1/stateless/verify", any(verify))
+        .route("/v1/stateless/authenticate", any(authenticate))
         .route("/v1/stateless/refresh", post(refresh))
         .merge(
             Router::new()
@@ -62,11 +62,11 @@ pub fn routes(state: ServerState) -> Router {
         get_user,
         delete_user,
         login,
-        verify,
+        authenticate,
         refresh,
         update_profile,
         update_user,
-        verify_user,
+        verify,
     ),
     components(
         schemas(

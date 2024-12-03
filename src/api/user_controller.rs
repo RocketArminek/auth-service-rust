@@ -297,7 +297,7 @@ pub async fn update_profile(
         (status = 422, description = "Unprocessable entity"),
     )
 )]
-pub async fn verify_user(
+pub async fn verify(
     State(state): State<ServerState>,
     VerificationRequest(user): VerificationRequest,
 ) -> impl IntoResponse {
