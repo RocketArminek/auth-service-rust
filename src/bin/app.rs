@@ -517,7 +517,11 @@ async fn init_role(
 
     let role = Role::now(role_prefix.to_string()).unwrap();
 
-    role_repository.lock().await.add(&role).await.unwrap();
+    let r = role_repository.lock().await.add(&role).await;
+
+    if let Err(e) = r {
+        tracing::error!("Failed to add role: {} during init role due to: {:?}", role_prefix, e);
+    }
 
     tracing::info!(
         "Created role: {}, {}, {}",

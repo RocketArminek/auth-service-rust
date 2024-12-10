@@ -234,7 +234,7 @@ fn it_does_not_create_user_with_invalid_email() {
 }
 
 #[test]
-fn it_assign_role_to_user() {
+fn it_assigns_role_to_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
