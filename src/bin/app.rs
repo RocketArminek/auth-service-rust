@@ -521,6 +521,8 @@ async fn init_role(
 
     if let Err(e) = r {
         tracing::error!("Failed to add role: {} during init role due to: {:?}", role_prefix, e);
+
+        return role;
     }
 
     tracing::info!(
