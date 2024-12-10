@@ -95,7 +95,7 @@ impl MysqlUserRepository {
         }
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<User>, RepositoryError> {
+    pub async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -127,7 +127,7 @@ impl MysqlUserRepository {
             })?;
 
         if rows.is_empty() {
-            return Ok(None);
+            return Err(RepositoryError::NotFound(format!("User not found with id: {}", id)));
         }
 
         let first_row = &rows[0];
@@ -155,7 +155,8 @@ impl MysqlUserRepository {
             .collect();
 
         user.roles = roles;
-        Ok(Some(user))
+
+        Ok(user)
     }
 
     pub async fn get_by_email(&self, email: &String) -> Option<User> {

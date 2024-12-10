@@ -714,8 +714,8 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
-    let deleted_user = repository.get_by_id(user.id).await.unwrap();
-    assert!(deleted_user.is_none());
+    let deleted_user = repository.get_by_id(user.id).await;
+    assert!(deleted_user.is_err());
 
     let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
         matches!(event, UserEvents::Deleted { .. })

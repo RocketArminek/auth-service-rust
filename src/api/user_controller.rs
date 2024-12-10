@@ -210,14 +210,7 @@ pub async fn update_profile(
 
     let user = state.user_repository.lock().await.get_by_id(user.id).await;
     match user {
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(MessageResponse {
-                message: "User not found".to_string(),
-            }),
-        )
-            .into_response(),
-        Ok(Some(old_user)) => {
+        Ok(old_user) => {
             let mut user = old_user.clone();
             user.first_name = Some(first_name);
             user.last_name = Some(last_name);
@@ -255,15 +248,9 @@ pub async fn update_profile(
                 }
             }
         }
-        e => {
-            tracing::error!("Failed to update user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(MessageResponse {
-                    message: "Failed to update user".to_string(),
-                }),
-            )
-                .into_response()
+        Err(e) => {
+            tracing::error!("Failed to update user");
+            e.into_response()
         }
     }
 }
@@ -285,14 +272,7 @@ pub async fn verify(
 ) -> impl IntoResponse {
     let user = state.user_repository.lock().await.get_by_id(user.id).await;
     match user {
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(MessageResponse {
-                message: "User not found".to_string(),
-            }),
-        )
-            .into_response(),
-        Ok(Some(mut user)) => {
+        Ok(mut user) => {
             if !state.verification_required {
                 return (
                     StatusCode::BAD_REQUEST,
@@ -343,15 +323,9 @@ pub async fn verify(
                 }
             }
         }
-        e => {
-            tracing::error!("Failed to update user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(MessageResponse {
-                    message: "Failed to update user".to_string(),
-                }),
-            )
-                .into_response()
+        Err(e) => {
+            tracing::error!("Failed to update user");
+            e.into_response()
         }
     }
 }

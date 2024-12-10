@@ -277,7 +277,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::OK);
 
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    let found_user = repository.get_by_id(user.id).await.unwrap().unwrap();
+    let found_user = repository.get_by_id(user.id).await.unwrap();
     let parts: Vec<&str> = found_user.password.splitn(2, '.').collect();
     let scheme = HashingScheme::from_string(parts[0].to_string()).unwrap();
 
