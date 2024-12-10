@@ -181,20 +181,7 @@ pub async fn authenticate(StatelessLoggedInUser(user): StatelessLoggedInUser) ->
         HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
     );
 
-    (
-        StatusCode::OK,
-        headers,
-        Json(UserDTO {
-            id: user_id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            avatar_path: user.avatar_path,
-            roles: user.roles,
-            is_verified: user.is_verified,
-        }),
-    )
-        .into_response()
+    (StatusCode::OK, headers, Json(UserDTO::from(user))).into_response()
 }
 
 #[utoipa::path(post, path = "/v1/stateless/refresh",

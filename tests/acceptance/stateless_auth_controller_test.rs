@@ -713,15 +713,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
 
     let claims = Claims::new(
         exp.timestamp() as usize,
-        UserDTO {
-            id: user.id,
-            email: user.email.clone(),
-            roles: vec!["ADMIN_USER".to_string()],
-            first_name: user.first_name.clone(),
-            last_name: user.last_name.clone(),
-            avatar_path: user.avatar_path.clone(),
-            is_verified: user.is_verified,
-        },
+        UserDTO::from(user),
         TokenType::Access,
     );
     let token = encode(

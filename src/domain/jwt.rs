@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+use crate::domain::user::User;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum TokenType {
@@ -39,4 +40,18 @@ pub struct UserDTO {
     pub roles: Vec<String>,
     #[serde(rename = "isVerified")]
     pub is_verified: bool,
+}
+
+impl From<User> for UserDTO {
+    fn from(user: User) -> Self {
+        UserDTO {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            avatar_path: user.avatar_path,
+            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+            is_verified: user.is_verified,
+        }
+    }
 }

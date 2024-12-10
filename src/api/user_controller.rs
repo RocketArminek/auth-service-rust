@@ -89,21 +89,13 @@ pub async fn create_user(
                 {
                     Ok(_) => {
                         tracing::info!("User created: {}", &user.email);
-                        let user_dto = UserDTO {
-                            id: user.id,
-                            email: user.email,
-                            first_name: user.first_name,
-                            last_name: user.last_name,
-                            avatar_path: user.avatar_path,
-                            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                            is_verified: user.is_verified,
-                        };
+                        let user_dto = UserDTO::from(user);
                         let user_created = UserEvents::Created {
                             user: user_dto.clone(),
                         };
                         let mut events = vec![&user_created];
 
-                        if !user.is_verified {
+                        if !user_dto.is_verified {
                             let now = Utc::now();
                             let vr_duration =
                                 Duration::new(state.vr_duration_in_seconds, 0).unwrap_or_default();
@@ -233,34 +225,14 @@ pub async fn update_profile(
 
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
-                    let user_dto = UserDTO {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        avatar_path: user.avatar_path,
-                        roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                        is_verified: user.is_verified,
-                    };
+                    let user_dto = UserDTO::from(user);
 
                     let result = state
                         .message_publisher
                         .lock()
                         .await
                         .publish(&UserEvents::Updated {
-                            old_user: UserDTO {
-                                id: old_user.id,
-                                email: old_user.email,
-                                first_name: old_user.first_name,
-                                last_name: old_user.last_name,
-                                avatar_path: old_user.avatar_path,
-                                roles: old_user
-                                    .roles
-                                    .iter()
-                                    .map(|role| role.name.clone())
-                                    .collect(),
-                                is_verified: old_user.is_verified,
-                            },
+                            old_user: UserDTO::from(old_user),
                             new_user: user_dto.clone(),
                         })
                         .await;
@@ -342,15 +314,7 @@ pub async fn verify(
             user.verify();
             match state.user_repository.lock().await.update(&user).await {
                 Ok(_) => {
-                    let user_dto = UserDTO {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        avatar_path: user.avatar_path,
-                        roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                        is_verified: user.is_verified,
-                    };
+                    let user_dto = UserDTO::from(user);
 
                     let result = state
                         .message_publisher
