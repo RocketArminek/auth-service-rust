@@ -247,10 +247,10 @@ async fn main() {
             let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
-                None => {
-                    println!("User not found for {}", email);
+                Err(e) => {
+                    println!("Error {:?}", e);
                 }
-                Some(user) => {
+                Ok(user) => {
                     println!("User found: {:?}", user);
                 }
             }
@@ -269,10 +269,10 @@ async fn main() {
             let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
-                None => {
-                    println!("User not found for {}", email);
+                Err(e) => {
+                    println!("Error {:?}", e);
                 }
-                Some(user) => {
+                Ok(user) => {
                     let hasher = SchemeAwareHasher::with_scheme(hashing_scheme);
 
                     if user.verify_password(&hasher, password) {
@@ -292,10 +292,10 @@ async fn main() {
             let user = user_repository.lock().await.get_by_email(email).await;
 
             match user {
-                None => {
-                    println!("User not found for {}", email);
+                Err(e) => {
+                    println!("Error {:?}", e);
                 }
-                Some(user) => {
+                Ok(user) => {
                     let r = role_repository.lock().await.get_by_name(role).await;
 
                     match r {

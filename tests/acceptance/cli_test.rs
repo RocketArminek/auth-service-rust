@@ -163,10 +163,7 @@ fn it_cannot_get_not_existing_user() {
     get_cmd
         .assert()
         .success()
-        .stdout(predicate::str::contains(format!(
-            "User not found for {}",
-            &email
-        )));
+        .stdout(predicate::str::contains("Error NotFound"));
 }
 
 #[test]

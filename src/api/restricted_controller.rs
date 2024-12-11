@@ -40,7 +40,7 @@ pub async fn create_restricted_user(
         .await
         .get_by_email(&email)
         .await;
-    if existing.is_some() {
+    if let Ok(_) = existing {
         return (
             StatusCode::CONFLICT,
             Json(MessageResponse {

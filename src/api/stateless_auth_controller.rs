@@ -35,7 +35,7 @@ pub async fn login(
         .await;
 
     match user {
-        Some(user) => {
+        Ok(user) => {
             let hasher = SchemeAwareHasher::with_scheme(state.hashing_scheme);
             if !user.verify_password(&hasher, &password) {
                 return (
@@ -150,13 +150,7 @@ pub async fn login(
                     .into_response(),
             }
         }
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(MessageResponse {
-                message: String::from("User not found"),
-            }),
-        )
-            .into_response(),
+        Err(e) => e.into_response()
     }
 }
 
@@ -204,7 +198,7 @@ pub async fn refresh(
         .await;
 
     match user {
-        Some(user) => {
+        Ok(user) => {
             let user_response = UserDTO {
                 id: user.id,
                 roles: user.roles.iter().map(|role| role.name.clone()).collect(),
@@ -269,12 +263,6 @@ pub async fn refresh(
                     .into_response(),
             }
         }
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(MessageResponse {
-                message: String::from("User not found"),
-            }),
-        )
-            .into_response(),
+        Err(e) => e.into_response(),
     }
 }

@@ -54,8 +54,8 @@ async fn it_deletes_user_by_email(pool: Pool<MySql>) {
     let row = repository.get_by_email(&user.email).await;
 
     match row {
-        None => {}
-        Some(user) => panic!("User {} was not deleted", user.email),
+        Err(_) => {}
+        Ok(user) => panic!("User {} was not deleted", user.email),
     }
 }
 
@@ -121,5 +121,5 @@ async fn it_cannot_be_created_with_not_existing_role(pool: Pool<MySql>) {
     assert!(result.is_err());
 
     let row = repository.get_by_email(&user.email).await;
-    assert!(row.is_none());
+    assert!(row.is_err());
 }
