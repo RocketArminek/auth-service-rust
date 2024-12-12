@@ -86,15 +86,7 @@ pub async fn login(
                     .into_response();
             }
 
-            let user_response = UserDTO {
-                id: user.id,
-                roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                email: user.email,
-                avatar_path: user.avatar_path,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                is_verified: user.is_verified,
-            };
+            let user_response = UserDTO::from(user);
 
             let now = Utc::now();
             let at_duration = Duration::new(state.at_duration_in_seconds, 0).unwrap_or_default();
@@ -199,15 +191,7 @@ pub async fn refresh(
 
     match user {
         Ok(user) => {
-            let user_response = UserDTO {
-                id: user.id,
-                roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                email: user.email,
-                avatar_path: user.avatar_path,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                is_verified: user.is_verified,
-            };
+            let user_response = UserDTO::from(user);
 
             let now = Utc::now();
             let at_duration = Duration::new(state.at_duration_in_seconds, 0).unwrap_or_default();

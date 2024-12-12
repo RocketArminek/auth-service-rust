@@ -238,13 +238,7 @@ pub async fn update_profile(
                 }
                 Err(e) => {
                     tracing::error!("Failed to update user: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(MessageResponse {
-                            message: "Failed to update user".to_string(),
-                        }),
-                    )
-                        .into_response()
+                    e.into_response()
                 }
             }
         }
@@ -312,19 +306,13 @@ pub async fn verify(
                     (StatusCode::OK, Json(user_dto)).into_response()
                 }
                 Err(e) => {
-                    tracing::error!("Failed to update user: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(MessageResponse {
-                            message: "Failed to update user".to_string(),
-                        }),
-                    )
-                        .into_response()
+                    tracing::error!("Failed to verify user: {:?}", e);
+                    e.into_response()
                 }
             }
         }
         Err(e) => {
-            tracing::error!("Failed to update user");
+            tracing::error!("Failed to verify user");
             e.into_response()
         }
     }

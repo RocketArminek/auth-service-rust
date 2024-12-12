@@ -353,13 +353,7 @@ pub async fn update_user(
                 }
                 Err(e) => {
                     tracing::error!("Failed to update user: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(MessageResponse {
-                            message: "Failed to update user".to_string(),
-                        }),
-                    )
-                        .into_response()
+                    e.into_response()
                 }
             }
         }

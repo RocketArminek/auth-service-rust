@@ -15,7 +15,7 @@ impl MysqlUserRepository {
         Self { pool }
     }
 
-    pub async fn add(&self, user: &User) -> Result<(), Error> {
+    pub async fn add(&self, user: &User) -> Result<(), RepositoryError> {
         query("INSERT INTO users (id, email, password, created_at, first_name, last_name, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .bind(&user.id)
             .bind(&user.email)
@@ -30,7 +30,7 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn update(&self, user: &User) -> Result<(), Error> {
+    pub async fn update(&self, user: &User) -> Result<(), RepositoryError> {
         query("UPDATE users SET email = ?, password = ?, created_at = ?, first_name = ?, last_name = ?, avatar_path = ?, is_verified = ? WHERE id = ?")
             .bind(&user.email)
             .bind(&user.password)
@@ -46,7 +46,7 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn add_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), Error> {
+    pub async fn add_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), RepositoryError> {
         query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
             .bind(&user_id)
             .bind(&role_id)
@@ -56,7 +56,7 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn add_with_role(&self, user: &User, role_id: Uuid) -> Result<(), Error> {
+    pub async fn add_with_role(&self, user: &User, role_id: Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let user_query =
@@ -67,16 +67,41 @@ impl MysqlUserRepository {
                 .bind(&user.created_at)
                 .bind(&user.is_verified)
                 .execute(&mut *tx)
-                .await;
+                .await
+                .map_err(
+                    |e| match e {
+                        Error::RowNotFound => {
+                            RepositoryError::NotFound(format!("User Not found: {}", user.id))
+                        }
+                        _ => RepositoryError::Database(e)
+                    }
+                );
 
         let role_query = query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
             .bind(&user.id)
             .bind(&role_id)
             .execute(&mut *tx)
-            .await;
+            .await
+            .map_err(
+                |e| match e {
+                    Error::RowNotFound => {
+                        RepositoryError::NotFound(format!("Role Not found: {}", role_id))
+                    }
+                    _ => RepositoryError::Database(e)
+                }
+            );
 
         match (user_query, role_query) {
-            (Ok(_), Ok(_)) => tx.commit().await,
+            (Ok(_), Ok(_)) => {
+                tx.commit().await.map_err(
+                    |e| match e {
+                        Error::RowNotFound => {
+                            RepositoryError::NotFound("Not found".to_string())
+                        }
+                        _ => RepositoryError::Database(e)
+                    }
+                )
+            },
             (Err(uce), Err(_)) => {
                 tx.rollback().await?;
 
