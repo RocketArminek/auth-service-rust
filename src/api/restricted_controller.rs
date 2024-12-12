@@ -171,17 +171,8 @@ pub async fn get_all_users(
         Ok((users, total)) => {
             let user_responses: Vec<UserDTO> = users
                 .into_iter()
-                .map(|user| UserDTO {
-                    id: user.id,
-                    email: user.email,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    avatar_path: user.avatar_path,
-                    roles: vec![],
-                    is_verified: user.is_verified,
-                })
+                .map(UserDTO::from)
                 .collect();
-
             (
                 StatusCode::OK,
                 Json(UserListResponse {
@@ -196,13 +187,7 @@ pub async fn get_all_users(
         }
         Err(e) => {
             tracing::error!("Failed to list users: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(MessageResponse {
-                    message: "Failed to list users".to_string(),
-                }),
-            )
-                .into_response()
+            e.into_response()
         }
     }
 }

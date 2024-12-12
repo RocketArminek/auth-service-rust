@@ -1,7 +1,7 @@
 use crate::domain::role::Role;
 use crate::domain::user::User;
-use crate::infrastructure::dto::{UserRow, UserWithRoleRow};
-use sqlx::{query, query_as, Error, MySql, Pool};
+use crate::infrastructure::dto::{UserWithRoleRow};
+use sqlx::{query, Error, MySql, Pool};
 use uuid::Uuid;
 use crate::infrastructure::repository::RepositoryError;
 
@@ -236,20 +236,78 @@ impl MysqlUserRepository {
         &self,
         page: i32,
         limit: i32,
-    ) -> Result<(Vec<UserRow>, i32), sqlx::Error> {
+    ) -> Result<(Vec<User>, i32), RepositoryError> {
         let offset = (page - 1) * limit;
 
-        let users =
-            query_as::<_, UserRow>("SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?")
-                .bind(limit)
-                .bind(offset)
-                .fetch_all(&self.pool)
-                .await?;
+        let rows = sqlx::query_as::<_, UserWithRoleRow>(
+            r#"
+            SELECT
+                u.id,
+                u.email,
+                u.password,
+                u.created_at,
+                u.first_name,
+                u.last_name,
+                u.avatar_path,
+                u.is_verified,
+                r.id as role_id,
+                r.name as role_name,
+                r.created_at as role_created_at
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            ORDER BY u.created_at DESC
+            LIMIT ? OFFSET ?
+            "#
+        )
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await?;
 
-        let total: (i32,) = sqlx::query_as("SELECT COUNT(*) FROM users")
+        let total: (i32,) = sqlx::query_as("SELECT COUNT(DISTINCT id) FROM users")
             .fetch_one(&self.pool)
             .await?;
 
+        let users = self.group_user_rows(rows);
+
         Ok((users, total.0))
+    }
+
+    fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
+        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> = std::collections::HashMap::new();
+
+        for row in rows {
+            let user_entry = users_map.entry(row.id).or_insert_with(|| {
+                let user = User {
+                    id: row.id,
+                    email: row.email.clone(),
+                    password: row.password.clone(),
+                    first_name: row.first_name.clone(),
+                    last_name: row.last_name.clone(),
+                    created_at: row.created_at,
+                    avatar_path: row.avatar_path.clone(),
+                    is_verified: row.is_verified,
+                    roles: Vec::new(),
+                };
+                (user, Vec::new())
+            });
+
+            if let Some(role_id) = row.role_id {
+                user_entry.1.push(Role {
+                    id: role_id,
+                    name: row.role_name.unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                });
+            }
+        }
+
+        users_map
+            .into_iter()
+            .map(|(_, (mut user, roles))| {
+                user.roles = roles;
+                user
+            })
+            .collect()
     }
 }
