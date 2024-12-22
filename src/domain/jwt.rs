@@ -1,7 +1,7 @@
+use crate::domain::user::User;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::domain::user::User;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum TokenType {

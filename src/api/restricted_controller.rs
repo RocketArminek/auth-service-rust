@@ -71,13 +71,7 @@ pub async fn create_restricted_user(
             tokio::task::spawn(async move {
                 user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
                 user.add_roles(vec![existing_role.clone()]);
-                match state
-                    .user_repository
-                    .lock()
-                    .await
-                    .add_with_role(&user, existing_role.id)
-                    .await
-                {
+                match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {
                         tracing::info!("User created: {}", user.email);
                         let result = state
@@ -169,10 +163,7 @@ pub async fn get_all_users(
 
     match user_repo.find_all(page, limit).await {
         Ok((users, total)) => {
-            let user_responses: Vec<UserDTO> = users
-                .into_iter()
-                .map(UserDTO::from)
-                .collect();
+            let user_responses: Vec<UserDTO> = users.into_iter().map(UserDTO::from).collect();
             (
                 StatusCode::OK,
                 Json(UserListResponse {
@@ -210,7 +201,7 @@ pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) ->
         Err(e) => {
             tracing::error!("Failed to get user");
             e.into_response()
-        },
+        }
     }
 }
 
@@ -311,7 +302,7 @@ pub async fn update_user(
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
-            match state.user_repository.lock().await.update(&user).await {
+            match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO {
                         id: user.id,

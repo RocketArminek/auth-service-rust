@@ -211,3 +211,22 @@ fn it_is_not_verified_by_default() {
     assert_eq!(user.email, String::from("test@test.com"));
     assert_eq!(user.is_verified, false);
 }
+
+#[test]
+fn it_cannot_add_same_roles_multiple_times() {
+    let mut user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        Some(true),
+    )
+    .unwrap();
+    let role = Role::now(String::from("SUPER_ADMIN")).unwrap();
+
+    user.add_roles(vec![role.clone(), role.clone()]);
+
+    assert_eq!(user.roles.len(), 1);
+    assert_eq!(user.roles[0].name, String::from("SUPER_ADMIN"));
+    assert!(user.has_role(String::from("SUPER_ADMIN")));
+}

@@ -1,9 +1,9 @@
 use crate::domain::role::Role;
 use crate::domain::user::User;
-use crate::infrastructure::dto::{UserWithRoleRow};
+use crate::infrastructure::dto::UserWithRoleRow;
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{query, Error, MySql, Pool};
 use uuid::Uuid;
-use crate::infrastructure::repository::RepositoryError;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {
@@ -15,109 +15,104 @@ impl MysqlUserRepository {
         Self { pool }
     }
 
-    pub async fn add(&self, user: &User) -> Result<(), RepositoryError> {
-        query("INSERT INTO users (id, email, password, created_at, first_name, last_name, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)")
-            .bind(&user.id)
-            .bind(&user.email)
-            .bind(&user.password)
-            .bind(&user.created_at)
-            .bind(&user.first_name)
-            .bind(&user.last_name)
-            .bind(&user.is_verified)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn update(&self, user: &User) -> Result<(), RepositoryError> {
-        query("UPDATE users SET email = ?, password = ?, created_at = ?, first_name = ?, last_name = ?, avatar_path = ?, is_verified = ? WHERE id = ?")
-            .bind(&user.email)
-            .bind(&user.password)
-            .bind(&user.created_at)
-            .bind(&user.first_name)
-            .bind(&user.last_name)
-            .bind(&user.avatar_path)
-            .bind(&user.is_verified)
-            .bind(&user.id)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn add_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), RepositoryError> {
-        query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
-            .bind(&user_id)
-            .bind(&role_id)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn add_with_role(&self, user: &User, role_id: Uuid) -> Result<(), RepositoryError> {
+    pub async fn save(&self, user: &User) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let user_query =
-            query("INSERT INTO users (id, email, password, created_at, is_verified) VALUES (?, ?, ?, ?, ?)")
-                .bind(&user.id)
-                .bind(&user.email)
-                .bind(&user.password)
-                .bind(&user.created_at)
-                .bind(&user.is_verified)
-                .execute(&mut *tx)
-                .await
-                .map_err(
-                    |e| match e {
-                        Error::RowNotFound => {
-                            RepositoryError::NotFound(format!("User Not found: {}", user.id))
-                        }
-                        _ => RepositoryError::Database(e)
-                    }
-                );
+        let existing_user = sqlx::query!("SELECT id FROM users WHERE id = ?", user.id)
+            .fetch_optional(&mut *tx)
+            .await?;
 
-        let role_query = query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")
-            .bind(&user.id)
-            .bind(&role_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(
-                |e| match e {
-                    Error::RowNotFound => {
-                        RepositoryError::NotFound(format!("Role Not found: {}", role_id))
-                    }
-                    _ => RepositoryError::Database(e)
-                }
-            );
-
-        match (user_query, role_query) {
-            (Ok(_), Ok(_)) => {
-                tx.commit().await.map_err(
-                    |e| match e {
-                        Error::RowNotFound => {
-                            RepositoryError::NotFound("Not found".to_string())
-                        }
-                        _ => RepositoryError::Database(e)
-                    }
+        match existing_user {
+            Some(_) => {
+                sqlx::query!(
+                    r#"
+                    UPDATE users
+                    SET email = ?,
+                        password = ?,
+                        created_at = ?,
+                        first_name = ?,
+                        last_name = ?,
+                        avatar_path = ?,
+                        is_verified = ?
+                    WHERE id = ?
+                    "#,
+                    user.email,
+                    user.password,
+                    user.created_at,
+                    user.first_name,
+                    user.last_name,
+                    user.avatar_path,
+                    user.is_verified,
+                    user.id
                 )
-            },
-            (Err(uce), Err(_)) => {
-                tx.rollback().await?;
-
-                Err(uce)
+                .execute(&mut *tx)
+                .await?;
             }
-            (Ok(_), Err(rce)) => {
-                tx.rollback().await?;
-
-                Err(rce)
-            }
-            (Err(uce), Ok(_)) => {
-                tx.rollback().await?;
-
-                Err(uce)
+            None => {
+                sqlx::query!(
+                    r#"
+                    INSERT INTO users (
+                        id, email, password, created_at,
+                        first_name, last_name, avatar_path, is_verified
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    "#,
+                    user.id,
+                    user.email,
+                    user.password,
+                    user.created_at,
+                    user.first_name,
+                    user.last_name,
+                    user.avatar_path,
+                    user.is_verified
+                )
+                .execute(&mut *tx)
+                .await?;
             }
         }
+
+        if !user.roles.is_empty() {
+            let placeholders = "?,".repeat(user.roles.len());
+            let query = format!(
+                "SELECT COUNT(id) as count FROM roles WHERE id IN ({})",
+                placeholders.trim_end_matches(',')
+            );
+
+            let mut q = sqlx::query_as::<_, (i64,)>(&query);
+            for role in &user.roles {
+                q = q.bind(role.id);
+            }
+
+            let found_roles = q.fetch_one(&mut *tx).await?;
+
+            if (found_roles.0 as usize) != user.roles.len() {
+                tx.rollback().await?;
+                return Err(RepositoryError::NotFound(
+                    "One or more roles not found".to_string(),
+                ));
+            }
+
+            sqlx::query!("DELETE FROM user_roles WHERE user_id = ?", user.id)
+                .execute(&mut *tx)
+                .await?;
+
+            for role in &user.roles {
+                sqlx::query!(
+                    r#"
+                INSERT INTO user_roles (user_id, role_id)
+                VALUES (?, ?)
+                "#,
+                    user.id,
+                    role.id
+                )
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+
+        tx.commit().await?;
+
+        Ok(())
     }
 
     pub async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
@@ -139,20 +134,23 @@ impl MysqlUserRepository {
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN roles r ON ur.role_id = r.id
             WHERE u.id = ?
-            "#
+            "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e)
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
-            return Err(RepositoryError::NotFound(format!("User not found with id: {}", id)));
+            return Err(RepositoryError::NotFound(format!(
+                "User not found with id: {}",
+                id
+            )));
         }
 
         let first_row = &rows[0];
@@ -203,20 +201,23 @@ impl MysqlUserRepository {
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN roles r ON ur.role_id = r.id
             WHERE u.email = ?
-            "#
+            "#,
         )
-            .bind(email)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with email: {}", email))
-                }
-                _ => RepositoryError::Database(e)
-            })?;
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
-            return Err(RepositoryError::NotFound(format!("User not found with email: {}", email)));
+            return Err(RepositoryError::NotFound(format!(
+                "User not found with email: {}",
+                email
+            )));
         }
 
         let first_row = &rows[0];
@@ -283,12 +284,12 @@ impl MysqlUserRepository {
             LEFT JOIN roles r ON ur.role_id = r.id
             ORDER BY u.created_at DESC
             LIMIT ? OFFSET ?
-            "#
+            "#,
         )
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
 
         let total: (i32,) = sqlx::query_as("SELECT COUNT(DISTINCT id) FROM users")
             .fetch_one(&self.pool)
@@ -300,7 +301,8 @@ impl MysqlUserRepository {
     }
 
     fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
-        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> = std::collections::HashMap::new();
+        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> =
+            std::collections::HashMap::new();
 
         for row in rows {
             let user_entry = users_map.entry(row.id).or_insert_with(|| {

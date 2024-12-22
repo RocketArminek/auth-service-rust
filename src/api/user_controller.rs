@@ -80,13 +80,7 @@ pub async fn create_user(
             tokio::task::spawn(async move {
                 user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
                 user.add_roles(vec![existing_role.clone()]);
-                match state
-                    .user_repository
-                    .lock()
-                    .await
-                    .add_with_role(&user, existing_role.id)
-                    .await
-                {
+                match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {
                         tracing::info!("User created: {}", &user.email);
                         let user_dto = UserDTO::from(user);
@@ -216,7 +210,7 @@ pub async fn update_profile(
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
-            match state.user_repository.lock().await.update(&user).await {
+            match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 
@@ -286,7 +280,7 @@ pub async fn verify(
                     .into_response();
             }
             user.verify();
-            match state.user_repository.lock().await.update(&user).await {
+            match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 

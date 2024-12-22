@@ -1,10 +1,10 @@
+use crate::api::dto::MessageResponse;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::Json;
+use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
-use axum::http::StatusCode;
-use axum::Json;
-use axum::response::IntoResponse;
-use sqlx::Error as SqlxError;
-use crate::api::dto::MessageResponse;
 
 #[derive(Debug)]
 pub enum RepositoryError {
@@ -38,7 +38,7 @@ impl From<SqlxError> for RepositoryError {
     fn from(error: SqlxError) -> Self {
         match error {
             SqlxError::RowNotFound => RepositoryError::NotFound("Entity not found".to_string()),
-            _ => RepositoryError::Database(error)
+            _ => RepositoryError::Database(error),
         }
     }
 }
@@ -49,15 +49,16 @@ impl IntoResponse for RepositoryError {
             RepositoryError::NotFound(msg) => (
                 StatusCode::NOT_FOUND,
                 Json(MessageResponse { message: msg }),
-            ).into_response(),
-            RepositoryError::Conflict(msg) => (
-                StatusCode::CONFLICT,
-                Json(MessageResponse { message: msg }),
-            ).into_response(),
+            )
+                .into_response(),
+            RepositoryError::Conflict(msg) => {
+                (StatusCode::CONFLICT, Json(MessageResponse { message: msg })).into_response()
+            }
             RepositoryError::ValidationError(msg) => (
                 StatusCode::BAD_REQUEST,
                 Json(MessageResponse { message: msg }),
-            ).into_response(),
+            )
+                .into_response(),
             RepositoryError::Database(e) => {
                 tracing::error!("Database error: {}", e);
                 (
@@ -65,7 +66,8 @@ impl IntoResponse for RepositoryError {
                     Json(MessageResponse {
                         message: "Internal server error".to_string(),
                     }),
-                ).into_response()
+                )
+                    .into_response()
             }
         }
     }

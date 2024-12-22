@@ -64,7 +64,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -104,7 +104,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -148,7 +148,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -207,7 +207,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -264,7 +264,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt));
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -313,7 +313,8 @@ async fn it_verifies_token(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role);
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -379,7 +380,8 @@ async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -445,7 +447,8 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -496,7 +499,8 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -566,7 +570,8 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/refresh")
@@ -608,7 +613,8 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -656,7 +662,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -706,7 +712,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     )
     .unwrap();
     user.hash_password(&SchemeAwareHasher::default());
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let now = Utc::now();
     let exp = now.sub(Duration::days(2));

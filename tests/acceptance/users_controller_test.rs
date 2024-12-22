@@ -255,7 +255,7 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
@@ -429,7 +429,8 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let email = String::from("jon@snow.test");
 
@@ -500,7 +501,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
     .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
-    repository.add(&admin).await.unwrap();
+    repository.save(&admin).await.unwrap();
 
     let email = String::from("jon@snow.test");
 
@@ -560,7 +561,8 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -603,7 +605,7 @@ async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
         172800,
         "nebula.auth.test".to_string(),
     )
-        .await;
+    .await;
     let repository = MysqlUserRepository::new(pool.clone());
     let mut admin = User::now_with_email_and_password(
         String::from("ned@stark.test"),
@@ -612,13 +614,14 @@ async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -677,7 +680,8 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let user = User::now_with_email_and_password(
         String::from("user@test.com"),
@@ -687,7 +691,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -742,7 +746,8 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let user = User::now_with_email_and_password(
         String::from("user@test.com"),
@@ -752,7 +757,7 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -820,7 +825,8 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -875,7 +881,8 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
 
     let role = Role::now("USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&user, role.id).await.unwrap();
+    user.add_role(role.clone());
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -915,8 +922,8 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
 
     if let Some(UserEvents::Updated { old_user, new_user }) = event {
         assert_eq!(old_user.email, "user@test.com".to_string());
-        assert_eq!(old_user.first_name, None);
-        assert_eq!(old_user.last_name, None);
+        assert_eq!(old_user.first_name, Some("Jon".to_string()));
+        assert_eq!(old_user.last_name, Some("Snow".to_string()));
         assert_eq!(old_user.avatar_path, None);
         assert_eq!(old_user.roles, vec!["USER".to_string()]);
 
@@ -962,7 +969,8 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let user = User::now_with_email_and_password(
         String::from("user@test.com"),
@@ -972,7 +980,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    repository.add(&user).await.unwrap();
+    repository.save(&user).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")
@@ -1055,7 +1063,8 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.add(&role).await.unwrap();
-    repository.add_with_role(&admin, role.id).await.unwrap();
+    admin.add_role(role.clone());
+    repository.save(&admin).await.unwrap();
 
     let response = server
         .post("/v1/stateless/login")

@@ -202,12 +202,7 @@ async fn main() {
                         .unwrap();
                     user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme));
                     user.add_role(existing_role.clone());
-                    user_repository
-                        .lock()
-                        .await
-                        .add_with_role(&user, existing_role.id)
-                        .await
-                        .unwrap();
+                    user_repository.lock().await.save(&user).await.unwrap();
 
                     println!(
                         "User created: {} {} at {} with roles ({})",
@@ -295,7 +290,7 @@ async fn main() {
                 Err(e) => {
                     println!("Error {:?}", e);
                 }
-                Ok(user) => {
+                Ok(mut user) => {
                     let r = role_repository.lock().await.get_by_name(role).await;
 
                     match r {
@@ -303,12 +298,8 @@ async fn main() {
                             println!("Role not found for {}", role);
                         }
                         Some(role) => {
-                            user_repository
-                                .lock()
-                                .await
-                                .add_role(user.id, role.id)
-                                .await
-                                .unwrap();
+                            user.add_role(role.clone());
+                            user_repository.lock().await.save(&user).await.unwrap();
 
                             println!("Role assigned: {} to {}", role.name, user.email);
                         }
@@ -520,7 +511,11 @@ async fn init_role(
     let r = role_repository.lock().await.add(&role).await;
 
     if let Err(e) = r {
-        tracing::error!("Failed to add role: {} during init role due to: {:?}", role_prefix, e);
+        tracing::error!(
+            "Failed to add role: {} during init role due to: {:?}",
+            role_prefix,
+            e
+        );
 
         return role;
     }

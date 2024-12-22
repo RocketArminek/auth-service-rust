@@ -103,6 +103,10 @@ impl User {
     }
 
     pub fn add_role(&mut self, role: Role) {
+        if self.roles.contains(&role) {
+            return;
+        }
+
         self.roles.push(role);
     }
 
@@ -114,8 +118,10 @@ impl User {
         self.is_verified = false;
     }
 
-    pub fn add_roles(&mut self, mut roles: Vec<Role>) {
-        self.roles.append(&mut roles);
+    pub fn add_roles(&mut self, roles: Vec<Role>) {
+        for role in roles.iter() {
+            self.add_role(role.clone());
+        }
     }
 
     pub fn has_role(&self, role_name: String) -> bool {

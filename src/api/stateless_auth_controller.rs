@@ -64,7 +64,7 @@ pub async fn login(
                         .user_repository
                         .lock()
                         .await
-                        .update(&outdated_user)
+                        .save(&outdated_user)
                         .await
                     {
                         Ok(_) => tracing::info!(
@@ -142,7 +142,7 @@ pub async fn login(
                     .into_response(),
             }
         }
-        Err(e) => e.into_response()
+        Err(e) => e.into_response(),
     }
 }
 
