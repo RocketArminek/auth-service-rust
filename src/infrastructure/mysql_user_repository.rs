@@ -18,13 +18,14 @@ impl MysqlUserRepository {
     pub async fn save(&self, user: &User) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let existing_user = sqlx::query!("SELECT id FROM users WHERE id = ?", user.id)
+        let existing_user = sqlx::query("SELECT id FROM users WHERE id = ?")
+            .bind(&user.id)
             .fetch_optional(&mut *tx)
             .await?;
 
         match existing_user {
             Some(_) => {
-                sqlx::query!(
+                sqlx::query(
                     r#"
                     UPDATE users
                     SET email = ?,
@@ -35,37 +36,37 @@ impl MysqlUserRepository {
                         avatar_path = ?,
                         is_verified = ?
                     WHERE id = ?
-                    "#,
-                    user.email,
-                    user.password,
-                    user.created_at,
-                    user.first_name,
-                    user.last_name,
-                    user.avatar_path,
-                    user.is_verified,
-                    user.id
+                    "#
                 )
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(&user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(&user.is_verified)
+                .bind(&user.id)
                 .execute(&mut *tx)
                 .await?;
             }
             None => {
-                sqlx::query!(
+                sqlx::query(
                     r#"
                     INSERT INTO users (
                         id, email, password, created_at,
                         first_name, last_name, avatar_path, is_verified
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    "#,
-                    user.id,
-                    user.email,
-                    user.password,
-                    user.created_at,
-                    user.first_name,
-                    user.last_name,
-                    user.avatar_path,
-                    user.is_verified
+                    "#
                 )
+                .bind(&user.id)
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(&user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(&user.is_verified)
                 .execute(&mut *tx)
                 .await?;
             }
@@ -92,19 +93,20 @@ impl MysqlUserRepository {
                 ));
             }
 
-            sqlx::query!("DELETE FROM user_roles WHERE user_id = ?", user.id)
+            sqlx::query("DELETE FROM user_roles WHERE user_id = ?")
+                .bind(&user.id)
                 .execute(&mut *tx)
                 .await?;
 
             for role in &user.roles {
-                sqlx::query!(
+                sqlx::query(
                     r#"
                 INSERT INTO user_roles (user_id, role_id)
                 VALUES (?, ?)
-                "#,
-                    user.id,
-                    role.id
+                "#
                 )
+                .bind(&user.id)
+                .bind(&role.id)
                 .execute(&mut *tx)
                 .await?;
             }
