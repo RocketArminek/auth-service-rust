@@ -59,7 +59,7 @@ pub async fn create_user(
     }
 
     let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
-    if existing_role.is_none() {
+    if let Err(_) = existing_role {
         return (
             StatusCode::BAD_REQUEST,
             Json(MessageResponse {

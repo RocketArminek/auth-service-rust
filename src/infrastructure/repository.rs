@@ -17,7 +17,7 @@ pub enum RepositoryError {
 impl fmt::Display for RepositoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RepositoryError::NotFound(msg) => write!(f, "Entity not found: {}", msg),
+            RepositoryError::NotFound(msg) => write!(f, "{}", msg),
             RepositoryError::Database(e) => write!(f, "Database error: {}", e),
             RepositoryError::Conflict(msg) => write!(f, "Conflict error: {}", msg),
             RepositoryError::ValidationError(msg) => write!(f, "Validation error: {}", msg),

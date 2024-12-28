@@ -32,7 +32,7 @@ async fn it_creates_new_user(pool: Pool<MySql>) {
     .await;
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     let email = String::from("jon@snow.test");
 
     let response = server
@@ -82,7 +82,7 @@ async fn it_creates_not_verified_user(pool: Pool<MySql>) {
     .await;
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     let email = String::from("jon@snow.test");
 
     let response = server
@@ -149,7 +149,7 @@ async fn it_verifies_user(pool: Pool<MySql>) {
     .await;
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     let email = String::from("jon@snow.test");
 
     let _ = server
@@ -214,7 +214,7 @@ async fn it_does_not_create_user_with_invalid_password(pool: Pool<MySql>) {
     let email = String::from("jon@snow.test");
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     let response = server
         .post("/v1/users")
@@ -258,7 +258,7 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
     repository.save(&user).await.unwrap();
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     let response = server
         .post("/v1/users")
@@ -288,7 +288,7 @@ async fn it_returns_bad_request_if_roles_does_not_exists(pool: Pool<MySql>) {
     .await;
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("user".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     let email = String::from("jon@snow.test");
 
     let response = server
@@ -382,7 +382,7 @@ async fn it_returns_bad_request_if_role_restricted_another(pool: Pool<MySql>) {
     let email = String::from("jon@snow.test");
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     let response = server
         .post("/v1/users")
@@ -428,7 +428,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -560,7 +560,7 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -619,7 +619,7 @@ async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -679,7 +679,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -745,7 +745,7 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -824,7 +824,7 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -880,7 +880,7 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
     user.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
     repository.save(&user).await.unwrap();
 
@@ -968,7 +968,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 
@@ -1062,7 +1062,7 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
     admin.hash_password(&SchemeAwareHasher::default());
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     admin.add_role(role.clone());
     repository.save(&admin).await.unwrap();
 

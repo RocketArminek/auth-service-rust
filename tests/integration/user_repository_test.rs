@@ -75,7 +75,7 @@ async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
 
     let role = Role::now("admin".to_string()).unwrap();
     let role_repository = MysqlRoleRepository::new(pool.clone());
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     user.add_role(role.clone());
     repository.save(&user).await.unwrap();
@@ -99,7 +99,7 @@ async fn it_can_be_created_with_role(pool: Pool<MySql>) {
     .unwrap();
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
 
     repository.save(&user).await.unwrap();
@@ -126,11 +126,11 @@ async fn it_can_update_user_roles(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool);
 
-    role_repository.add(&role1).await.unwrap();
+    role_repository.save(&role1).await.unwrap();
     user.add_role(role1.clone());
     repository.save(&user).await.unwrap();
 
-    role_repository.add(&role2).await.unwrap();
+    role_repository.save(&role2).await.unwrap();
     user.roles.clear();
     user.add_role(role2.clone());
     repository.save(&user).await.unwrap();
@@ -184,9 +184,9 @@ async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool);
 
-    role_repository.add(&role1).await.unwrap();
-    role_repository.add(&role2).await.unwrap();
-    role_repository.add(&role3).await.unwrap();
+    role_repository.save(&role1).await.unwrap();
+    role_repository.save(&role2).await.unwrap();
+    role_repository.save(&role3).await.unwrap();
 
     user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
     repository.save(&user).await.unwrap();
@@ -239,7 +239,7 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<My
     let role_repository = MysqlRoleRepository::new(pool.clone());
 
     let role = Role::now("valid_role".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     let mut user = User::now_with_email_and_password(
         "test@test.com".to_string(),
@@ -314,8 +314,8 @@ async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
 
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
-    role_repository.add(&role1).await.unwrap();
-    role_repository.add(&role2).await.unwrap();
+    role_repository.save(&role1).await.unwrap();
+    role_repository.save(&role2).await.unwrap();
 
     let mut user = User::now_with_email_and_password(
         "test@test.com".to_string(),
@@ -412,7 +412,7 @@ async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
     ];
 
     for role in &roles {
-        role_repository.add(role).await.unwrap();
+        role_repository.save(role).await.unwrap();
     }
 
     let mut user = User::now_with_email_and_password(
@@ -463,7 +463,7 @@ async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
 
     let role = Role::now("shared_role".to_string()).unwrap();
-    role_repository.add(&role).await.unwrap();
+    role_repository.save(&role).await.unwrap();
 
     let mut users = Vec::new();
     for i in 0..5 {
@@ -521,7 +521,7 @@ async fn it_handles_rapid_role_changes(pool: Pool<MySql>) {
     let mut roles = Vec::new();
     for i in 0..5 {
         let role = Role::now(format!("role{}", i)).unwrap();
-        role_repository.add(&role).await.unwrap();
+        role_repository.save(&role).await.unwrap();
         roles.push(role);
     }
 

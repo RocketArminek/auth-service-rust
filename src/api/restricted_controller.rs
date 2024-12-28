@@ -50,8 +50,14 @@ pub async fn create_restricted_user(
             .into_response();
     }
 
-    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
-    if existing_role.is_none() {
+    let existing_role = state
+        .role_repository
+        .lock()
+        .await
+        .get_by_name(&role)
+        .await;
+
+    if let Err(_) = existing_role {
         return (
             StatusCode::BAD_REQUEST,
             Json(MessageResponse {

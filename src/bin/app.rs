@@ -294,10 +294,10 @@ async fn main() {
                     let r = role_repository.lock().await.get_by_name(role).await;
 
                     match r {
-                        None => {
-                            println!("Role not found for {}", role);
+                        Err(e) => {
+                            println!("{}", e.to_string());
                         }
-                        Some(role) => {
+                        Ok(role) => {
                             user.add_role(role.clone());
                             user_repository.lock().await.save(&user).await.unwrap();
 
@@ -317,9 +317,9 @@ async fn main() {
                 .await;
 
             match role {
-                None => {
+                Err(_) => {
                     let role = Role::now(restricted_role_prefix).unwrap();
-                    role_repository.lock().await.add(&role).await.unwrap();
+                    role_repository.lock().await.save(&role).await.unwrap();
 
                     println!(
                         "Created initial restricted role base on pattern: {}, {}, {}",
@@ -328,14 +328,14 @@ async fn main() {
                         role.created_at.format("%Y-%m-%d %H:%M:%S")
                     );
                 }
-                Some(_) => {
+                Ok(_) => {
                     println!("Role already exists");
                 }
             }
         }
         Some(Commands::CreateRole { name }) => {
             let role = Role::now(name.to_owned()).unwrap();
-            role_repository.lock().await.add(&role).await.unwrap();
+            role_repository.lock().await.save(&role).await.unwrap();
 
             println!(
                 "Created role: {}, {}, {}",
@@ -347,10 +347,10 @@ async fn main() {
         Some(Commands::GetRole { name }) => {
             let role = role_repository.lock().await.get_by_name(name).await;
             match role {
-                None => {
-                    panic!("Role not found for {}", name);
+                Err(e) => {
+                    panic!("Error {:?}", e);
                 }
-                Some(role) => {
+                Ok(role) => {
                     println!("Get role: {}", role.name);
                 }
             }
@@ -494,13 +494,12 @@ async fn init_role(
     tracing::info!("Configured {} with: {}", role_env_var, role_prefix);
     let existing_role = role_repository.lock().await.get_by_name(&role_prefix).await;
 
-    if existing_role.is_some() {
-        let existing_role = existing_role.clone().unwrap();
+    if let Ok(existing_role) = existing_role {
         tracing::info!(
             "Found existing role: {}, {}, {}",
-            existing_role.id,
-            existing_role.name,
-            existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
+            &existing_role.id,
+            &existing_role.name,
+            &existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
         );
 
         return existing_role;
@@ -508,7 +507,7 @@ async fn init_role(
 
     let role = Role::now(role_prefix.to_string()).unwrap();
 
-    let r = role_repository.lock().await.add(&role).await;
+    let r = role_repository.lock().await.save(&role).await;
 
     if let Err(e) = r {
         tracing::error!(
