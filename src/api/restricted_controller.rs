@@ -85,19 +85,7 @@ pub async fn create_restricted_user(
                             .lock()
                             .await
                             .publish(&UserEvents::Created {
-                                user: UserDTO {
-                                    id: user.id,
-                                    email: user.email,
-                                    first_name: user.first_name,
-                                    last_name: user.last_name,
-                                    avatar_path: user.avatar_path,
-                                    roles: user
-                                        .roles
-                                        .iter()
-                                        .map(|role| role.name.clone())
-                                        .collect(),
-                                    is_verified: user.is_verified,
-                                },
+                                user: UserDTO::from(user),
                             })
                             .await;
 
@@ -237,15 +225,7 @@ pub async fn delete_user(
                     .lock()
                     .await
                     .publish(&UserEvents::Deleted {
-                        user: UserDTO {
-                            id: user.id,
-                            email: user.email,
-                            first_name: user.first_name,
-                            last_name: user.last_name,
-                            avatar_path: user.avatar_path,
-                            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                            is_verified: user.is_verified,
-                        },
+                        user: UserDTO::from(user),
                     })
                     .await;
 
@@ -310,34 +290,14 @@ pub async fn update_user(
 
             match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
-                    let user_dto = UserDTO {
-                        id: user.id,
-                        email: user.email,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        avatar_path: user.avatar_path,
-                        roles: user.roles.iter().map(|role| role.name.clone()).collect(),
-                        is_verified: user.is_verified,
-                    };
+                    let user_dto = UserDTO::from(user);
 
                     let result = state
                         .message_publisher
                         .lock()
                         .await
                         .publish(&UserEvents::Updated {
-                            old_user: UserDTO {
-                                id: old_user.id,
-                                email: old_user.email,
-                                first_name: old_user.first_name,
-                                last_name: old_user.last_name,
-                                avatar_path: old_user.avatar_path,
-                                roles: old_user
-                                    .roles
-                                    .iter()
-                                    .map(|role| role.name.clone())
-                                    .collect(),
-                                is_verified: old_user.is_verified,
-                            },
+                            old_user: UserDTO::from(old_user),
                             new_user: user_dto.clone(),
                         })
                         .await;
