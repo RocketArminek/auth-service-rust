@@ -5,15 +5,7 @@ use crate::infrastructure::dto::UserWithRoleRow;
 use crate::infrastructure::repository::RepositoryError;
 use sqlx::{query, Error, MySql, Pool};
 use uuid::Uuid;
-
-#[async_trait]
-pub trait UserRepository {
-    async fn save(&self, user: &User) -> Result<(), RepositoryError>;
-    async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError>;
-    async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError>;
-    async fn delete_by_email(&self, email: &String) -> Result<(), Error>;
-    async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError>;
-}
+use crate::domain::repositories::UserRepository;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {

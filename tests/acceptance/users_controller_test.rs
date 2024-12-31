@@ -7,11 +7,12 @@ use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository, UserRepository};
+use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
+use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_creates_new_user(pool: Pool<MySql>) {

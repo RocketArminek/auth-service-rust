@@ -3,16 +3,7 @@ use crate::domain::role::Role;
 use crate::infrastructure::repository::RepositoryError;
 use sqlx::{query, query_as, MySql, Pool};
 use uuid::Uuid;
-
-#[async_trait]
-pub trait RoleRepository {
-    async fn save(&self, role: &Role) -> Result<(), RepositoryError>;
-    async fn get_by_id(&self, id: Uuid) -> Result<Role, RepositoryError>;
-    async fn get_by_name(&self, name: &String) -> Result<Role, RepositoryError>;
-    async fn get_all(&self) -> Result<Vec<Role>, RepositoryError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepositoryError>;
-    async fn delete_by_name(&self, name: &String) -> Result<(), RepositoryError>;
-}
+use crate::domain::repositories::RoleRepository;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {

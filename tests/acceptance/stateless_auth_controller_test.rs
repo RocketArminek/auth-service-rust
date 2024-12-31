@@ -5,13 +5,14 @@ use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository, UserRepository};
+use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
+use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {

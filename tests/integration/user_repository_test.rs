@@ -1,9 +1,10 @@
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository, UserRepository};
+use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
+use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
 use auth_service::infrastructure::repository::RepositoryError;
 use sqlx::{MySql, Pool};
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_add_user(pool: Pool<MySql>) {
