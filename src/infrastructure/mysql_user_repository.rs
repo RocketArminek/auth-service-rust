@@ -1,9 +1,19 @@
+use axum::async_trait;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::UserWithRoleRow;
 use crate::infrastructure::repository::RepositoryError;
 use sqlx::{query, Error, MySql, Pool};
 use uuid::Uuid;
+
+#[async_trait]
+pub trait UserRepository {
+    async fn save(&self, user: &User) -> Result<(), RepositoryError>;
+    async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError>;
+    async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError>;
+    async fn delete_by_email(&self, email: &String) -> Result<(), Error>;
+    async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError>;
+}
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {
@@ -15,7 +25,48 @@ impl MysqlUserRepository {
         Self { pool }
     }
 
-    pub async fn save(&self, user: &User) -> Result<(), RepositoryError> {
+    fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
+        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> =
+            std::collections::HashMap::new();
+
+        for row in rows {
+            let user_entry = users_map.entry(row.id).or_insert_with(|| {
+                let user = User {
+                    id: row.id,
+                    email: row.email.clone(),
+                    password: row.password.clone(),
+                    first_name: row.first_name.clone(),
+                    last_name: row.last_name.clone(),
+                    created_at: row.created_at,
+                    avatar_path: row.avatar_path.clone(),
+                    is_verified: row.is_verified,
+                    roles: Vec::new(),
+                };
+                (user, Vec::new())
+            });
+
+            if let Some(role_id) = row.role_id {
+                user_entry.1.push(Role {
+                    id: role_id,
+                    name: row.role_name.unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                });
+            }
+        }
+
+        users_map
+            .into_iter()
+            .map(|(_, (mut user, roles))| {
+                user.roles = roles;
+                user
+            })
+            .collect()
+    }
+}
+
+#[async_trait]
+impl UserRepository for MysqlUserRepository {
+    async fn save(&self, user: &User) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let existing_user = sqlx::query("SELECT id FROM users WHERE id = ?")
@@ -117,7 +168,7 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
+    async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -184,7 +235,7 @@ impl MysqlUserRepository {
         Ok(user)
     }
 
-    pub async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError> {
+    async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -251,7 +302,7 @@ impl MysqlUserRepository {
         Ok(user)
     }
 
-    pub async fn delete_by_email(&self, email: &String) -> Result<(), Error> {
+    async fn delete_by_email(&self, email: &String) -> Result<(), Error> {
         query("DELETE FROM users WHERE email = ?")
             .bind(email)
             .execute(&self.pool)
@@ -260,11 +311,7 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn find_all(
-        &self,
-        page: i32,
-        limit: i32,
-    ) -> Result<(Vec<User>, i32), RepositoryError> {
+    async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError> {
         let offset = (page - 1) * limit;
 
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
@@ -300,43 +347,5 @@ impl MysqlUserRepository {
         let users = self.group_user_rows(rows);
 
         Ok((users, total.0))
-    }
-
-    fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
-        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> =
-            std::collections::HashMap::new();
-
-        for row in rows {
-            let user_entry = users_map.entry(row.id).or_insert_with(|| {
-                let user = User {
-                    id: row.id,
-                    email: row.email.clone(),
-                    password: row.password.clone(),
-                    first_name: row.first_name.clone(),
-                    last_name: row.last_name.clone(),
-                    created_at: row.created_at,
-                    avatar_path: row.avatar_path.clone(),
-                    is_verified: row.is_verified,
-                    roles: Vec::new(),
-                };
-                (user, Vec::new())
-            });
-
-            if let Some(role_id) = row.role_id {
-                user_entry.1.push(Role {
-                    id: role_id,
-                    name: row.role_name.unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                });
-            }
-        }
-
-        users_map
-            .into_iter()
-            .map(|(_, (mut user, roles))| {
-                user.roles = roles;
-                user
-            })
-            .collect()
     }
 }

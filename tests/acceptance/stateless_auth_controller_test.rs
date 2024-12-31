@@ -6,7 +6,7 @@ use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
-use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
+use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository, UserRepository};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
