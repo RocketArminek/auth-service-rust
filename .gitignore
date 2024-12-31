@@ -3,3 +3,11 @@
 vendor/
 
 .env.local
+
+dev.db
+dev.db-wal
+dev.db-shm
+
+test.db
+test.db-wal
+test.db-shm

@@ -13,7 +13,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use sqlx::{MySql, Pool};
 use std::ops::{Add, Sub};
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -39,7 +39,7 @@ async fn it_returns_not_found_if_user_does_not_exist(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -77,7 +77,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_issues_access_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let at_duration = 60;
@@ -121,7 +121,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
     assert_eq!(body.message, "User is not verified!")
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let at_duration = 60;
@@ -180,7 +180,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
     assert_eq!(token.claims.exp, exp.timestamp() as usize);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_issues_refresh_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let rt_duration = 300;
@@ -238,7 +238,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
     assert_eq!(token.claims.exp, exp.timestamp() as usize);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -284,7 +284,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
     assert_eq!(scheme, HashingScheme::BcryptLow)
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_verifies_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -351,7 +351,7 @@ async fn it_verifies_token(pool: Pool<MySql>) {
     assert!(roles_from_header.contains("user"));
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -418,7 +418,7 @@ async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
     assert!(roles_from_header.contains("user"));
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -470,7 +470,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_refreshes_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -541,7 +541,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
     assert_eq!(token.claims.exp, exp.timestamp() as usize);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -584,7 +584,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -636,7 +636,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(
@@ -686,7 +686,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
     assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
     let secret = "secret".to_string();
     let server = create_test_server(

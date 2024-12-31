@@ -50,12 +50,7 @@ pub async fn create_restricted_user(
             .into_response();
     }
 
-    let existing_role = state
-        .role_repository
-        .lock()
-        .await
-        .get_by_name(&role)
-        .await;
+    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
 
     if let Err(_) = existing_role {
         return (

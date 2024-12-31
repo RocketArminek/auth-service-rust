@@ -36,7 +36,7 @@ impl MysqlUserRepository {
                         avatar_path = ?,
                         is_verified = ?
                     WHERE id = ?
-                    "#
+                    "#,
                 )
                 .bind(&user.email)
                 .bind(&user.password)
@@ -57,7 +57,7 @@ impl MysqlUserRepository {
                         first_name, last_name, avatar_path, is_verified
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    "#
+                    "#,
                 )
                 .bind(&user.id)
                 .bind(&user.email)
@@ -103,7 +103,7 @@ impl MysqlUserRepository {
                     r#"
                 INSERT INTO user_roles (user_id, role_id)
                 VALUES (?, ?)
-                "#
+                "#,
                 )
                 .bind(&user.id)
                 .bind(&role.id)

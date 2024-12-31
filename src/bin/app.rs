@@ -5,7 +5,7 @@ use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::database::create_mysql_pool;
+use auth_service::infrastructure::database::{create_pool, get_database_engine};
 use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
@@ -16,7 +16,7 @@ use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use regex::{Error, Regex};
-use sqlx::sqlx_macros::migrate;
+use sqlx::{MySql, Pool};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
@@ -134,9 +134,15 @@ async fn main() {
         &vr_duration_in_seconds / 60 / 60 / 24
     );
 
+    let db_engine = get_database_engine();
+    tracing::info!("DB engine: {}", db_engine.to_string());
+
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
-    let pool = create_mysql_pool().await.unwrap();
-    migrate_db(&pool).await;
+
+    let db_pool = create_pool().await.unwrap();
+    db_pool.migrate().await;
+
+    let pool: Pool<MySql> = db_pool.into();
 
     let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
     let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
@@ -527,17 +533,4 @@ async fn init_role(
     );
 
     role
-}
-
-async fn migrate_db(pool: &sqlx::MySqlPool) {
-    let migration_result = migrate!("./migrations").run(pool).await;
-    match migration_result {
-        Ok(_) => {
-            tracing::info!("Database migration completed successfully");
-        }
-        Err(e) => {
-            tracing::error!("Failed to migrate database: {}", e);
-            panic!("Failed to migrate database");
-        }
-    }
 }

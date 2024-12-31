@@ -1,7 +1,7 @@
 use crate::domain::role::Role;
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{query, query_as, MySql, Pool};
 use uuid::Uuid;
-use crate::infrastructure::repository::RepositoryError;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {
@@ -16,28 +16,22 @@ impl MysqlRoleRepository {
     pub async fn save(&self, role: &Role) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let existing_role = sqlx::query_as::<_, Role>(
-            "SELECT * FROM roles WHERE id = ?"
-        )
+        let existing_role = sqlx::query_as::<_, Role>("SELECT * FROM roles WHERE id = ?")
             .bind(role.id)
             .fetch_optional(&mut *tx)
             .await?;
 
         match existing_role {
             Some(_) => {
-                sqlx::query(
-                    "UPDATE roles SET name = ?, created_at = ? WHERE id = ?"
-                )
+                sqlx::query("UPDATE roles SET name = ?, created_at = ? WHERE id = ?")
                     .bind(&role.name)
                     .bind(&role.created_at)
                     .bind(&role.id)
                     .execute(&mut *tx)
                     .await?;
-            },
+            }
             None => {
-                sqlx::query(
-                    "INSERT INTO roles (id, name, created_at) VALUES (?, ?, ?)"
-                )
+                sqlx::query("INSERT INTO roles (id, name, created_at) VALUES (?, ?, ?)")
                     .bind(&role.id)
                     .bind(&role.name)
                     .bind(&role.created_at)

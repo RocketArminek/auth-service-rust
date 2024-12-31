@@ -2,7 +2,7 @@ use auth_service::domain::role::Role;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use sqlx::{MySql, Pool};
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_add_role(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
@@ -12,7 +12,7 @@ async fn it_can_add_role(pool: Pool<MySql>) {
     assert_eq!(row.name, role.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_get_role_by_id(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
@@ -22,7 +22,7 @@ async fn it_can_get_role_by_id(pool: Pool<MySql>) {
     assert_eq!(row.name, role.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_get_role_by_name(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
@@ -32,7 +32,7 @@ async fn it_can_get_role_by_name(pool: Pool<MySql>) {
     assert_eq!(row.name, role.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_get_all_roles(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
@@ -42,7 +42,7 @@ async fn it_can_get_all_roles(pool: Pool<MySql>) {
     assert_eq!(rows.len(), 1);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_delete_role(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);
@@ -56,7 +56,7 @@ async fn it_can_delete_role(pool: Pool<MySql>) {
     }
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_name_is_unique(pool: Pool<MySql>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let role2 = Role::now("ROLE".to_string()).unwrap();
@@ -70,7 +70,7 @@ async fn it_name_is_unique(pool: Pool<MySql>) {
     }
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_update_role(pool: Pool<MySql>) {
     let mut role = Role::now("ROLE".to_string()).unwrap();
     let repository = MysqlRoleRepository::new(pool);

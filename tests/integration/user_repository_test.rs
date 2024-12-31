@@ -2,10 +2,10 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-use sqlx::{MySql, Pool};
 use auth_service::infrastructure::repository::RepositoryError;
+use sqlx::{MySql, Pool};
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_add_user(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -22,7 +22,7 @@ async fn it_can_add_user(pool: Pool<MySql>) {
     assert_eq!(row.email, user.email);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_get_user_by_email(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -39,7 +39,7 @@ async fn it_can_get_user_by_email(pool: Pool<MySql>) {
     assert_eq!(row.email, user.email);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_deletes_user_by_email(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -60,7 +60,7 @@ async fn it_deletes_user_by_email(pool: Pool<MySql>) {
     }
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -86,7 +86,7 @@ async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
     assert_eq!(row.roles[0].name, role.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_be_created_with_role(pool: Pool<MySql>) {
     let role = Role::now("admin".to_string()).unwrap();
     let mut user = User::now_with_email_and_password(
@@ -110,7 +110,7 @@ async fn it_can_be_created_with_role(pool: Pool<MySql>) {
     assert_eq!(row.roles[0].name, role.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_update_user_roles(pool: Pool<MySql>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -121,7 +121,7 @@ async fn it_can_update_user_roles(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool);
@@ -141,7 +141,7 @@ async fn it_can_update_user_roles(pool: Pool<MySql>) {
     assert_eq!(updated_user.roles[0].name, role2.name);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_prevents_save_with_nonexistent_role(pool: Pool<MySql>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -150,7 +150,7 @@ async fn it_prevents_save_with_nonexistent_role(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     let non_existent_role = Role::now("nonexistent".to_string()).unwrap();
     user.add_role(non_existent_role);
@@ -167,7 +167,7 @@ async fn it_prevents_save_with_nonexistent_role(pool: Pool<MySql>) {
     }
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -179,7 +179,7 @@ async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool);
@@ -199,7 +199,7 @@ async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
     assert_eq!(saved_roles, vec!["role1", "role2", "role3"]);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
 
@@ -210,7 +210,7 @@ async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
         Some("User".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     repository.save(&user).await.unwrap();
 
@@ -221,7 +221,7 @@ async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
         Some("User2".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     let result = repository.save(&user2).await;
     assert!(result.is_err());
@@ -233,7 +233,7 @@ async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
     assert!(result.is_err());
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -248,7 +248,7 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<My
         Some("User".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     user.add_role(role.clone());
 
     repository.save(&user).await.unwrap();
@@ -264,7 +264,7 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<My
     assert_eq!(saved_user.roles[0].name, "valid_role");
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
 
@@ -275,7 +275,7 @@ async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
         Some("User".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     repository.save(&user).await.unwrap();
 
@@ -283,18 +283,14 @@ async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
         let repository = MysqlUserRepository::new(pool.clone());
         let mut user = user.clone();
         user.first_name = Some("Updated1".to_string());
-        async move {
-            repository.save(&user).await
-        }
+        async move { repository.save(&user).await }
     });
 
     let handle2 = tokio::spawn({
         let repository = MysqlUserRepository::new(pool.clone());
         let mut user = user.clone();
         user.first_name = Some("Updated2".to_string());
-        async move {
-            repository.save(&user).await
-        }
+        async move { repository.save(&user).await }
     });
 
     let result1 = handle1.await.unwrap();
@@ -307,7 +303,7 @@ async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
     assert!(final_user.first_name.unwrap().starts_with("Updated"));
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -324,7 +320,7 @@ async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
         Some("User".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     user.add_role(role1.clone());
 
     repository.save(&user).await.unwrap();
@@ -333,18 +329,14 @@ async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
         let repository = MysqlUserRepository::new(pool.clone());
         let mut user = user.clone();
         user.roles = vec![role1.clone(), role2.clone()];
-        async move {
-            repository.save(&user).await
-        }
+        async move { repository.save(&user).await }
     });
 
     let handle2 = tokio::spawn({
         let repository = MysqlUserRepository::new(pool.clone());
         let mut user = user.clone();
         user.roles = vec![role2.clone()];
-        async move {
-            repository.save(&user).await
-        }
+        async move { repository.save(&user).await }
     });
 
     let result1 = handle1.await.unwrap();
@@ -358,7 +350,7 @@ async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
     assert!(final_user.roles.len() <= 2);
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -367,7 +359,7 @@ async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
 
     let repository = MysqlUserRepository::new(pool.clone());
 
@@ -381,9 +373,7 @@ async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
         let mut user = user.clone();
         user.first_name = Some(format!("Jon{}", i));
 
-        let task = tokio::spawn(async move {
-            repository.save(&user).await
-        });
+        let task = tokio::spawn(async move { repository.save(&user).await });
         tasks.push(task);
     }
 
@@ -400,7 +390,7 @@ async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
     assert!(final_user.first_name.unwrap().starts_with("Jon"));
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let roles: Vec<Role> = vec![
@@ -422,7 +412,7 @@ async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
         Some(String::from("Snow")),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     user.add_role(roles[0].clone());
 
     let repository = MysqlUserRepository::new(pool.clone());
@@ -437,9 +427,7 @@ async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
         user.first_name = Some(format!("Jon{}", i));
         user.roles = vec![roles[i % roles.len()].clone()];
 
-        let task = tokio::spawn(async move {
-            repository.save(&user).await
-        });
+        let task = tokio::spawn(async move { repository.save(&user).await });
         tasks.push(task);
     }
 
@@ -457,7 +445,7 @@ async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
     assert_eq!(final_user.roles.len(), 1); // Should have exactly one role
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -474,7 +462,7 @@ async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
             Some("Test".to_string()),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         user.add_role(role.clone());
         users.push(user);
     }
@@ -490,9 +478,7 @@ async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
         let mut user = user.clone();
         user.first_name = Some(format!("UpdatedUser{}", i));
 
-        let task = tokio::spawn(async move {
-            repository.save(&user).await
-        });
+        let task = tokio::spawn(async move { repository.save(&user).await });
         tasks.push(task);
     }
 
@@ -513,7 +499,7 @@ async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
     }
 }
 
-#[sqlx::test]
+#[sqlx::test(migrations = "./migrations/mysql")]
 async fn it_handles_rapid_role_changes(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -532,7 +518,7 @@ async fn it_handles_rapid_role_changes(pool: Pool<MySql>) {
         Some("User".to_string()),
         Some(true),
     )
-        .unwrap();
+    .unwrap();
     user.add_role(roles[0].clone());
 
     repository.save(&user).await.unwrap();
@@ -549,9 +535,7 @@ async fn it_handles_rapid_role_changes(pool: Pool<MySql>) {
             roles[(i + 1) % roles.len()].clone(),
         ];
 
-        let task = tokio::spawn(async move {
-            repository.save(&user).await
-        });
+        let task = tokio::spawn(async move { repository.save(&user).await });
         tasks.push(task);
     }
 
