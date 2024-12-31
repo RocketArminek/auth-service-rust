@@ -1,7 +1,7 @@
 use crate::domain::crypto::HashingScheme;
 use crate::domain::event::UserEvents;
 use crate::infrastructure::message_publisher::MessagePublisher;
-use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use crate::infrastructure::mysql_role_repository::{RoleRepository};
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use regex::{Error, Regex};
 use std::sync::Arc;
@@ -17,7 +17,7 @@ pub struct ServerState {
     pub verification_required: bool,
     pub vr_duration_in_seconds: i64,
     pub user_repository: Arc<Mutex<MysqlUserRepository>>,
-    pub role_repository: Arc<Mutex<MysqlRoleRepository>>,
+    pub role_repository: Arc<Mutex<dyn RoleRepository + Send + Sync>>,
     pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>>,
 }
 

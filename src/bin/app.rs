@@ -7,7 +7,7 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::{create_pool, get_database_engine};
 use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
-use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
 use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use clap::{Parser, Subcommand};

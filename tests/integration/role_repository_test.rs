@@ -1,5 +1,5 @@
 use auth_service::domain::role::Role;
-use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository, RoleRepository};
 use sqlx::{MySql, Pool};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
