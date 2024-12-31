@@ -7,3 +7,5 @@ pub mod rabbitmq_message_publisher;
 pub mod repository;
 pub mod sqlite_user_repository;
 pub mod sqlite_role_repository;
+pub mod sql_role_repository;
+pub mod sql_user_repository;

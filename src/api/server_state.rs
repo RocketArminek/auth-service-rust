@@ -15,9 +15,9 @@ pub struct ServerState {
     pub rt_duration_in_seconds: i64,
     pub verification_required: bool,
     pub vr_duration_in_seconds: i64,
-    pub user_repository: Arc<Mutex<dyn UserRepository + Send + Sync>>,
-    pub role_repository: Arc<Mutex<dyn RoleRepository + Send + Sync>>,
-    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>>,
+    pub user_repository: Arc<Mutex<dyn UserRepository>>,
+    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
+    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
 }
 
 pub trait SecretAware {

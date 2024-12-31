@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[async_trait]
-pub trait MessagePublisher<T: Serialize + Send + Sync> {
+pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
     async fn publish(&self, event: &T) -> Result<(), Box<dyn Error>>;
     async fn publish_all(&self, events: Vec<&T>) -> Result<(), Box<dyn Error>>;
 }

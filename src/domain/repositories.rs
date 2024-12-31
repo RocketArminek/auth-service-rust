@@ -6,7 +6,7 @@ use crate::domain::user::User;
 use crate::infrastructure::repository::RepositoryError;
 
 #[async_trait]
-pub trait UserRepository {
+pub trait UserRepository: Send + Sync {
     async fn save(&self, user: &User) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError>;
     async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError>;
@@ -15,7 +15,7 @@ pub trait UserRepository {
 }
 
 #[async_trait]
-pub trait RoleRepository {
+pub trait RoleRepository: Send + Sync {
     async fn save(&self, role: &Role) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: Uuid) -> Result<Role, RepositoryError>;
     async fn get_by_name(&self, name: &String) -> Result<Role, RepositoryError>;
