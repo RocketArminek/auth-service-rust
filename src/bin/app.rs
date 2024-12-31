@@ -7,8 +7,6 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::{create_pool, get_database_engine};
 use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use clap::{Parser, Subcommand};
 use dotenv::{dotenv, from_filename};
@@ -16,12 +14,12 @@ use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use regex::{Error, Regex};
-use sqlx::{MySql, Pool};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
+use auth_service::domain::repositories::{RoleRepository};
+use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -143,10 +141,8 @@ async fn main() {
     let db_pool = create_pool().await.unwrap();
     db_pool.migrate().await;
 
-    let pool: Pool<MySql> = db_pool.into();
-
-    let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
-    let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
+    let user_repository = create_user_repository(db_pool.clone());
+    let role_repository = create_role_repository(db_pool.clone());
 
     let message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>> =
         create_message_publisher().await;
@@ -474,7 +470,7 @@ async fn shutdown_signal() {
     }
 }
 
-async fn init_roles(role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Result<Regex, Error> {
+async fn init_roles(role_repository: &Arc<Mutex<dyn RoleRepository + Send + Sync>>) -> Result<Regex, Error> {
     init_role(
         &"REGULAR_ROLE_PREFIX".to_string(),
         "USER".to_string(),
@@ -494,7 +490,7 @@ async fn init_roles(role_repository: &Arc<Mutex<MysqlRoleRepository>>) -> Result
 async fn init_role(
     role_env_var: &String,
     default: String,
-    role_repository: &Arc<Mutex<MysqlRoleRepository>>,
+    role_repository: &Arc<Mutex<dyn RoleRepository + Send + Sync>>,
 ) -> Role {
     let role_prefix = env::var(role_env_var).unwrap_or(default);
 

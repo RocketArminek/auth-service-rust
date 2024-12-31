@@ -5,6 +5,14 @@ use axum::Json;
 use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use crate::domain::repositories::{RoleRepository, UserRepository};
+use crate::infrastructure::database::DatabasePool;
+use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
+use crate::infrastructure::sqlite_role_repository::SqliteRoleRepository;
+use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
 
 #[derive(Debug)]
 pub enum RepositoryError {
@@ -69,6 +77,28 @@ impl IntoResponse for RepositoryError {
                 )
                     .into_response()
             }
+        }
+    }
+}
+
+pub fn create_user_repository(pool: DatabasePool) -> Arc<Mutex<dyn UserRepository + Sync + Send>> {
+    match pool {
+        DatabasePool::MySql(pool) => {
+            Arc::new(Mutex::new(MysqlUserRepository::new(pool)))
+        }
+        DatabasePool::Sqlite(pool) => {
+            Arc::new(Mutex::new(SqliteUserRepository::new(pool)))
+        }
+    }
+}
+
+pub fn create_role_repository(pool: DatabasePool) -> Arc<Mutex<dyn RoleRepository + Sync + Send>> {
+    match pool {
+        DatabasePool::MySql(pool) => {
+            Arc::new(Mutex::new(MysqlRoleRepository::new(pool)))
+        }
+        DatabasePool::Sqlite(pool) => {
+            Arc::new(Mutex::new(SqliteRoleRepository::new(pool)))
         }
     }
 }

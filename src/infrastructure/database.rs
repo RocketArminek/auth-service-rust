@@ -10,6 +10,7 @@ pub enum DatabaseEngine {
     Mysql,
 }
 
+#[derive(Clone)]
 pub enum DatabasePool {
     MySql(Pool<MySql>),
     Sqlite(Pool<Sqlite>),
