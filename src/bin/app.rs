@@ -6,7 +6,7 @@ use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::{create_pool, get_database_engine};
-use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
+use auth_service::infrastructure::message_publisher::{create_message_publisher};
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use clap::{Parser, Subcommand};
 use dotenv::{dotenv, from_filename};
@@ -144,7 +144,7 @@ async fn main() {
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
 
-    let message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents> + Send + Sync>> =
+    let message_publisher =
         create_message_publisher().await;
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
@@ -470,7 +470,7 @@ async fn shutdown_signal() {
     }
 }
 
-async fn init_roles(role_repository: &Arc<Mutex<dyn RoleRepository + Send + Sync>>) -> Result<Regex, Error> {
+async fn init_roles(role_repository: &Arc<Mutex<dyn RoleRepository>>) -> Result<Regex, Error> {
     init_role(
         &"REGULAR_ROLE_PREFIX".to_string(),
         "USER".to_string(),
@@ -490,7 +490,7 @@ async fn init_roles(role_repository: &Arc<Mutex<dyn RoleRepository + Send + Sync
 async fn init_role(
     role_env_var: &String,
     default: String,
-    role_repository: &Arc<Mutex<dyn RoleRepository + Send + Sync>>,
+    role_repository: &Arc<Mutex<dyn RoleRepository>>,
 ) -> Role {
     let role_prefix = env::var(role_env_var).unwrap_or(default);
 

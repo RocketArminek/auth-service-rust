@@ -81,7 +81,7 @@ impl IntoResponse for RepositoryError {
     }
 }
 
-pub fn create_user_repository(pool: DatabasePool) -> Arc<Mutex<dyn UserRepository + Sync + Send>> {
+pub fn create_user_repository(pool: DatabasePool) -> Arc<Mutex<dyn UserRepository>> {
     match pool {
         DatabasePool::MySql(pool) => {
             Arc::new(Mutex::new(MysqlUserRepository::new(pool)))
@@ -92,7 +92,7 @@ pub fn create_user_repository(pool: DatabasePool) -> Arc<Mutex<dyn UserRepositor
     }
 }
 
-pub fn create_role_repository(pool: DatabasePool) -> Arc<Mutex<dyn RoleRepository + Sync + Send>> {
+pub fn create_role_repository(pool: DatabasePool) -> Arc<Mutex<dyn RoleRepository>> {
     match pool {
         DatabasePool::MySql(pool) => {
             Arc::new(Mutex::new(MysqlRoleRepository::new(pool)))

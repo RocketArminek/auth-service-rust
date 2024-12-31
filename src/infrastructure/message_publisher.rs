@@ -26,7 +26,7 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for NullPublisher {
 }
 
 pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
-) -> Arc<Mutex<dyn MessagePublisher<T> + Send + Sync>> {
+) -> Arc<Mutex<dyn MessagePublisher<T>>> {
     let event_driven = env::var("EVENT_DRIVEN")
         .unwrap_or("true".to_string())
         .parse::<bool>()
