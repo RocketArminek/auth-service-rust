@@ -13,6 +13,7 @@ COPY --link src src
 
 FROM base-builder AS test
 COPY --link tests tests
+RUN cargo +stable install cargo-llvm-cov --locked
 RUN cargo test --no-run
 
 FROM base-builder AS dist
