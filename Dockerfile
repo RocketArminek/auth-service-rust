@@ -3,7 +3,7 @@ FROM rust:${RUST_VERSION}-slim-bookworm AS base-builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y curl ca-certificates
 RUN cargo install sqlx-cli --no-default-features --features mysql
-RUN cargo +stable install cargo-llvm-cov --locked
+RUN cargo install cargo-llvm-cov --locked
 COPY --link Cargo.lock Cargo.lock
 COPY --link Cargo.toml Cargo.toml
 COPY --link .cargo .cargo
