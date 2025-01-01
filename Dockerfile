@@ -16,7 +16,7 @@ COPY --link src src
 FROM base-builder AS test
 COPY --link tests tests
 RUN cargo test --no-run
-RUN cargo llvm-cov --ignore-run-fail
+RUN cargo llvm-cov --ignore-run-fail --ignore-filename-regex "/vendor/"
 
 FROM base-builder AS dist
 RUN cargo build --release
