@@ -127,7 +127,7 @@ jobs:
       - name: Run tests
         run: |
           cd /app
-          cargo llvm-cov --ignore-filename-regex "/vendor/"
+          cargo test --all
 
   publish-server-image:
     runs-on: ubuntu-20.04
