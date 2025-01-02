@@ -264,4 +264,3 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<Sq
     assert_eq!(saved_user.roles.len(), 1);
     assert_eq!(saved_user.roles[0].name, "valid_role");
 }
-

@@ -117,9 +117,7 @@ pub fn get_database_engine() -> DatabaseEngine {
     }
 }
 
-pub async fn create_pool() -> Result<DatabasePool, Error> {
-    let database_engine = get_database_engine();
-
+pub async fn create_pool(database_engine: &DatabaseEngine) -> Result<DatabasePool, Error> {
     match database_engine {
         DatabaseEngine::Sqlite => Ok(DatabasePool::Sqlite(create_sqlite_pool().await?)),
         DatabaseEngine::Mysql => Ok(DatabasePool::MySql(create_mysql_pool().await?)),

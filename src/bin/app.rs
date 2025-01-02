@@ -138,7 +138,7 @@ async fn main() {
 
     let secret = env::var("SECRET").expect("SECRET is not set in envs");
 
-    let db_pool = create_pool().await.unwrap();
+    let db_pool = create_pool(&db_engine).await.unwrap();
     db_pool.migrate().await;
 
     let user_repository = create_user_repository(db_pool.clone());
