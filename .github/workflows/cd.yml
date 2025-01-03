@@ -121,7 +121,7 @@ jobs:
       rabbit:
         image: rabbitmq:3-management
       mysql:
-        image: mysql:8.0
+        image: ${{ (matrix.db.engine == 'mysql') && 'mysql:8.0' || '' }}
         env:
           MYSQL_ROOT_PASSWORD: toor
           MYSQL_DATABASE: auth_service_dev
