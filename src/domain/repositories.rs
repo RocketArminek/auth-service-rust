@@ -1,9 +1,9 @@
-use axum::async_trait;
-use sqlx::Error;
-use uuid::Uuid;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::repository::RepositoryError;
+use axum::async_trait;
+use sqlx::Error;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {

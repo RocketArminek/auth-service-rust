@@ -1,9 +1,9 @@
-use axum::async_trait;
+use crate::domain::repositories::RoleRepository;
 use crate::domain::role::Role;
 use crate::infrastructure::repository::RepositoryError;
-use sqlx::{query, query_as, Sqlite, Pool};
+use axum::async_trait;
+use sqlx::{query, query_as, Pool, Sqlite};
 use uuid::Uuid;
-use crate::domain::repositories::RoleRepository;
 
 #[derive(Clone)]
 pub struct SqliteRoleRepository {

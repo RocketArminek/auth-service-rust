@@ -1,13 +1,12 @@
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
+use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use auth_service::infrastructure::repository::RepositoryError;
 use sqlx::{MySql, Pool};
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_add_user(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -25,7 +24,6 @@ async fn it_can_add_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_get_user_by_email(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -43,7 +41,6 @@ async fn it_can_get_user_by_email(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_deletes_user_by_email(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -65,7 +62,6 @@ async fn it_deletes_user_by_email(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -92,7 +88,6 @@ async fn it_can_assign_role_to_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_be_created_with_role(pool: Pool<MySql>) {
     let role = Role::now("admin".to_string()).unwrap();
     let mut user = User::now_with_email_and_password(
@@ -117,7 +112,6 @@ async fn it_can_be_created_with_role(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_update_user_roles(pool: Pool<MySql>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -149,7 +143,6 @@ async fn it_can_update_user_roles(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_prevents_save_with_nonexistent_role(pool: Pool<MySql>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -176,7 +169,6 @@ async fn it_prevents_save_with_nonexistent_role(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -209,7 +201,6 @@ async fn it_can_handle_multiple_roles(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
 
@@ -244,7 +235,6 @@ async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -276,7 +266,6 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<My
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
 
@@ -316,7 +305,6 @@ async fn it_maintains_transaction_isolation(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -364,7 +352,6 @@ async fn it_handles_parallel_transactions_with_roles(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -405,7 +392,6 @@ async fn it_handles_concurrent_saves_of_same_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let roles: Vec<Role> = vec![
@@ -461,7 +447,6 @@ async fn it_handles_concurrent_saves_with_role_changes(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());
@@ -516,7 +501,6 @@ async fn it_handles_concurrent_saves_of_different_users(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_handles_rapid_role_changes(pool: Pool<MySql>) {
     let repository = MysqlUserRepository::new(pool.clone());
     let role_repository = MysqlRoleRepository::new(pool.clone());

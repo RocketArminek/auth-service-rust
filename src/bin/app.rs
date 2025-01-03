@@ -3,11 +3,13 @@ use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
+use auth_service::domain::repositories::RoleRepository;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::{create_pool, get_database_engine};
-use auth_service::infrastructure::message_publisher::{create_message_publisher};
+use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
+use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
 use clap::{Parser, Subcommand};
 use dotenv::{dotenv, from_filename};
 use futures_lite::StreamExt;
@@ -18,8 +20,6 @@ use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
-use auth_service::domain::repositories::{RoleRepository};
-use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -144,8 +144,7 @@ async fn main() {
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
 
-    let message_publisher =
-        create_message_publisher().await;
+    let message_publisher = create_message_publisher().await;
 
     let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
 

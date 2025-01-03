@@ -1,13 +1,12 @@
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
 use auth_service::infrastructure::repository::RepositoryError;
-use sqlx::{Pool, Sqlite};
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 use auth_service::infrastructure::sqlite_user_repository::SqliteUserRepository;
+use sqlx::{Pool, Sqlite};
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_add_user(pool: Pool<Sqlite>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -25,7 +24,6 @@ async fn it_can_add_user(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_get_user_by_email(pool: Pool<Sqlite>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -43,7 +41,6 @@ async fn it_can_get_user_by_email(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_deletes_user_by_email(pool: Pool<Sqlite>) {
     let user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -65,7 +62,6 @@ async fn it_deletes_user_by_email(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_assign_role_to_user(pool: Pool<Sqlite>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -92,7 +88,6 @@ async fn it_can_assign_role_to_user(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_be_created_with_role(pool: Pool<Sqlite>) {
     let role = Role::now("admin".to_string()).unwrap();
     let mut user = User::now_with_email_and_password(
@@ -117,7 +112,6 @@ async fn it_can_be_created_with_role(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_update_user_roles(pool: Pool<Sqlite>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -149,7 +143,6 @@ async fn it_can_update_user_roles(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_prevents_save_with_nonexistent_role(pool: Pool<Sqlite>) {
     let mut user = User::now_with_email_and_password(
         "jon@snow.test".to_string(),
@@ -176,7 +169,6 @@ async fn it_prevents_save_with_nonexistent_role(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_can_handle_multiple_roles(pool: Pool<Sqlite>) {
     let role1 = Role::now("role1".to_string()).unwrap();
     let role2 = Role::now("role2".to_string()).unwrap();
@@ -209,7 +201,6 @@ async fn it_can_handle_multiple_roles(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<Sqlite>) {
     let repository = SqliteUserRepository::new(pool.clone());
 
@@ -244,7 +235,6 @@ async fn it_rolls_back_transaction_on_invalid_email(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
-#[cfg(feature = "sqlite")]
 async fn it_rolls_back_on_invalid_role_without_affecting_user_data(pool: Pool<Sqlite>) {
     let repository = SqliteUserRepository::new(pool.clone());
     let role_repository = SqliteRoleRepository::new(pool.clone());

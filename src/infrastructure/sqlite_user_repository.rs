@@ -1,12 +1,12 @@
-use axum::async_trait;
+use crate::domain::repositories::UserRepository;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::UserWithRoleRow;
 use crate::infrastructure::repository::RepositoryError;
-use sqlx::{query, Sqlite, Pool, Error};
-use uuid::Uuid;
+use axum::async_trait;
+use sqlx::{query, Error, Pool, Sqlite};
 use std::collections::HashMap;
-use crate::domain::repositories::UserRepository;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct SqliteUserRepository {
@@ -85,16 +85,16 @@ impl UserRepository for SqliteUserRepository {
                     WHERE id = ?
                     "#,
                 )
-                    .bind(&user.email)
-                    .bind(&user.password)
-                    .bind(&user.created_at)
-                    .bind(&user.first_name)
-                    .bind(&user.last_name)
-                    .bind(&user.avatar_path)
-                    .bind(&user.is_verified)
-                    .bind(&user.id)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(&user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(&user.is_verified)
+                .bind(&user.id)
+                .execute(&mut *tx)
+                .await?;
             }
             None => {
                 sqlx::query(
@@ -106,16 +106,16 @@ impl UserRepository for SqliteUserRepository {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     "#,
                 )
-                    .bind(&user.id)
-                    .bind(&user.email)
-                    .bind(&user.password)
-                    .bind(&user.created_at)
-                    .bind(&user.first_name)
-                    .bind(&user.last_name)
-                    .bind(&user.avatar_path)
-                    .bind(&user.is_verified)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(&user.id)
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(&user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(&user.is_verified)
+                .execute(&mut *tx)
+                .await?;
             }
         }
 
@@ -152,10 +152,10 @@ impl UserRepository for SqliteUserRepository {
                 VALUES (?, ?)
                 "#,
                 )
-                    .bind(&user.id)
-                    .bind(&role.id)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(&user.id)
+                .bind(&role.id)
+                .execute(&mut *tx)
+                .await?;
             }
         }
 
@@ -185,15 +185,15 @@ impl UserRepository for SqliteUserRepository {
             WHERE u.id = ?
             "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -252,15 +252,15 @@ impl UserRepository for SqliteUserRepository {
             WHERE u.email = ?
             "#,
         )
-            .bind(email)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with email: {}", email))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -331,10 +331,10 @@ impl UserRepository for SqliteUserRepository {
             LIMIT ? OFFSET ?
             "#,
         )
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
 
         let total: (i32,) = sqlx::query_as("SELECT COUNT(DISTINCT id) FROM users")
             .fetch_one(&self.pool)

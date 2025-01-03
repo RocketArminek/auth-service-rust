@@ -5,17 +5,16 @@ use auth_service::api::dto::{LoginResponse, MessageResponse, UserListResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::mysql_role_repository::{MysqlRoleRepository};
-use auth_service::infrastructure::mysql_user_repository::{MysqlUserRepository};
+use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
+use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_creates_new_user(pool: Pool<MySql>) {
     let id = Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -66,7 +65,6 @@ async fn it_creates_new_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_creates_not_verified_user(pool: Pool<MySql>) {
     let id = Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -134,7 +132,6 @@ async fn it_creates_not_verified_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_verifies_user(pool: Pool<MySql>) {
     let id = Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -199,7 +196,6 @@ async fn it_verifies_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_does_not_create_user_with_invalid_password(pool: Pool<MySql>) {
     let id = uuid::Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -237,7 +233,6 @@ async fn it_does_not_create_user_with_invalid_password(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -279,7 +274,6 @@ async fn it_returns_conflict_if_user_already_exists(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_bad_request_if_roles_does_not_exists(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -313,7 +307,6 @@ async fn it_returns_bad_request_if_roles_does_not_exists(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_bad_request_if_role_is_restricted(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -344,7 +337,6 @@ async fn it_returns_bad_request_if_role_is_restricted(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_bad_request_if_role_is_restricted_2(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -375,7 +367,6 @@ async fn it_returns_bad_request_if_role_is_restricted_2(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_bad_request_if_role_restricted_another(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -409,7 +400,6 @@ async fn it_returns_bad_request_if_role_restricted_another(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_creates_restricted_user(pool: Pool<MySql>) {
     let id = uuid::Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -485,7 +475,6 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
     let id = uuid::Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -546,7 +535,6 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -606,7 +594,6 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -667,7 +654,6 @@ async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_get_single_user(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -731,7 +717,6 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_can_delete_user(pool: Pool<MySql>) {
     let id = uuid::Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -814,7 +799,6 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -867,7 +851,6 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_updates_user_information(pool: Pool<MySql>) {
     let id = Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -957,7 +940,6 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_updates_other_user_information(pool: Pool<MySql>) {
     let id = Uuid::new_v4();
     let exchange_name = format!("nebula.auth.test-{}", id);
@@ -1055,7 +1037,6 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
-#[cfg(feature = "mysql")]
 async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),

@@ -1,10 +1,10 @@
 use crate::domain::crypto::HashingScheme;
 use crate::domain::event::UserEvents;
+use crate::domain::repositories::{RoleRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use regex::{Error, Regex};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::domain::repositories::{RoleRepository, UserRepository};
 
 #[derive(Clone)]
 pub struct ServerState {

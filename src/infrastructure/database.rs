@@ -1,9 +1,9 @@
+use sqlx::migrate::{MigrateDatabase, MigrateError};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
 use std::env;
-use sqlx::migrate::{MigrateDatabase, MigrateError};
-use sqlx::sqlx_macros::migrate;
 
 pub enum DatabaseEngine {
     Sqlite,
