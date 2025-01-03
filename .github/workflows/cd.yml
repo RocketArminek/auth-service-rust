@@ -103,7 +103,7 @@ jobs:
             url: "mysql://root:toor@mysql:3306/auth_service_dev"
     runs-on: ubuntu-latest
     name: "Run tests"
-    timeout-minutes: 2
+    timeout-minutes: 10
     needs:
       - publish-test-image
     container:
