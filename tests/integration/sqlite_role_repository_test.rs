@@ -4,6 +4,7 @@ use auth_service::domain::repositories::RoleRepository;
 use auth_service::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_add_role(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);
@@ -14,6 +15,7 @@ async fn it_can_add_role(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_get_role_by_id(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);
@@ -24,6 +26,7 @@ async fn it_can_get_role_by_id(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_get_role_by_name(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);
@@ -34,6 +37,7 @@ async fn it_can_get_role_by_name(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_get_all_roles(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);
@@ -44,6 +48,7 @@ async fn it_can_get_all_roles(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_delete_role(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);
@@ -58,6 +63,7 @@ async fn it_can_delete_role(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_name_is_unique(pool: Pool<Sqlite>) {
     let role = Role::now("ROLE".to_string()).unwrap();
     let role2 = Role::now("ROLE".to_string()).unwrap();
@@ -72,6 +78,7 @@ async fn it_name_is_unique(pool: Pool<Sqlite>) {
 }
 
 #[sqlx::test(migrations = "./migrations/sqlite")]
+#[cfg(feature = "sqlite")]
 async fn it_can_update_role(pool: Pool<Sqlite>) {
     let mut role = Role::now("ROLE".to_string()).unwrap();
     let repository = SqliteRoleRepository::new(pool);

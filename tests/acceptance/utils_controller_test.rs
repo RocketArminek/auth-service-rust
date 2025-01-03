@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use sqlx::{MySql, Pool};
 
 #[sqlx::test(migrations = "./migrations/mysql")]
+#[cfg(feature = "mysql")]
 async fn it_returns_health_check_result(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -26,6 +27,7 @@ async fn it_returns_health_check_result(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
+#[cfg(feature = "mysql")]
 async fn it_returns_open_api_docs(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),
@@ -47,6 +49,7 @@ async fn it_returns_open_api_docs(pool: Pool<MySql>) {
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]
+#[cfg(feature = "mysql")]
 async fn it_returns_swagger_ui(pool: Pool<MySql>) {
     let server = create_test_server(
         "secret".to_string(),

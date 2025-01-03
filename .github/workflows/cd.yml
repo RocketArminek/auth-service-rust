@@ -94,6 +94,13 @@ jobs:
 #          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock=false
 
   tests:
+    strategy:
+      matrix:
+        db:
+          - engine: "sqlite"
+            url: "sqlite://test.db"
+          - engine: "mysql"
+            url: "mysql://root:toor@mysql:3306/auth_service_dev"
     runs-on: ubuntu-latest
     name: "Run tests"
     timeout-minutes: 2
@@ -105,7 +112,8 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
       env:
-        DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
+        DATABASE_ENGINE: ${{ matrix.db.engine }}
+        DATABASE_URL: ${{ matrix.db.url }}
         RABBITMQ_URL: amqp://rabbit:5672
         SECRET: secret
         PASSWORD_HASHING_SCHEME: bcrypt_low
@@ -120,14 +128,10 @@ jobs:
     steps:
       - name: Wait for Services
         run: sleep 10
-      - name: Prepare db
-        run: |
-          cd /app
-          sqlx database reset
       - name: Run tests
         run: |
           cd /app
-          cargo test --all
+          cargo test --features ${{ matrix.db.engine }}
 
   publish-server-image:
     runs-on: ubuntu-20.04

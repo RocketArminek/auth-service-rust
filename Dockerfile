@@ -13,7 +13,7 @@ COPY --link src src
 
 FROM base-builder AS test
 COPY --link tests tests
-RUN cargo test --no-run
+RUN cargo test --no-run --all-features
 
 FROM base-builder AS dist
 RUN cargo build --release
