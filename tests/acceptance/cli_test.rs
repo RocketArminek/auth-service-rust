@@ -3,6 +3,7 @@ use predicates::prelude::*;
 use std::process::Command;
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_creates_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
@@ -49,6 +50,7 @@ fn it_creates_user() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_checks_password_of_the_account() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut check_password_cmd = Command::cargo_bin("app").unwrap();
@@ -103,6 +105,7 @@ fn it_checks_password_of_the_account() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_gets_user_by_email() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut get_cmd = Command::cargo_bin("app").unwrap();
@@ -155,6 +158,7 @@ fn it_gets_user_by_email() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_cannot_get_not_existing_user() {
     let mut get_cmd = Command::cargo_bin("app").unwrap();
     let email = String::from("some@email.test");
@@ -167,6 +171,7 @@ fn it_cannot_get_not_existing_user() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_deletes_user_by_email() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut delete_cmd = Command::cargo_bin("app").unwrap();
@@ -216,6 +221,7 @@ fn it_deletes_user_by_email() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_does_not_create_user_with_invalid_email() {
     let mut cmd = Command::cargo_bin("app").unwrap();
 
@@ -231,6 +237,7 @@ fn it_does_not_create_user_with_invalid_email() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_assigns_role_to_user() {
     let mut create_cmd = Command::cargo_bin("app").unwrap();
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
@@ -278,6 +285,7 @@ fn it_assigns_role_to_user() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_gets_role() {
     let mut create_role_cmd = Command::cargo_bin("app").unwrap();
     let mut get_role_cmd = Command::cargo_bin("app").unwrap();
@@ -307,6 +315,7 @@ fn it_gets_role() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_initializes_auth_owner_role() {
     let mut cmd = Command::cargo_bin("app").unwrap();
     let mut get_role_cmd = Command::cargo_bin("app").unwrap();
@@ -326,6 +335,7 @@ fn it_initializes_auth_owner_role() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_checks_rabbitmq_connection() {
     let mut cmd = Command::cargo_bin("app").unwrap();
 
@@ -333,6 +343,7 @@ fn it_checks_rabbitmq_connection() {
 }
 
 #[test]
+#[cfg(feature = "mysql")]
 fn it_consumes_rabbitmq_messages() {
     let mut cmd = Command::cargo_bin("app").unwrap();
 
