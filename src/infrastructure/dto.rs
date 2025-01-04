@@ -35,6 +35,7 @@ impl From<UserRow> for User {
         User {
             id: row.id,
             email: row.email,
+            not_hashed_password: "".to_string(),
             password: row.password,
             first_name: row.first_name,
             last_name: row.last_name,

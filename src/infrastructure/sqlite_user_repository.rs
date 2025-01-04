@@ -26,6 +26,7 @@ impl SqliteUserRepository {
                 let user = User {
                     id: row.id,
                     email: row.email.clone(),
+                    not_hashed_password: "".to_string(),
                     password: row.password.clone(),
                     first_name: row.first_name.clone(),
                     last_name: row.last_name.clone(),
@@ -206,6 +207,7 @@ impl UserRepository for SqliteUserRepository {
         let mut user = User {
             id: first_row.id,
             email: first_row.email.clone(),
+            not_hashed_password: "".to_string(),
             password: first_row.password.clone(),
             first_name: first_row.first_name.clone(),
             last_name: first_row.last_name.clone(),
@@ -273,6 +275,7 @@ impl UserRepository for SqliteUserRepository {
         let mut user = User {
             id: first_row.id,
             email: first_row.email.clone(),
+            not_hashed_password: "".to_string(),
             password: first_row.password.clone(),
             first_name: first_row.first_name.clone(),
             last_name: first_row.last_name.clone(),

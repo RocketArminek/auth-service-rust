@@ -9,6 +9,7 @@ use uuid::{NoContext, Timestamp, Uuid};
 pub struct User {
     pub id: Uuid,
     pub email: String,
+    pub not_hashed_password: String,
     pub password: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -22,7 +23,7 @@ impl User {
     pub fn new(
         id: Uuid,
         email: String,
-        password: String,
+        not_hashed_password: String,
         first_name: Option<String>,
         last_name: Option<String>,
         created_at: DateTime<Utc>,
@@ -37,25 +38,25 @@ impl User {
 
         if email.is_empty() {
             Err(UserError::InvalidEmail { email })
-        } else if password.is_empty() {
+        } else if not_hashed_password.is_empty() {
             Err(UserError::EmptyPassword)
-        } else if password.len() < 8 {
+        } else if not_hashed_password.len() < 8 {
             Err(UserError::InvalidPassword {
                 reason: Some("Password must be at least 8 characters long".to_string()),
             })
-        } else if !password_digit_check.is_match(&password) {
+        } else if !password_digit_check.is_match(&not_hashed_password) {
             Err(UserError::InvalidPassword {
                 reason: Some("Password must contain at least one digit".to_string()),
             })
-        } else if !password_special_character_check.is_match(&password) {
+        } else if !password_special_character_check.is_match(&not_hashed_password) {
             Err(UserError::InvalidPassword {
                 reason: Some("Password must contain at least one special character".to_string()),
             })
-        } else if !password_uppercase_check.is_match(&password) {
+        } else if !password_uppercase_check.is_match(&not_hashed_password) {
             Err(UserError::InvalidPassword {
                 reason: Some("Password must contain at least one uppercase letter".to_string()),
             })
-        } else if !password_lowercase_check.is_match(&password) {
+        } else if !password_lowercase_check.is_match(&not_hashed_password) {
             Err(UserError::InvalidPassword {
                 reason: Some("Password must contain at least one lowercase letter".to_string()),
             })
@@ -65,7 +66,8 @@ impl User {
             Ok(User {
                 id,
                 email,
-                password,
+                not_hashed_password,
+                password: "".to_string(),
                 first_name,
                 last_name,
                 created_at,
@@ -78,7 +80,7 @@ impl User {
 
     pub fn now_with_email_and_password(
         email: String,
-        password: String,
+        not_hashed_password: String,
         first_name: Option<String>,
         last_name: Option<String>,
         is_verified: Option<bool>,
@@ -89,7 +91,7 @@ impl User {
         User::new(
             Uuid::new_v7(timestamp),
             email.clone(),
-            password.clone(),
+            not_hashed_password.clone(),
             first_name,
             last_name,
             now,
@@ -131,7 +133,7 @@ impl User {
 
 pub trait PasswordHandler {
     fn hash_password(&mut self, hasher: &impl Hasher) {
-        let hashed_password = hasher.hash_password(self.get_password().as_str());
+        let hashed_password = hasher.hash_password(self.get_not_hashed_password().as_str());
 
         match hashed_password {
             Ok(hashed_password) => self.set_password(hashed_password),
@@ -143,11 +145,14 @@ pub trait PasswordHandler {
         hasher.verify_password(password, self.get_password().as_str())
     }
 
+    fn get_not_hashed_password(&self) -> String;
     fn get_password(&self) -> String;
     fn set_password(&mut self, password: String);
 }
 
 impl PasswordHandler for User {
+    fn get_not_hashed_password(&self) -> String { self.not_hashed_password.clone() }
+
     fn get_password(&self) -> String {
         self.password.clone()
     }
