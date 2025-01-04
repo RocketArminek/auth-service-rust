@@ -142,6 +142,12 @@ impl Argon2Hasher {
     }
 }
 
+impl Default for Argon2Hasher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Hasher for Argon2Hasher {
     fn hash_password(&self, password: &str) -> Result<String, UserError> {
         let salt = SaltString::generate(&mut OsRng);
@@ -173,12 +179,18 @@ impl BcryptHasher {
         BcryptHasher { cost }
     }
 
-    pub fn default() -> Self {
-        BcryptHasher { cost: DEFAULT_COST }
+    pub fn low_cost() -> Self {
+        BcryptHasher::new(4)
     }
 
-    pub fn low_cost() -> Self {
-        BcryptHasher { cost: 4 }
+    pub fn max_cost() -> Self {
+        BcryptHasher::new(31)
+    }
+}
+
+impl Default for BcryptHasher {
+    fn default() -> Self {
+        BcryptHasher::new(DEFAULT_COST)
     }
 }
 

@@ -56,3 +56,12 @@ fn it_can_check_if_hash_needs_rehash() {
     assert_eq!(needs_rehash_01, false);
     assert_eq!(needs_rehash_02, true);
 }
+
+#[test]
+fn it_can_create_low_cost_bcrypt() {
+    let bcrypt_hasher = BcryptHasher::low_cost();
+    let hash = bcrypt_hasher.hash_password("password").unwrap();
+    let is_ok = bcrypt_hasher.verify_password("password", &hash);
+
+    assert_eq!(is_ok, true);
+}
