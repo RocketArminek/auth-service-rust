@@ -78,8 +78,8 @@ pub async fn create_user(
             let id = user.id.clone();
 
             tokio::task::spawn(async move {
-                if let Err(e) = user
-                    .hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme))
+                if let Err(e) =
+                    user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme))
                 {
                     tracing::error!("Failed to hash user's password: {:?}", e);
 

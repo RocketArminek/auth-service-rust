@@ -149,7 +149,9 @@ pub trait PasswordHandler {
 }
 
 impl PasswordHandler for User {
-    fn get_not_hashed_password(&self) -> String { self.not_hashed_password.clone() }
+    fn get_not_hashed_password(&self) -> String {
+        self.not_hashed_password.clone()
+    }
 
     fn get_password(&self) -> String {
         self.password.clone()

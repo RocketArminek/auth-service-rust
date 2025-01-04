@@ -1,5 +1,5 @@
 use crate::utils;
-use crate::utils::create_test_server;
+use crate::utils::{create_test_server, run_test_with_utils};
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse, UserListResponse};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
@@ -14,185 +14,191 @@ use axum::http::{HeaderName, HeaderValue, StatusCode};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
-#[sqlx::test(migrations = "./migrations/mysql")]
-async fn it_creates_new_user(pool: Pool<MySql>) {
-    let id = Uuid::new_v4();
-    let exchange_name = format!("nebula.auth.test-{}", id);
-    let (_channel, consumer, _queue_name) = utils::setup_test_consumer(&exchange_name).await;
-    let server = create_test_server(
-        "secret".to_string(),
-        pool.clone(),
-        HashingScheme::BcryptLow,
+#[tokio::test]
+async fn it_creates_new_user() {
+    run_test_with_utils(
         None,
-        60,
-        60,
-        false,
-        172800,
-        exchange_name,
-    )
-    .await;
-    let role_repository = MysqlRoleRepository::new(pool.clone());
-    let role = Role::now("user".to_string()).unwrap();
-    role_repository.save(&role).await.unwrap();
-    let email = String::from("jon@snow.test");
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        |
+            _user_repository,
+            role_repository,
+            _pool,
+            server,
+            _channel,
+            consumer,
+            _queue_name
+        | async move {
+            let role = Role::now("user".to_string()).unwrap();
+            role_repository.lock().await.save(&role).await.unwrap();
+            let email = String::from("jon@snow.test");
+            let response = server
+                .post("/v1/users")
+                .json(&json!({
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                    "role": "user",
+                })).await;
 
-    let response = server
-        .post("/v1/users")
-        .json(&json!({
-            "email": &email,
-            "password": "Iknow#othing1",
-            "role": "user",
-        }))
-        .await;
+            assert_eq!(response.status_code(), StatusCode::CREATED);
 
-    assert_eq!(response.status_code(), StatusCode::CREATED);
+            let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
+                matches!(event, UserEvents::Created { .. })
+            })
+                .await;
 
-    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
-        matches!(event, UserEvents::Created { .. })
-    })
-    .await;
+            assert!(event.is_some(), "Should have received some event");
 
-    assert!(event.is_some(), "Should have received some event");
-
-    if let Some(UserEvents::Created { user }) = event {
-        assert_eq!(user.email, email);
-        assert_eq!(user.first_name, None);
-        assert_eq!(user.last_name, None);
-        assert_eq!(user.avatar_path, None);
-        assert_eq!(user.roles, vec!["user".to_string()]);
-        assert_eq!(user.is_verified, true);
-    }
+            if let Some(UserEvents::Created { user }) = event {
+                assert_eq!(user.email, email);
+                assert_eq!(user.first_name, None);
+                assert_eq!(user.last_name, None);
+                assert_eq!(user.avatar_path, None);
+                assert_eq!(user.roles, vec!["user".to_string()]);
+                assert_eq!(user.is_verified, true);
+            }
+        }
+    ).await
 }
 
-#[sqlx::test(migrations = "./migrations/mysql")]
-async fn it_creates_not_verified_user(pool: Pool<MySql>) {
-    let id = Uuid::new_v4();
-    let exchange_name = format!("nebula.auth.test-{}", id);
-    let (_channel, consumer, _queue_name) = utils::setup_test_consumer(&exchange_name).await;
-    let server = create_test_server(
-        "secret".to_string(),
-        pool.clone(),
-        HashingScheme::BcryptLow,
+#[tokio::test]
+async fn it_creates_not_verified_user() {
+    run_test_with_utils(
         None,
-        60,
-        60,
-        true,
-        172800,
-        exchange_name,
-    )
-    .await;
-    let role_repository = MysqlRoleRepository::new(pool.clone());
-    let role = Role::now("user".to_string()).unwrap();
-    role_repository.save(&role).await.unwrap();
-    let email = String::from("jon@snow.test");
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        None,
+        |
+            _user_repository,
+            role_repository,
+            _pool,
+            server,
+            _channel,
+            consumer,
+            _queue_name
+        | async move {
+            let role = Role::now("user".to_string()).unwrap();
+            role_repository.lock().await.save(&role).await.unwrap();
+            let email = String::from("jon@snow.test");
 
-    let response = server
-        .post("/v1/users")
-        .json(&json!({
-            "email": &email,
-            "password": "Iknow#othing1",
-            "role": "user",
-        }))
-        .await;
+            let response = server
+                .post("/v1/users")
+                .json(&json!({
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                    "role": "user",
+                })).await;
 
-    assert_eq!(response.status_code(), StatusCode::CREATED);
+            assert_eq!(response.status_code(), StatusCode::CREATED);
 
-    let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
-        matches!(event, UserEvents::Created { .. })
-    })
-    .await;
+            let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
+                matches!(event, UserEvents::Created { .. })
+            })
+                .await;
 
-    assert!(event.is_some(), "Should have received some event");
+            assert!(event.is_some(), "Should have received some event");
 
-    if let Some(UserEvents::Created { user }) = event {
-        assert_eq!(user.email, email);
-        assert_eq!(user.first_name, None);
-        assert_eq!(user.last_name, None);
-        assert_eq!(user.avatar_path, None);
-        assert_eq!(user.roles, vec!["user".to_string()]);
-        assert_eq!(user.is_verified, false);
-    }
+            if let Some(UserEvents::Created { user }) = event {
+                assert_eq!(user.email, email);
+                assert_eq!(user.first_name, None);
+                assert_eq!(user.last_name, None);
+                assert_eq!(user.avatar_path, None);
+                assert_eq!(user.roles, vec!["user".to_string()]);
+                assert_eq!(user.is_verified, false);
+            }
 
-    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
-        matches!(event, UserEvents::VerificationRequested { .. })
-    })
-    .await;
+            let event = utils::wait_for_event::<UserEvents>(consumer, 60, |event| {
+                matches!(event, UserEvents::VerificationRequested { .. })
+            })
+                .await;
 
-    assert!(event.is_some(), "Should have received some event");
+            assert!(event.is_some(), "Should have received some event");
 
-    if let Some(UserEvents::VerificationRequested { user, token }) = event {
-        assert_eq!(user.email, email);
-        assert_eq!(user.first_name, None);
-        assert_eq!(user.last_name, None);
-        assert_eq!(user.avatar_path, None);
-        assert_eq!(user.roles, vec!["user".to_string()]);
-        assert_eq!(user.is_verified, false);
-        assert_eq!(token.is_empty(), false);
-    }
+            if let Some(UserEvents::VerificationRequested { user, token }) = event {
+                assert_eq!(user.email, email);
+                assert_eq!(user.first_name, None);
+                assert_eq!(user.last_name, None);
+                assert_eq!(user.avatar_path, None);
+                assert_eq!(user.roles, vec!["user".to_string()]);
+                assert_eq!(user.is_verified, false);
+                assert_eq!(token.is_empty(), false);
+            }
+        }
+    ).await
 }
 
-#[sqlx::test(migrations = "./migrations/mysql")]
-async fn it_verifies_user(pool: Pool<MySql>) {
-    let id = Uuid::new_v4();
-    let exchange_name = format!("nebula.auth.test-{}", id);
-    let (_channel, consumer, _queue_name) = utils::setup_test_consumer(&exchange_name).await;
-    let server = create_test_server(
-        "secret".to_string(),
-        pool.clone(),
-        HashingScheme::BcryptLow,
+#[tokio::test]
+async fn it_verifies_user() {
+    run_test_with_utils(
         None,
-        60,
-        60,
-        true,
-        172800,
-        exchange_name,
-    )
-    .await;
-    let role_repository = MysqlRoleRepository::new(pool.clone());
-    let role = Role::now("user".to_string()).unwrap();
-    role_repository.save(&role).await.unwrap();
-    let email = String::from("jon@snow.test");
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        None,
+        |
+            _user_repository,
+            role_repository,
+            _pool,
+            server,
+            _channel,
+            consumer,
+            _queue_name
+        | async move {
+            let role = Role::now("user".to_string()).unwrap();
+            role_repository.lock().await.save(&role).await.unwrap();
+            let email = String::from("jon@snow.test");
 
-    let _ = server
-        .post("/v1/users")
-        .json(&json!({
-            "email": &email,
-            "password": "Iknow#othing1",
-            "role": "user",
-        }))
-        .await;
+            let _ = server
+                .post("/v1/users")
+                .json(&json!({
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                    "role": "user",
+                }))
+                .await;
 
-    let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
-        matches!(event, UserEvents::VerificationRequested { .. })
-    })
-    .await;
+            let event = utils::wait_for_event::<UserEvents>(consumer.clone(), 5, |event| {
+                matches!(event, UserEvents::VerificationRequested { .. })
+            })
+                .await;
 
-    let Some(UserEvents::VerificationRequested { token, .. }) = event else {
-        panic!("Should have received verification requested event")
-    };
+            let Some(UserEvents::VerificationRequested { token, .. }) = event else {
+                panic!("Should have received verification requested event")
+            };
 
-    let response = server
-        .patch("/v1/me/verify")
-        .add_header(
-            HeaderName::try_from("Authorization").unwrap(),
-            HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
-        )
-        .await;
+            let response = server
+                .patch("/v1/me/verify")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+                )
+                .await;
 
-    assert_eq!(response.status_code(), StatusCode::OK);
+            assert_eq!(response.status_code(), StatusCode::OK);
 
-    let body = response.json::<UserDTO>();
+            let body = response.json::<UserDTO>();
 
-    assert_eq!(body.is_verified, true);
-    assert_eq!(body.email, email);
-    assert_eq!(body.roles, vec!["user".to_string()]);
+            assert_eq!(body.is_verified, true);
+            assert_eq!(body.email, email);
+            assert_eq!(body.roles, vec!["user".to_string()]);
 
-    let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
-        matches!(event, UserEvents::Verified { .. })
-    })
-    .await;
+            let event = utils::wait_for_event::<UserEvents>(consumer, 5, |event| {
+                matches!(event, UserEvents::Verified { .. })
+            })
+                .await;
 
-    assert!(event.is_some(), "Should have received some event");
+            assert!(event.is_some(), "Should have received some event");
+        }
+    ).await
 }
 
 #[sqlx::test(migrations = "./migrations/mysql")]

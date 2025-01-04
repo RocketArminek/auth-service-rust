@@ -264,7 +264,8 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt)).unwrap();
+    user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt))
+        .unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server

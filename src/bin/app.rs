@@ -202,8 +202,8 @@ async fn main() {
                         .get_by_name(&role)
                         .await
                         .unwrap();
-                    if let Err(e) = user
-                        .hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme))
+                    if let Err(e) =
+                        user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme))
                     {
                         println!("Failed to hash user's password: {:?}", e);
 

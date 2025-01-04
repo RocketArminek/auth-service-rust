@@ -119,23 +119,35 @@ pub fn get_database_engine() -> DatabaseEngine {
 
 pub async fn create_pool(database_engine: &DatabaseEngine) -> Result<DatabasePool, Error> {
     match database_engine {
-        DatabaseEngine::Sqlite => Ok(DatabasePool::Sqlite(create_sqlite_pool().await?)),
-        DatabaseEngine::Mysql => Ok(DatabasePool::MySql(create_mysql_pool().await?)),
+        DatabaseEngine::Sqlite => Ok(DatabasePool::Sqlite(
+            create_sqlite_pool(&get_sqlite_db_url().unwrap()).await?,
+        )),
+        DatabaseEngine::Mysql => Ok(DatabasePool::MySql(
+            create_mysql_pool(&get_mysql_database_url().unwrap()).await?,
+        )),
     }
 }
 
-async fn create_sqlite_pool() -> Result<Pool<Sqlite>, Error> {
+pub fn get_sqlite_db_url() -> Result<String, String> {
     let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
         let path = env::var("SQLITE_PATH").expect("SQLITE_PATH environment variable not set");
         format!("sqlite://{}", path)
     });
 
     if database_url.is_empty() {
-        panic!("DATABASE_URL is empty");
+        return Err("DATABASE_URL is empty".to_string());
     }
 
-    if !Sqlite::database_exists(&database_url).await? {
-        Sqlite::create_database(&database_url).await?;
+    Ok(database_url)
+}
+
+pub async fn create_sqlite_pool(database_url: &str) -> Result<Pool<Sqlite>, Error> {
+    if !Sqlite::database_exists(database_url).await? {
+        Sqlite::create_database(database_url).await?;
+        tracing::info!(
+            "Database does not exists. Database created for {}",
+            database_url
+        );
     }
 
     let max_connections = env::var("DATABASE_MAX_CONNECTIONS")
@@ -155,7 +167,7 @@ async fn create_sqlite_pool() -> Result<Pool<Sqlite>, Error> {
         .await
 }
 
-pub async fn create_mysql_pool() -> Result<Pool<MySql>, Error> {
+pub fn get_mysql_database_url() -> Result<String, String> {
     let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
         let user = env::var("DATABASE_USER").expect("DATABASE_USER is not set");
         let password = env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD is not set");
@@ -167,7 +179,19 @@ pub async fn create_mysql_pool() -> Result<Pool<MySql>, Error> {
     });
 
     if database_url.is_empty() {
-        panic!("DATABASE_URL is empty");
+        return Err("DATABASE_URL is empty".to_string());
+    }
+
+    Ok(database_url)
+}
+
+pub async fn create_mysql_pool(database_url: &str) -> Result<Pool<MySql>, Error> {
+    if !MySql::database_exists(database_url).await? {
+        MySql::create_database(database_url).await?;
+        tracing::info!(
+            "Database does not exists. Database created {}",
+            database_url.split("/").last().unwrap_or("")
+        );
     }
 
     let max_connections = env::var("DATABASE_MAX_CONNECTIONS")
