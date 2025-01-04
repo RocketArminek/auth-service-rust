@@ -1,16 +1,3 @@
-#[cfg(feature = "mysql")]
-use {
-    auth_service::api::routes::routes,
-    auth_service::api::server_state::{parse_restricted_pattern, ServerState},
-    auth_service::domain::crypto::HashingScheme,
-    auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository,
-    auth_service::infrastructure::mysql_user_repository::MysqlUserRepository,
-    auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher,
-    axum_test::TestServer,
-    sqlx::{MySql, Pool},
-    std::sync::Arc,
-    tokio::sync::Mutex
-};
 use futures_lite::StreamExt;
 use lapin::options::{
     BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
@@ -22,6 +9,19 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::time::Duration;
 use tokio::time::sleep;
+#[cfg(feature = "mysql")]
+use {
+    auth_service::api::routes::routes,
+    auth_service::api::server_state::{parse_restricted_pattern, ServerState},
+    auth_service::domain::crypto::HashingScheme,
+    auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository,
+    auth_service::infrastructure::mysql_user_repository::MysqlUserRepository,
+    auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher,
+    axum_test::TestServer,
+    sqlx::{MySql, Pool},
+    std::sync::Arc,
+    tokio::sync::Mutex,
+};
 
 #[cfg(feature = "mysql")]
 pub async fn create_test_server(
