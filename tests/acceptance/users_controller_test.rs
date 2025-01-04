@@ -425,7 +425,7 @@ async fn it_creates_restricted_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -500,7 +500,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     repository.save(&admin).await.unwrap();
 
@@ -557,7 +557,7 @@ async fn it_can_list_all_user_as_an_privileged_role(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -616,7 +616,7 @@ async fn it_can_list_all_user_with_roles(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role_repository = MysqlRoleRepository::new(pool.clone());
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -677,7 +677,7 @@ async fn it_can_get_single_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
@@ -743,7 +743,7 @@ async fn it_can_delete_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
@@ -822,7 +822,7 @@ async fn it_returns_not_found_for_nonexistent_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
@@ -878,7 +878,7 @@ async fn it_updates_user_information(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
@@ -966,7 +966,7 @@ async fn it_updates_other_user_information(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
@@ -1060,7 +1060,7 @@ async fn it_cannot_update_none_existing_user(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default());
+    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     let role = Role::now("ADMIN_USER".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();

@@ -78,7 +78,14 @@ pub async fn create_user(
             let id = user.id.clone();
 
             tokio::task::spawn(async move {
-                user.hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme));
+                if let Err(e) = user
+                    .hash_password(&SchemeAwareHasher::with_scheme(state.hashing_scheme))
+                {
+                    tracing::error!("Failed to hash user's password: {:?}", e);
+
+                    return;
+                }
+
                 user.add_roles(vec![existing_role.clone()]);
                 match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {

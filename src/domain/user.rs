@@ -132,13 +132,11 @@ impl User {
 }
 
 pub trait PasswordHandler {
-    fn hash_password(&mut self, hasher: &impl Hasher) {
-        let hashed_password = hasher.hash_password(self.get_not_hashed_password().as_str());
+    fn hash_password(&mut self, hasher: &impl Hasher) -> Result<(), UserError> {
+        let hashed_password = hasher.hash_password(self.get_not_hashed_password().as_str())?;
+        self.set_password(hashed_password);
 
-        match hashed_password {
-            Ok(hashed_password) => self.set_password(hashed_password),
-            Err(error) => tracing::error!("Error hashing password: {:?}", error),
-        }
+        Ok(())
     }
 
     fn verify_password(&self, hasher: &impl Hasher, password: &str) -> bool {

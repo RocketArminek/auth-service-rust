@@ -140,7 +140,7 @@ fn it_can_verify_password_using_hasher() {
     )
     .unwrap();
     let hasher = SchemeAwareHasher::default();
-    user.hash_password(&hasher);
+    user.hash_password(&hasher).unwrap();
 
     assert_eq!(user.verify_password(&hasher, "Iknow#othing1"), true);
 }

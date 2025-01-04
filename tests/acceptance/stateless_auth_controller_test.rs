@@ -64,7 +64,7 @@ async fn it_returns_unauthorized_for_invalid_password(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -104,7 +104,7 @@ async fn it_issues_access_token(pool: Pool<MySql>) {
         Some(false),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -148,7 +148,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified(pool: Pool<MySq
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -207,7 +207,7 @@ async fn it_issues_refresh_token(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -264,7 +264,7 @@ async fn it_auto_updates_password_scheme(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt));
+    user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt)).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -311,7 +311,7 @@ async fn it_verifies_token(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role);
@@ -378,7 +378,7 @@ async fn it_verifies_token_if_user_is_also_verified(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
@@ -445,7 +445,7 @@ async fn it_does_not_verify_token_by_using_refresh_token(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
@@ -497,7 +497,7 @@ async fn it_refreshes_token(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
@@ -568,7 +568,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
@@ -611,7 +611,7 @@ async fn it_does_not_refresh_if_you_use_access_token(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     let role = Role::now("user".to_string()).unwrap();
     role_repository.save(&role).await.unwrap();
     user.add_role(role.clone());
@@ -662,7 +662,7 @@ async fn it_returns_unauthorized_when_token_is_invalid(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let response = server
@@ -712,7 +712,7 @@ async fn it_returns_unauthorized_when_token_is_expired(pool: Pool<MySql>) {
         Some(true),
     )
     .unwrap();
-    user.hash_password(&SchemeAwareHasher::default());
+    user.hash_password(&SchemeAwareHasher::default()).unwrap();
     repository.save(&user).await.unwrap();
 
     let now = Utc::now();
