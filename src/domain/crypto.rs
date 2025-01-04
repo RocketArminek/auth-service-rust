@@ -84,7 +84,7 @@ impl SchemeAwareHasher {
     pub fn is_password_outdated(&self, hash: &str) -> bool {
         let parts = self.extract_scheme_and_hash(hash);
 
-        parts.is_some_and(|scheme| scheme.0 != self.current_scheme)
+        parts.is_some_and(|(scheme, _)| scheme != self.current_scheme)
     }
 
     fn extract_scheme_and_hash<'a>(&'a self, hash: &'a str) -> Option<(HashingScheme, &'a str)> {
