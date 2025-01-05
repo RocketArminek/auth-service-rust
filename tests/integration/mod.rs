@@ -1,9 +1,5 @@
 pub mod message_publisher_test;
-#[cfg(feature = "mysql")]
 pub mod role_repository_test;
-#[cfg(feature = "sqlite")]
 pub mod sqlite_role_repository_test;
-#[cfg(feature = "sqlite")]
 pub mod sqlite_user_repository_test;
-#[cfg(feature = "mysql")]
 pub mod user_repository_test;

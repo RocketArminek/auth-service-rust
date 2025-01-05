@@ -1,10 +1,10 @@
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_publisher;
 use axum::async_trait;
 use serde::Serialize;
-use std::env;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use crate::application::message_publisher_configuration::MessagePublisherConfiguration;
 
 #[async_trait]
 pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
@@ -26,17 +26,16 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for NullPublisher {
 }
 
 pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
+    publisher_config: &MessagePublisherConfiguration,
 ) -> Arc<Mutex<dyn MessagePublisher<T>>> {
-    let event_driven = env::var("EVENT_DRIVEN")
-        .unwrap_or("true".to_string())
-        .parse::<bool>()
-        .expect("EVENT_DRIVEN must be a boolean");
-
-    if !event_driven {
-        tracing::info!("Event driven is turned off. Events wont be published.");
-
-        return Arc::new(Mutex::new(NullPublisher {}));
+    match publisher_config {
+        MessagePublisherConfiguration::Rabbitmq(config) => {
+            tracing::info!("Event driven is turned on");
+            create_rabbitmq_message_publisher(config).await
+        }
+        MessagePublisherConfiguration::None => {
+            tracing::info!("Event driven is turned off. Events wont be published.");
+            Arc::new(Mutex::new(NullPublisher {}))
+        }
     }
-
-    create_rabbitmq_message_publisher().await
 }

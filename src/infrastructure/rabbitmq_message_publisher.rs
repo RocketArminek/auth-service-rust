@@ -4,10 +4,10 @@ use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
-use std::env;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use crate::application::message_publisher_configuration::RabbitmqConfiguration;
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -70,35 +70,22 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublishe
     }
 }
 
-pub async fn create_rabbitmq_connection() -> Connection {
-    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
-
-    Connection::connect(&rabbitmq_url, ConnectionProperties::default())
+pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Connection {
+    Connection::connect(config.rabbitmq_url(), ConnectionProperties::default())
         .await
         .expect("Failed to connect to rabbitmq")
 }
 
 pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(
+    config: &RabbitmqConfiguration,
 ) -> Arc<Mutex<dyn MessagePublisher<T> + Send + Sync>> {
-    tracing::info!("Event driven is turned on");
-    let rabbitmq_exchange_name =
-        env::var("RABBITMQ_EXCHANGE_NAME").unwrap_or("nebula.auth.events".to_string());
-    let conn = create_rabbitmq_connection().await;
-
-    tracing::info!(
-        "Rabbitmq publishing method configured: exchange={}",
-        &rabbitmq_exchange_name
-    );
+    let conn = create_rabbitmq_connection(config).await;
 
     let message_publisher = RabbitmqMessagePublisher::new(
         &conn,
-        rabbitmq_exchange_name,
-        ExchangeKind::Fanout,
-        ExchangeDeclareOptions {
-            durable: true,
-            auto_delete: false,
-            ..ExchangeDeclareOptions::default()
-        },
+        config.rabbitmq_exchange_name().to_string(),
+        config.rabbitmq_exchange_kind().clone(),
+        config.rabbitmq_exchange_declare_options(),
     )
     .await
     .expect("Failed to create message publisher");

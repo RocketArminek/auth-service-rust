@@ -3,8 +3,9 @@ use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
-use std::env;
+use crate::application::database_configuration::DatabaseConfiguration;
 
+#[derive(Debug, Clone)]
 pub enum DatabaseEngine {
     Sqlite,
     Mysql,
@@ -96,52 +97,32 @@ impl Default for DatabaseEngine {
     }
 }
 
-pub fn get_database_engine() -> DatabaseEngine {
-    let db_url = env::var("DATABASE_URL");
-    match db_url {
-        Ok(db_url) => {
-            if db_url.is_empty() {
-                panic!("DATABASE_URL is empty");
-            }
-            let url_lower = db_url.to_lowercase();
-            match url_lower {
-                url if url.starts_with("sqlite:") => DatabaseEngine::Sqlite,
-                url if url.starts_with("mysql:") => DatabaseEngine::Mysql,
-                _ => DatabaseEngine::default(),
-            }
-        }
-        Err(_) => env::var("DATABASE_ENGINE")
-            .unwrap_or_default()
-            .try_into()
-            .unwrap_or_default(),
-    }
-}
-
-pub async fn create_pool(database_engine: &DatabaseEngine) -> Result<DatabasePool, Error> {
-    match database_engine {
+pub async fn create_pool(config: &DatabaseConfiguration) -> Result<DatabasePool, Error> {
+    match config.database_engine() {
         DatabaseEngine::Sqlite => Ok(DatabasePool::Sqlite(
-            create_sqlite_pool(&get_sqlite_db_url().unwrap()).await?,
+            create_sqlite_pool(
+                config.database_url(),
+                config.database_max_connections(),
+                config.database_timeout_ms(),
+            )
+            .await?,
         )),
         DatabaseEngine::Mysql => Ok(DatabasePool::MySql(
-            create_mysql_pool(&get_mysql_database_url().unwrap()).await?,
+            create_mysql_pool(
+                config.database_url(),
+                config.database_max_connections(),
+                config.database_timeout_ms(),
+            )
+            .await?,
         )),
     }
 }
 
-pub fn get_sqlite_db_url() -> Result<String, String> {
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
-        let path = env::var("SQLITE_PATH").expect("SQLITE_PATH environment variable not set");
-        format!("sqlite://{}", path)
-    });
-
-    if database_url.is_empty() {
-        return Err("DATABASE_URL is empty".to_string());
-    }
-
-    Ok(database_url)
-}
-
-pub async fn create_sqlite_pool(database_url: &str) -> Result<Pool<Sqlite>, Error> {
+pub async fn create_sqlite_pool(
+    database_url: &str,
+    max_connections: u32,
+    timeout_ms: u64,
+) -> Result<Pool<Sqlite>, Error> {
     if !Sqlite::database_exists(database_url).await? {
         Sqlite::create_database(database_url).await?;
         tracing::info!(
@@ -150,16 +131,6 @@ pub async fn create_sqlite_pool(database_url: &str) -> Result<Pool<Sqlite>, Erro
         );
     }
 
-    let max_connections = env::var("DATABASE_MAX_CONNECTIONS")
-        .unwrap_or("5".to_string())
-        .parse()
-        .unwrap_or(5);
-
-    let timeout_ms = env::var("DATABASE_TIMEOUT_MS")
-        .unwrap_or("50".to_string())
-        .parse()
-        .unwrap_or(50);
-
     SqlitePoolOptions::new()
         .max_connections(max_connections)
         .acquire_timeout(std::time::Duration::from_millis(timeout_ms))
@@ -167,25 +138,11 @@ pub async fn create_sqlite_pool(database_url: &str) -> Result<Pool<Sqlite>, Erro
         .await
 }
 
-pub fn get_mysql_database_url() -> Result<String, String> {
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
-        let user = env::var("DATABASE_USER").expect("DATABASE_USER is not set");
-        let password = env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD is not set");
-        let host = env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = env::var("DATABASE_PORT").unwrap_or_else(|_| "3306".to_string());
-        let name = env::var("DATABASE_NAME").expect("DATABASE_NAME is not set");
-
-        format!("mysql://{}:{}@{}:{}/{}", user, password, host, port, name)
-    });
-
-    if database_url.is_empty() {
-        return Err("DATABASE_URL is empty".to_string());
-    }
-
-    Ok(database_url)
-}
-
-pub async fn create_mysql_pool(database_url: &str) -> Result<Pool<MySql>, Error> {
+pub async fn create_mysql_pool(
+    database_url: &str,
+    max_connections: u32,
+    timeout_ms: u64,
+) -> Result<Pool<MySql>, Error> {
     if !MySql::database_exists(database_url).await? {
         MySql::create_database(database_url).await?;
         tracing::info!(
@@ -193,16 +150,6 @@ pub async fn create_mysql_pool(database_url: &str) -> Result<Pool<MySql>, Error>
             database_url.split("/").last().unwrap_or("")
         );
     }
-
-    let max_connections = env::var("DATABASE_MAX_CONNECTIONS")
-        .unwrap_or("5".to_string())
-        .parse()
-        .unwrap_or(5);
-
-    let timeout_ms = env::var("DATABASE_TIMEOUT_MS")
-        .unwrap_or("500".to_string())
-        .parse()
-        .unwrap_or(500);
 
     MySqlPoolOptions::new()
         .max_connections(max_connections)

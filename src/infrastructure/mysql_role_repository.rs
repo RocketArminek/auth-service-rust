@@ -49,7 +49,7 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Role, RepositoryError> {
+    async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError> {
         let role = query_as::<_, Role>("SELECT * FROM roles WHERE id = ?")
             .bind(id)
             .fetch_one(&self.pool)
@@ -58,7 +58,7 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(role)
     }
 
-    async fn get_by_name(&self, name: &String) -> Result<Role, RepositoryError> {
+    async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError> {
         let role = query_as::<_, Role>("SELECT * FROM roles WHERE name = ?")
             .bind(name)
             .fetch_one(&self.pool)
@@ -75,7 +75,7 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(roles)
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), RepositoryError> {
+    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
         query("DELETE FROM roles WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
@@ -84,7 +84,7 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(())
     }
 
-    async fn delete_by_name(&self, name: &String) -> Result<(), RepositoryError> {
+    async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError> {
         query("DELETE FROM roles WHERE name = ?")
             .bind(name)
             .execute(&self.pool)

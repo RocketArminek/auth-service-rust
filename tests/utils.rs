@@ -1,221 +1,120 @@
-#[cfg(feature = "mysql")]
 use auth_service::domain::repositories::{RoleRepository, UserRepository};
-#[cfg(feature = "mysql")]
-use auth_service::infrastructure::database::{
-    create_mysql_pool, create_sqlite_pool, get_database_engine, get_mysql_database_url,
-    get_sqlite_db_url, DatabaseEngine, DatabasePool,
-};
-#[cfg(feature = "mysql")]
+use auth_service::infrastructure::database::{create_pool, DatabasePool};
 use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
-#[cfg(feature = "mysql")]
-use dotenv::{dotenv, from_filename};
 use futures_lite::StreamExt;
 use lapin::options::{
-    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
+    BasicAckOptions, BasicConsumeOptions, QueueBindOptions,
     QueueDeclareOptions,
 };
 use lapin::types::FieldTable;
-use lapin::{Channel, Connection, ConnectionProperties, Consumer, ExchangeKind};
+use lapin::{Channel, Connection, ConnectionProperties, Consumer};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "mysql")]
 use sqlx::migrate::MigrateDatabase;
-#[cfg(feature = "mysql")]
-use sqlx::{Error, Sqlite};
-use std::env;
+use sqlx::{Sqlite};
 use std::time::Duration;
 use tokio::time::sleep;
-#[cfg(feature = "mysql")]
-use uuid::Uuid;
-#[cfg(feature = "mysql")]
 use auth_service::api::routes::routes;
-#[cfg(feature = "mysql")]
-use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
-#[cfg(feature = "mysql")]
-use auth_service::domain::crypto::HashingScheme;
-#[cfg(feature = "mysql")]
-use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-#[cfg(feature = "mysql")]
-use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-#[cfg(feature = "mysql")]
-use auth_service::infrastructure::rabbitmq_message_publisher::RabbitmqMessagePublisher;
-#[cfg(feature = "mysql")]
+use auth_service::api::server_state::ServerState;
 use axum_test::TestServer;
-#[cfg(feature = "mysql")]
-use sqlx::{MySql, Pool};
-#[cfg(feature = "mysql")]
+use sqlx::{MySql};
 use std::sync::Arc;
-#[cfg(feature = "mysql")]
+use dotenv::{dotenv, from_filename};
+use auth_service::infrastructure::message_publisher::{create_message_publisher, MessagePublisher};
 use tokio::sync::Mutex;
+use uuid::Uuid;
+use auth_service::application::app_configuration::{AppConfiguration, AppConfigurationBuilder};
+use auth_service::application::configuration::Configuration;
+use auth_service::application::database_configuration::{DatabaseConfiguration, DatabaseConfigurationBuilder};
+use auth_service::application::message_publisher_configuration::{MessagePublisherConfiguration, MessagePublisherConfigurationBuilder};
+use auth_service::domain::event::UserEvents;
 
-#[cfg(feature = "mysql")]
-pub async fn create_test_server_v2(
-    secret: String,
+pub async fn create_test_server(
+    config: &Configuration,
     user_repository: Arc<Mutex<dyn UserRepository>>,
     role_repository: Arc<Mutex<dyn RoleRepository>>,
-    hashing_scheme: HashingScheme,
-    restricted_pattern: Option<String>,
-    at_duration_in_seconds: i64,
-    rt_duration_in_seconds: i64,
-    verification_required: bool,
-    vr_duration_in_seconds: i64,
-    exchange_name: String,
+    message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
 ) -> TestServer {
-    let restricted_role_pattern =
-        parse_restricted_pattern(&restricted_pattern.unwrap_or("ADMIN".to_string())).unwrap();
-    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
+    let config = config.app().clone();
 
-    let rabbitmq_conn = Connection::connect(&rabbitmq_url, ConnectionProperties::default())
-        .await
-        .expect("Can't connect to RabbitMQ");
-    let message_publisher = RabbitmqMessagePublisher::new(
-        &rabbitmq_conn,
-        exchange_name,
-        ExchangeKind::Fanout,
-        ExchangeDeclareOptions {
-            durable: false,
-            auto_delete: true,
-            ..ExchangeDeclareOptions::default()
-        },
-    )
-    .await
-    .expect("Failed to create RabbitMQ message publisher");
-
-    let message_publisher = Arc::new(Mutex::new(message_publisher));
-
-    let state = ServerState {
-        secret,
-        restricted_role_pattern,
-        hashing_scheme,
-        at_duration_in_seconds,
-        rt_duration_in_seconds,
-        verification_required,
-        vr_duration_in_seconds,
+    let state = ServerState::new(
+        config,
         user_repository,
         role_repository,
         message_publisher,
-    };
+    );
 
     TestServer::new(routes(state)).unwrap()
 }
 
-#[cfg(feature = "mysql")]
-pub async fn create_test_server(
-    secret: String,
-    pool: Pool<MySql>,
-    hashing_scheme: HashingScheme,
-    restricted_pattern: Option<String>,
-    at_duration_in_seconds: i64,
-    rt_duration_in_seconds: i64,
-    verification_required: bool,
-    vr_duration_in_seconds: i64,
-    exchange_name: String,
-) -> TestServer {
-    let user_repository = Arc::new(Mutex::new(MysqlUserRepository::new(pool.clone())));
-    let role_repository = Arc::new(Mutex::new(MysqlRoleRepository::new(pool.clone())));
-    let restricted_role_pattern =
-        parse_restricted_pattern(&restricted_pattern.unwrap_or("ADMIN".to_string())).unwrap();
-    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://localhost:5672".to_string());
+pub async fn setup_test_consumer(
+    config: &MessagePublisherConfiguration,
+) -> (Channel, Consumer, String) {
+    match config {
+        MessagePublisherConfiguration::Rabbitmq(config) => {
+            let conn = Connection::connect(
+                config.rabbitmq_url(),
+                ConnectionProperties::default().with_connection_name("test_consumer".into()),
+            )
+            .await
+            .expect("Failed to connect to RabbitMQ");
 
-    let rabbitmq_conn = Connection::connect(&rabbitmq_url, ConnectionProperties::default())
-        .await
-        .expect("Can't connect to RabbitMQ");
-    let message_publisher = RabbitmqMessagePublisher::new(
-        &rabbitmq_conn,
-        exchange_name,
-        ExchangeKind::Fanout,
-        ExchangeDeclareOptions {
-            durable: false,
-            auto_delete: true,
-            ..ExchangeDeclareOptions::default()
-        },
-    )
-    .await
-    .expect("Failed to create RabbitMQ message publisher");
+            let channel = conn
+                .create_channel()
+                .await
+                .expect("Failed to create channel");
 
-    let message_publisher = Arc::new(Mutex::new(message_publisher));
+            channel
+                .exchange_declare(
+                    config.rabbitmq_exchange_name(),
+                    config.rabbitmq_exchange_kind().clone(),
+                    config.rabbitmq_exchange_declare_options(),
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to declare exchange");
 
-    let state = ServerState {
-        secret,
-        restricted_role_pattern,
-        hashing_scheme,
-        at_duration_in_seconds,
-        rt_duration_in_seconds,
-        verification_required,
-        vr_duration_in_seconds,
-        user_repository,
-        role_repository,
-        message_publisher,
-    };
+            let queue = channel
+                .queue_declare(
+                    "",
+                    QueueDeclareOptions {
+                        exclusive: true,
+                        auto_delete: true,
+                        ..QueueDeclareOptions::default()
+                    },
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to declare queue");
 
-    TestServer::new(routes(state)).unwrap()
-}
+            let queue_name = queue.name().to_string();
 
-pub async fn setup_test_consumer(exchange_name: &str) -> (Channel, Consumer, String) {
-    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or("amqp://127.0.0.1:5672".to_string());
+            channel
+                .queue_bind(
+                    &queue_name,
+                    config.rabbitmq_exchange_name(),
+                    "",
+                    QueueBindOptions::default(),
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to bind queue");
 
-    let conn = Connection::connect(
-        &rabbitmq_url,
-        ConnectionProperties::default().with_connection_name("test_consumer".into()),
-    )
-    .await
-    .expect("Failed to connect to RabbitMQ");
+            let consumer = channel
+                .basic_consume(
+                    &queue_name,
+                    "test_consumer",
+                    BasicConsumeOptions::default(),
+                    FieldTable::default(),
+                )
+                .await
+                .expect("Failed to create consumer");
 
-    let channel = conn
-        .create_channel()
-        .await
-        .expect("Failed to create channel");
-
-    channel
-        .exchange_declare(
-            exchange_name,
-            ExchangeKind::Fanout,
-            ExchangeDeclareOptions {
-                durable: false,
-                auto_delete: true,
-                ..ExchangeDeclareOptions::default()
-            },
-            FieldTable::default(),
-        )
-        .await
-        .expect("Failed to declare exchange");
-
-    let queue = channel
-        .queue_declare(
-            "",
-            QueueDeclareOptions {
-                exclusive: true,
-                auto_delete: true,
-                ..QueueDeclareOptions::default()
-            },
-            FieldTable::default(),
-        )
-        .await
-        .expect("Failed to declare queue");
-
-    let queue_name = queue.name().to_string();
-
-    channel
-        .queue_bind(
-            &queue_name,
-            exchange_name,
-            "",
-            QueueBindOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .expect("Failed to bind queue");
-
-    let consumer = channel
-        .basic_consume(
-            &queue_name,
-            "test_consumer",
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .expect("Failed to create consumer");
-
-    (channel, consumer, queue_name)
+            (channel, consumer, queue_name)
+        }
+        MessagePublisherConfiguration::None => {
+            panic!("Cannot setup test consumer for none message publisher")
+        }
+    }
 }
 
 pub async fn wait_for_event<T: std::fmt::Debug>(
@@ -264,112 +163,69 @@ pub enum TestEvent {
     Something { name: String },
 }
 
-#[cfg(feature = "mysql")]
-pub async fn run_test_with_utils<F, Fut>(
-    secret: Option<String>,
-    hashing_scheme: Option<HashingScheme>,
-    restricted_pattern: Option<String>,
-    at_duration_in_seconds: Option<i64>,
-    rt_duration_in_seconds: Option<i64>,
-    verification_required: Option<bool>,
-    vr_duration_in_seconds: Option<i64>,
-    test: F,
-) where
+pub async fn run_test_with_utils<F, Fut, N>(configurator: N, test: F)
+where
     F: Fn(
         Arc<Mutex<dyn UserRepository>>,
         Arc<Mutex<dyn RoleRepository>>,
-        DatabasePool,
         TestServer,
         Channel,
         Consumer,
         String,
     ) -> Fut,
     Fut: std::future::Future<Output = ()>,
+    N: FnOnce(
+        &mut AppConfigurationBuilder,
+        &mut DatabaseConfigurationBuilder,
+        &mut MessagePublisherConfigurationBuilder
+    ),
 {
-    from_filename(".env.local").or(dotenv()).ok();
-    run_test_with_repo(|user_repository, role_repository, pool| async {
-        let id = Uuid::new_v4();
-        let exchange_name = format!("nebula.auth.test-{}", id);
-        let (channel, consumer, queue_name) = setup_test_consumer(&exchange_name).await;
-        let server = create_test_server_v2(
-            secret.clone().unwrap_or("secret".to_string()),
-            user_repository.clone(),
-            role_repository.clone(),
-            hashing_scheme.clone().unwrap_or(HashingScheme::BcryptLow),
-            restricted_pattern.clone(),
-            at_duration_in_seconds.clone().unwrap_or(60),
-            rt_duration_in_seconds.clone().unwrap_or(60),
-            verification_required.clone().unwrap_or(false),
-            vr_duration_in_seconds.clone().unwrap_or(172800),
-            exchange_name,
-        )
-        .await;
+    from_filename(".env.test").or(dotenv()).ok();
+    let case = Uuid::new_v4().to_string().replace("-", "_");
 
-        test(
-            user_repository,
-            role_repository,
-            pool,
-            server,
-            channel,
-            consumer,
-            queue_name,
-        )
-        .await;
-    })
-    .await
-}
+    let mut app = AppConfigurationBuilder::new();
+    app.load_env();
+    let mut db = DatabaseConfigurationBuilder::new();
+    db.load_env();
+    db.database_url(format!("{}_{}", db.database_url.clone().unwrap(), &case));
+    let mut publisher = MessagePublisherConfigurationBuilder::new();
+    publisher.load_env();
+    publisher.rabbitmq_exchange_name(
+        format!("{}_{}", publisher.rabbitmq_exchange_name.clone().unwrap(), &case)
+    );
 
-#[cfg(feature = "mysql")]
-async fn run_test_with_repo<F, Fut>(test: F)
-where
-    F: Fn(Arc<Mutex<dyn UserRepository>>, Arc<Mutex<dyn RoleRepository>>, DatabasePool) -> Fut,
-    Fut: std::future::Future<Output = ()>,
-{
-    run_test_with_db_pool(|pool| async {
-        let user_repository = create_user_repository(pool.clone());
-        let role_repository = create_role_repository(pool.clone());
+    configurator(&mut app, &mut db, &mut publisher);
 
-        test(user_repository, role_repository, pool).await
-    })
-    .await;
-}
+    let config = Configuration::new(app.build(), db.build(), publisher.build());
 
-#[cfg(feature = "mysql")]
-async fn run_test_with_db_pool<F, Fut>(test: F)
-where
-    F: Fn(DatabasePool) -> Fut,
-    Fut: std::future::Future<Output = ()>,
-{
-    let db_engine = get_database_engine();
-    let (pool, db_url) = create_test_pool(&db_engine).await.unwrap();
+    let pool = create_pool(config.db()).await.unwrap();
     pool.migrate().await;
-    test(pool.clone()).await;
-    drop_database(&pool, &db_url).await;
+    let user_repository = create_user_repository(pool.clone());
+    let role_repository = create_role_repository(pool.clone());
+
+    let message_publisher = create_message_publisher(config.publisher()).await;
+    let (channel, consumer, queue_name) = setup_test_consumer(config.publisher()).await;
+
+    let server = create_test_server(
+        &config,
+        user_repository.clone(),
+        role_repository.clone(),
+        message_publisher
+    ).await;
+
+    test(
+        user_repository,
+        role_repository,
+        server,
+        channel,
+        consumer,
+        queue_name,
+    )
+    .await;
+
+    drop_database(&pool, config.db().database_url()).await;
 }
 
-#[cfg(feature = "mysql")]
-async fn create_test_pool(
-    database_engine: &DatabaseEngine,
-) -> Result<(DatabasePool, String), Error> {
-    match database_engine {
-        DatabaseEngine::Sqlite => {
-            let database_url = get_test_database_url(&get_sqlite_db_url().unwrap());
-            Ok((
-                DatabasePool::Sqlite(create_sqlite_pool(&database_url).await?),
-                database_url,
-            ))
-        }
-        DatabaseEngine::Mysql => {
-            let database_url = get_test_database_url(&get_mysql_database_url().unwrap());
-            Ok((
-                DatabasePool::MySql(create_mysql_pool(&database_url).await?),
-                database_url,
-            ))
-        }
-    }
-}
-
-#[cfg(feature = "mysql")]
 async fn drop_database(database_pool: &DatabasePool, database_url: &str) {
     match database_pool {
         DatabasePool::MySql(_) => {
@@ -379,13 +235,4 @@ async fn drop_database(database_pool: &DatabasePool, database_url: &str) {
             Sqlite::drop_database(database_url).await.unwrap();
         }
     }
-}
-
-#[cfg(feature = "mysql")]
-fn get_test_database_url(database_url: &str) -> String {
-    format!(
-        "{}-{}",
-        database_url,
-        Uuid::new_v4().to_string().replace("-", "_")
-    )
 }

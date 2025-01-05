@@ -1,25 +1,28 @@
 use auth_service::api::routes::routes;
-use auth_service::api::server_state::{parse_restricted_pattern, ServerState};
-use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
+use auth_service::api::server_state::ServerState;
+use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repositories::RoleRepository;
+use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::database::{create_pool, get_database_engine};
+use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
-use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
+use auth_service::infrastructure::repository::{
+    create_role_repository, create_user_repository, RepositoryError,
+};
 use clap::{Parser, Subcommand};
-use dotenv::{dotenv, from_filename};
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
-use regex::{Error, Regex};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
+use auth_service::application::app_configuration::AppConfiguration;
+use auth_service::application::configuration::Configuration;
+use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -85,87 +88,33 @@ enum Commands {
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
     let cli = Cli::parse();
-    from_filename(".env.local").or(dotenv()).ok();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let hashing_scheme =
-        env::var("PASSWORD_HASHING_SCHEME").expect("PASSWORD_HASHING_SCHEME is not set in envs");
-    let hashing_scheme = HashingScheme::from_string(hashing_scheme).unwrap();
-    tracing::info!("Configured hashing scheme: {}", hashing_scheme.to_string());
+    let config = Configuration::default();
+    tracing::info!("{:#?}", config);
 
-    let at_duration_in_seconds = env::var("AT_DURATION_IN_SECONDS")
-        .unwrap_or("300".to_string())
-        .parse::<i64>()
-        .unwrap();
-
-    tracing::info!(
-        "Configured access token duration in seconds: {} ({} m)",
-        &at_duration_in_seconds,
-        &at_duration_in_seconds / 60
-    );
-
-    let rt_duration_in_seconds = env::var("RT_DURATION_IN_SECONDS")
-        .unwrap_or("2592000".to_string())
-        .parse::<i64>()
-        .unwrap();
-
-    tracing::info!(
-        "Configured refresh token duration in seconds: {} ({} d)",
-        &rt_duration_in_seconds,
-        &rt_duration_in_seconds / 60 / 60 / 24
-    );
-
-    let verification_required = env::var("VERIFICATION_REQUIRED")
-        .unwrap_or("true".to_string())
-        .parse::<bool>()
-        .unwrap();
-
-    let vr_duration_in_seconds = env::var("VR_DURATION_IN_SECONDS")
-        .unwrap_or("172800".to_string())
-        .parse::<i64>()
-        .unwrap();
-
-    tracing::info!(
-        "Configured verification token duration in seconds: {} ({} d)",
-        &vr_duration_in_seconds,
-        &vr_duration_in_seconds / 60 / 60 / 24
-    );
-
-    let db_engine = get_database_engine();
-    tracing::info!("DB engine: {}", db_engine.to_string());
-
-    let secret = env::var("SECRET").expect("SECRET is not set in envs");
-
-    let db_pool = create_pool(&db_engine).await.unwrap();
+    let db_pool = create_pool(config.db()).await.unwrap();
     db_pool.migrate().await;
 
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
 
-    let message_publisher = create_message_publisher().await;
+    let message_publisher = create_message_publisher(config.publisher()).await;
 
-    let restricted_role_pattern = init_roles(&role_repository).await.unwrap();
+    load_fixtures(config.app(), &user_repository, &role_repository).await;
+    let hashing_scheme = config.app().password_hashing_scheme();
 
     match &cli.command {
         Some(Commands::Start) | None => {
             let port = "8080";
             let addr = &format!("0.0.0.0:{}", port);
             let listener = tokio::net::TcpListener::bind(addr).await;
+            let config = config.app().clone();
 
-            let state = ServerState {
-                secret,
-                hashing_scheme,
-                restricted_role_pattern,
-                at_duration_in_seconds,
-                rt_duration_in_seconds,
-                verification_required,
-                vr_duration_in_seconds,
-                user_repository,
-                role_repository,
-                message_publisher,
-            };
+            let state =
+                ServerState::new(config, user_repository, role_repository, message_publisher);
 
             match listener {
                 Ok(listener) => {
@@ -373,86 +322,97 @@ async fn main() {
 
             println!("Role deleted for {}", name);
         }
-        Some(Commands::CheckRabbitmqConnection) => {
-            create_rabbitmq_connection().await;
-        }
+        Some(Commands::CheckRabbitmqConnection) => match config.publisher() {
+            MessagePublisherConfiguration::Rabbitmq(config) => {
+                create_rabbitmq_connection(config).await;
+            }
+            MessagePublisherConfiguration::None => {
+                println!("No publisher configuration found");
+            }
+        },
         Some(Commands::ConsumeRabbitmqMessages {
             exchange_name,
             dry_run,
-        }) => {
-            let conn = create_rabbitmq_connection().await;
-            let exchange_name = exchange_name.to_owned();
-            let channel = conn
-                .create_channel()
-                .await
-                .expect("Failed to create channel");
-            let dry_run = dry_run.unwrap_or(false);
+        }) => match config.publisher() {
+            MessagePublisherConfiguration::Rabbitmq(config) => {
+                let conn = create_rabbitmq_connection(config).await;
+                let exchange_name = exchange_name.to_owned();
+                let channel = conn
+                    .create_channel()
+                    .await
+                    .expect("Failed to create channel");
+                let dry_run = dry_run.unwrap_or(false);
 
-            let queue = channel
-                .queue_declare(
-                    "",
-                    QueueDeclareOptions {
-                        exclusive: true,
-                        auto_delete: true,
-                        ..QueueDeclareOptions::default()
-                    },
-                    FieldTable::default(),
-                )
-                .await
-                .expect("Failed to declare queue");
+                let queue = channel
+                    .queue_declare(
+                        "",
+                        QueueDeclareOptions {
+                            exclusive: true,
+                            auto_delete: true,
+                            ..QueueDeclareOptions::default()
+                        },
+                        FieldTable::default(),
+                    )
+                    .await
+                    .expect("Failed to declare queue");
 
-            let queue_name = queue.name().to_string();
+                let queue_name = queue.name().to_string();
 
-            let r = channel
-                .queue_bind(
-                    &queue_name,
-                    &exchange_name,
-                    "",
-                    QueueBindOptions::default(),
-                    FieldTable::default(),
-                )
-                .await;
+                let r = channel
+                    .queue_bind(
+                        &queue_name,
+                        &exchange_name,
+                        "",
+                        QueueBindOptions::default(),
+                        FieldTable::default(),
+                    )
+                    .await;
 
-            if r.is_err() {
-                println!("Could not bind queue");
-                return;
-            }
+                if r.is_err() {
+                    println!("Could not bind queue");
+                    return;
+                }
 
-            let mut consumer = channel
-                .basic_consume(
-                    &queue_name,
-                    "test_consumer",
-                    BasicConsumeOptions::default(),
-                    FieldTable::default(),
-                )
-                .await
-                .expect("Failed to create consumer");
+                let mut consumer = channel
+                    .basic_consume(
+                        &queue_name,
+                        "test_consumer",
+                        BasicConsumeOptions::default(),
+                        FieldTable::default(),
+                    )
+                    .await
+                    .expect("Failed to create consumer");
 
-            if dry_run {
-                println!("Just a dry run");
-                return;
-            }
+                if dry_run {
+                    println!("Just a dry run");
+                    return;
+                }
 
-            while let Some(delivery) = consumer.next().await {
-                match delivery {
-                    Ok(delivery) => {
-                        if let Ok(event) = serde_json::from_slice::<UserEvents>(&delivery.data) {
-                            println!("Received event: {:?}", event);
-                        } else {
-                            println!("Cannot deserialize event: {:?}", delivery);
+                while let Some(delivery) = consumer.next().await {
+                    match delivery {
+                        Ok(delivery) => {
+                            if let Ok(event) = serde_json::from_slice::<UserEvents>(&delivery.data)
+                            {
+                                println!("Received event: {:?}", event);
+                            } else {
+                                println!("Cannot deserialize event: {:?}", delivery);
+                            }
+
+                            delivery
+                                .ack(BasicAckOptions::default())
+                                .await
+                                .expect("Failed to ack message");
                         }
-
-                        delivery
-                            .ack(BasicAckOptions::default())
-                            .await
-                            .expect("Failed to ack message");
-                    }
-                    Err(e) => {
-                        println!("Error receiving message: {:?}", e);
+                        Err(e) => {
+                            println!("Error receiving message: {:?}", e);
+                        }
                     }
                 }
             }
-        }
+            MessagePublisherConfiguration::None => {
+                println!("No message publishing enabled");
+            }
+        },
     }
 }
 
@@ -475,32 +435,70 @@ async fn shutdown_signal() {
     }
 }
 
-async fn init_roles(role_repository: &Arc<Mutex<dyn RoleRepository>>) -> Result<Regex, Error> {
-    init_role(
-        &"REGULAR_ROLE_PREFIX".to_string(),
-        "USER".to_string(),
-        role_repository,
-    )
-    .await;
-    let restricted_role = init_role(
-        &"RESTRICTED_ROLE_PREFIX".to_string(),
-        "ADMIN".to_string(),
-        role_repository,
-    )
-    .await;
+async fn load_fixtures(
+    config: &AppConfiguration,
+    user_repository: &Arc<Mutex<dyn UserRepository>>,
+    role_repository: &Arc<Mutex<dyn RoleRepository>>,
+) {
+    init_role(config.regular_role_name(), &role_repository)
+        .await
+        .unwrap();
+    let restricted_role = init_role(config.restricted_role_name(), &role_repository)
+        .await
+        .unwrap();
+    init_user(config, &user_repository, restricted_role)
+        .await
+        .unwrap();
+}
 
-    parse_restricted_pattern(restricted_role.name.as_str())
+async fn init_user(
+    config: &AppConfiguration,
+    user_repository: &Arc<Mutex<dyn UserRepository>>,
+    role: Role,
+) -> Result<User, RepositoryError> {
+    let email = config.super_admin_email().to_string();
+
+    let existing_user = user_repository.lock().await.get_by_email(&email).await;
+
+    if let Ok(existing_user) = existing_user {
+        tracing::info!(
+            "Found existing super admin: {}, {}, {}",
+            &existing_user.id,
+            &existing_user.email,
+            &existing_user.created_at.format("%Y-%m-%d %H:%M:%S")
+        );
+
+        return Ok(existing_user);
+    }
+
+    let password = config.super_admin_password().to_string();
+
+    let user = User::now_with_email_and_password(email, password, None, None, Some(true))
+        .unwrap()
+        .with_roles(vec![role]);
+
+    let r = user_repository.lock().await.save(&user).await;
+    if let Err(e) = r {
+        tracing::error!("Error saving user: {}", e);
+
+        return Err(e);
+    }
+
+    tracing::info!(
+        "Super admin created: {}, {}, {}",
+        &user.id,
+        &user.email,
+        &user.created_at.format("%Y-%m-%d %H:%M:%S")
+    );
+
+    Ok(user)
 }
 
 async fn init_role(
-    role_env_var: &String,
-    default: String,
+    role_name: &str,
     role_repository: &Arc<Mutex<dyn RoleRepository>>,
-) -> Role {
-    let role_prefix = env::var(role_env_var).unwrap_or(default);
-
-    tracing::info!("Configured {} with: {}", role_env_var, role_prefix);
-    let existing_role = role_repository.lock().await.get_by_name(&role_prefix).await;
+) -> Result<Role, RepositoryError> {
+    let existing_role = role_repository.lock().await.get_by_name(role_name).await;
 
     if let Ok(existing_role) = existing_role {
         tracing::info!(
@@ -510,21 +508,21 @@ async fn init_role(
             &existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
         );
 
-        return existing_role;
+        return Ok(existing_role);
     }
 
-    let role = Role::now(role_prefix.to_string()).unwrap();
+    let role = Role::now(role_name.to_string()).unwrap();
 
     let r = role_repository.lock().await.save(&role).await;
 
     if let Err(e) = r {
         tracing::error!(
             "Failed to add role: {} during init role due to: {:?}",
-            role_prefix,
+            role_name,
             e
         );
 
-        return role;
+        return Err(e);
     }
 
     tracing::info!(
@@ -534,5 +532,5 @@ async fn init_role(
         role.created_at.format("%Y-%m-%d %H:%M:%S")
     );
 
-    role
+    Ok(role)
 }

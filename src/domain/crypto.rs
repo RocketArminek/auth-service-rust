@@ -42,6 +42,19 @@ impl HashingScheme {
     }
 }
 
+impl TryFrom<String> for HashingScheme {
+    type Error = UserError;
+    fn try_from(scheme: String) -> Result<Self, Self::Error> {
+        HashingScheme::from_string(scheme)
+    }
+}
+
+impl Default for HashingScheme {
+    fn default() -> Self {
+        HashingScheme::BcryptLow
+    }
+}
+
 impl SchemeAwareHasher {
     pub fn default() -> Self {
         let mut hashers: HashMap<HashingScheme, Box<dyn Hasher>> = HashMap::new();

@@ -165,7 +165,7 @@ impl UserRepository for SqliteUserRepository {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: Uuid) -> Result<User, RepositoryError> {
+    async fn get_by_id(&self, id: &Uuid) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -233,7 +233,7 @@ impl UserRepository for SqliteUserRepository {
         Ok(user)
     }
 
-    async fn get_by_email(&self, email: &String) -> Result<User, RepositoryError> {
+    async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -301,7 +301,7 @@ impl UserRepository for SqliteUserRepository {
         Ok(user)
     }
 
-    async fn delete_by_email(&self, email: &String) -> Result<(), Error> {
+    async fn delete_by_email(&self, email: &str) -> Result<(), Error> {
         query("DELETE FROM users WHERE email = ?")
             .bind(email)
             .execute(&self.pool)

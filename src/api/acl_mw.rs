@@ -15,10 +15,12 @@ pub async fn restricted_acl(
 ) -> impl IntoResponse {
     tracing::info!("User: {:?}", user);
 
-    let is_allowed = user
-        .roles
-        .iter()
-        .any(|role| state.restricted_role_pattern.is_match(role.as_str()));
+    let is_allowed = user.roles.iter().any(|role| {
+        state
+            .config()
+            .restricted_role_pattern()
+            .is_match(role.as_str())
+    });
 
     if !is_allowed {
         return (
