@@ -3,29 +3,65 @@ use auth_service::application::configuration::ConfigurationBuilder;
 use auth_service::application::database_configuration::DatabaseConfigurationBuilder;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfigurationBuilder;
 
+
+pub fn init_test_publisher_configuration_builder(
+    test_case_id: &str,
+    configurator: impl FnOnce(&mut MessagePublisherConfigurationBuilder)
+) -> MessagePublisherConfigurationBuilder {
+    let mut builder = MessagePublisherConfigurationBuilder::new();
+    builder.load_env();
+    builder.rabbitmq_exchange_name(format!(
+        "{}_{}",
+        builder.rabbitmq_exchange_name.clone().unwrap(),
+        test_case_id
+    ));
+    configurator(&mut builder);
+
+    builder
+}
+
+pub fn init_test_database_configuration_builder(
+    test_case_id: &str,
+    configurator: impl FnOnce(&mut DatabaseConfigurationBuilder)
+) -> DatabaseConfigurationBuilder {
+    let mut builder = DatabaseConfigurationBuilder::new();
+    builder.load_env();
+    builder.database_url(
+        format!("{}_{}", builder.database_url.clone().unwrap(), test_case_id)
+    );
+    configurator(&mut builder);
+
+    builder
+}
+
+pub fn init_test_app_configuration_builder(
+    _test_case_id: &str,
+    _configurator: impl FnOnce(&mut AppConfigurationBuilder)
+) -> AppConfigurationBuilder {
+    let mut builder = AppConfigurationBuilder::new();
+    builder.load_env();
+
+    builder
+}
+
 pub fn init_test_config_builder(
     test_case_id: &str,
     configurator: impl FnOnce(&mut ConfigurationBuilder)
 ) -> ConfigurationBuilder {
     let mut builder = ConfigurationBuilder::new(
-        AppConfigurationBuilder::new(),
-        DatabaseConfigurationBuilder::new(),
-        MessagePublisherConfigurationBuilder::new(),
+        init_test_app_configuration_builder(
+            test_case_id,
+            |_| {}
+        ),
+        init_test_database_configuration_builder(
+            test_case_id,
+            |_| {}
+        ),
+        init_test_publisher_configuration_builder(
+            test_case_id,
+            |_| {}
+        ),
     );
-
-    builder.app.load_env();
-    builder.db.load_env();
-    builder.publisher.load_env();
-
-    builder.db.database_url(
-        format!("{}_{}", builder.db.database_url.clone().unwrap(), test_case_id)
-    );
-
-    builder.publisher.rabbitmq_exchange_name(format!(
-        "{}_{}",
-        builder.publisher.rabbitmq_exchange_name.clone().unwrap(),
-        test_case_id
-    ));
 
     configurator(&mut builder);
 

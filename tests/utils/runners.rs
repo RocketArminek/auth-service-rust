@@ -5,19 +5,91 @@ use dotenv::{dotenv, from_filename};
 use auth_service::infrastructure::message_publisher::{create_message_publisher};
 use uuid::Uuid;
 use auth_service::application::configuration::{ConfigurationBuilder};
-use crate::utils::config::init_test_config_builder;
-use crate::utils::context::IntegrationTestContext;
+use auth_service::application::database_configuration::DatabaseConfigurationBuilder;
+use auth_service::application::message_publisher_configuration::MessagePublisherConfigurationBuilder;
+use crate::utils::config::{init_test_config_builder, init_test_database_configuration_builder, init_test_publisher_configuration_builder};
+use crate::utils::context::{AcceptanceTestContext, DatabaseTestContext, PublisherTestContext};
 use crate::utils::db::drop_database;
 use crate::utils::events::setup_test_consumer;
 use crate::utils::server::create_test_server;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
+const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagePublisherConfigurationBuilder) = |_| {};
+const NONE_DATABASE_CONFIGURATOR: fn(&mut DatabaseConfigurationBuilder) = |_| {};
+
+pub async fn run_database_test_with_default<F, Fut>(
+    test: F,
+) where
+    F: Fn(DatabaseTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+{
+    run_database_test(NONE_DATABASE_CONFIGURATOR, test).await;
+}
+
+pub async fn run_database_test<F, Fut, C>(
+    configurator: C,
+    test: F,
+) where
+    F: Fn(DatabaseTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+    C: FnOnce(&mut DatabaseConfigurationBuilder)
+{
+    from_filename(".env.test").or(dotenv()).ok();
+    let case = Uuid::new_v4().to_string().replace("-", "_");
+    let builder = init_test_database_configuration_builder(
+        &case,
+        configurator
+    );
+
+    let config = builder.build();
+
+    let pool = create_pool(&config).await.unwrap();
+    pool.migrate().await;
+    let user_repository = create_user_repository(pool.clone());
+    let role_repository = create_role_repository(pool.clone());
+
+    test(DatabaseTestContext::new(user_repository, role_repository)).await;
+
+    drop_database(&pool, config.database_url()).await;
+}
+
+pub async fn run_message_publisher_test_with_default<F, Fut>(
+    test: F,
+) where
+    F: Fn(PublisherTestContext) -> Fut,
+    Fut: Future<Output = ()>
+{
+    run_message_publisher_test(NONE_MESSAGE_PUBLISHER_CONFIGURATOR, test).await;
+}
+
+pub async fn run_message_publisher_test<F, Fut, C>(
+    configurator: C,
+    test: F,
+) where
+    F: Fn(PublisherTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+    C: FnOnce(&mut MessagePublisherConfigurationBuilder)
+{
+    from_filename(".env.test").or(dotenv()).ok();
+    let case = Uuid::new_v4().to_string().replace("-", "_");
+    let builder = init_test_publisher_configuration_builder(
+        &case,
+        configurator
+    );
+
+    let config = builder.build();
+
+    let message_publisher = create_message_publisher(&config).await;
+    let (_, consumer, _) = setup_test_consumer(&config).await;
+
+    test(PublisherTestContext::new(message_publisher, consumer)).await
+}
 
 pub async fn run_integration_test<F, Fut, C>(
     configurator: C,
     test: F,
 ) where
-    F: Fn(IntegrationTestContext) -> Fut,
+    F: Fn(AcceptanceTestContext) -> Fut,
     Fut: Future<Output = ()>,
     C: FnOnce(&mut ConfigurationBuilder)
 {
@@ -45,22 +117,14 @@ pub async fn run_integration_test<F, Fut, C>(
         message_publisher
     ).await;
 
-    test(
-        IntegrationTestContext::new(
-            user_repository,
-            role_repository,
-            server,
-            consumer,
-        )
-    )
-        .await;
+    test(AcceptanceTestContext::new(user_repository, role_repository, server, consumer)).await;
 
     drop_database(&pool, config.db().database_url()).await;
 }
 
 pub async fn run_integration_test_with_default<F, Fut>(test: F)
 where
-    F: Fn(IntegrationTestContext) -> Fut,
+    F: Fn(AcceptanceTestContext) -> Fut,
     Fut: Future<Output = ()>,
 {
     run_integration_test(NONE_CONFIGURATOR, test).await;

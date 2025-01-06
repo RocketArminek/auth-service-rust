@@ -4,16 +4,8 @@ use futures_lite::StreamExt;
 use lapin::{Channel, Connection, ConnectionProperties, Consumer};
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
-use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type")]
-pub enum TestEvent {
-    #[serde(rename = "test.something")]
-    Something { name: String },
-}
 
 pub async fn wait_for_event<T: Debug>(
     mut consumer: Consumer,

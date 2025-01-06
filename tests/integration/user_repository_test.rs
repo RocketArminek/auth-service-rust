@@ -1,28 +1,26 @@
-// use auth_service::domain::repositories::{RoleRepository, UserRepository};
-// use auth_service::domain::role::Role;
-// use auth_service::domain::user::User;
-// use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-// use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
-// use auth_service::infrastructure::repository::RepositoryError;
-// use sqlx::{MySql, Pool};
-//
-// #[sqlx::test(migrations = "./migrations/mysql")]
-// async fn it_can_add_user(pool: Pool<MySql>) {
-//     let user = User::now_with_email_and_password(
-//         "jon@snow.test".to_string(),
-//         "Iknow#othing1".to_string(),
-//         Some(String::from("Jon")),
-//         Some(String::from("Snow")),
-//         Some(true),
-//     )
-//     .unwrap();
-//     let repository = MysqlUserRepository::new(pool);
-//     repository.save(&user).await.unwrap();
-//     let row = repository.get_by_id(&user.id).await.unwrap();
-//
-//     assert_eq!(row.email, user.email);
-// }
-//
+use auth_service::domain::user::User;
+use crate::utils::runners::run_database_test_with_default;
+
+#[tokio::test]
+async fn it_can_add_user() {
+    run_database_test_with_default(
+        |c| async move {
+            let user = User::now_with_email_and_password(
+                "jon@snow.test".to_string(),
+                "Iknow#othing1".to_string(),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+                .unwrap();
+            c.user_repository.lock().await.save(&user).await.unwrap();
+            let row = c.user_repository.lock().await.get_by_id(&user.id).await.unwrap();
+
+            assert_eq!(row.email, user.email);
+        }
+    ).await;
+}
+
 // #[sqlx::test(migrations = "./migrations/mysql")]
 // async fn it_can_get_user_by_email(pool: Pool<MySql>) {
 //     let user = User::now_with_email_and_password(

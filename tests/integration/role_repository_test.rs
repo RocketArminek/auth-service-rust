@@ -1,18 +1,19 @@
-// use auth_service::domain::repositories::RoleRepository;
-// use auth_service::domain::role::Role;
-// use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-// use sqlx::{MySql, Pool};
-//
-// #[sqlx::test(migrations = "./migrations/mysql")]
-// async fn it_can_add_role(pool: Pool<MySql>) {
-//     let role = Role::now("ROLE".to_string()).unwrap();
-//     let repository = MysqlRoleRepository::new(pool);
-//     repository.save(&role).await.unwrap();
-//     let row = repository.get_by_id(&role.id).await.unwrap();
-//
-//     assert_eq!(row.name, role.name);
-// }
-//
+use auth_service::domain::role::Role;
+use crate::utils::runners::run_database_test_with_default;
+
+#[tokio::test]
+async fn it_can_add_role() {
+    run_database_test_with_default(
+        |c| async move {
+            let role = Role::now("ROLE".to_string()).unwrap();
+            c.role_repository.lock().await.save(&role).await.unwrap();
+            let row = c.role_repository.lock().await.get_by_id(&role.id).await.unwrap();
+
+            assert_eq!(row.name, role.name);
+        }
+    ).await;
+}
+
 // #[sqlx::test(migrations = "./migrations/mysql")]
 // async fn it_can_get_role_by_id(pool: Pool<MySql>) {
 //     let role = Role::now("ROLE".to_string()).unwrap();
