@@ -1,18 +1,12 @@
-use crate::utils;
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse, UserListResponse};
-use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
+use auth_service::domain::crypto::{SchemeAwareHasher};
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use auth_service::infrastructure::mysql_role_repository::MysqlRoleRepository;
-use auth_service::infrastructure::mysql_user_repository::MysqlUserRepository;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
-use sqlx::{MySql, Pool};
 use uuid::Uuid;
-use auth_service::application::configuration::{Configuration, ConfigurationBuilder};
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 
 #[tokio::test]

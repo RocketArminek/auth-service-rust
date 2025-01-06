@@ -1,8 +1,6 @@
-use std::fmt::Debug;
 use std::future::Future;
 use auth_service::infrastructure::database::{create_pool};
 use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
-use futures_lite::StreamExt;
 use dotenv::{dotenv, from_filename};
 use auth_service::infrastructure::message_publisher::{create_message_publisher};
 use uuid::Uuid;
