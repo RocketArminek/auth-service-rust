@@ -33,7 +33,7 @@ pub async fn create_user(
     let password = request.password.clone();
     let role = request.role.clone();
     if state
-        .config()
+        .config
         .restricted_role_pattern()
         .is_match(role.as_str())
     {
@@ -47,7 +47,7 @@ pub async fn create_user(
     }
 
     let existing = state
-        .user_repository()
+        .user_repository
         .lock()
         .await
         .get_by_email(&email)
@@ -63,7 +63,7 @@ pub async fn create_user(
     }
 
     let existing_role = state
-        .role_repository()
+        .role_repository
         .lock()
         .await
         .get_by_name(&role)
@@ -79,7 +79,7 @@ pub async fn create_user(
     }
     let existing_role = existing_role.unwrap();
 
-    let is_verified = !state.config().verification_required();
+    let is_verified = !state.config.verification_required();
     let user = User::now_with_email_and_password(email, password, None, None, Some(is_verified));
 
     match user {
@@ -88,7 +88,7 @@ pub async fn create_user(
 
             tokio::task::spawn(async move {
                 if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(
-                    state.config().password_hashing_scheme(),
+                    state.config.password_hashing_scheme(),
                 )) {
                     tracing::error!("Failed to hash user's password: {:?}", e);
 
@@ -96,7 +96,7 @@ pub async fn create_user(
                 }
 
                 user.add_roles(vec![existing_role.clone()]);
-                match state.user_repository().lock().await.save(&user).await {
+                match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {
                         tracing::info!("User created: {}", &user.email);
                         let user_dto = UserDTO::from(user);
@@ -108,7 +108,7 @@ pub async fn create_user(
                         if !user_dto.is_verified {
                             let now = Utc::now();
                             let vr_duration = Duration::new(
-                                state.config().vr_duration_in_seconds().to_signed(),
+                                state.config.vr_duration_in_seconds().to_signed(),
                                 0,
                             )
                             .unwrap_or_default();
@@ -135,7 +135,7 @@ pub async fn create_user(
                                 events.push(&verification_requested);
 
                                 let result = state
-                                    .message_publisher()
+                                    .message_publisher
                                     .lock()
                                     .await
                                     .publish_all(events)
@@ -150,7 +150,7 @@ pub async fn create_user(
                         }
 
                         let result = state
-                            .message_publisher()
+                            .message_publisher
                             .lock()
                             .await
                             .publish_all(events)
@@ -222,7 +222,7 @@ pub async fn update_profile(
     let avatar_path = request.avatar_path.clone();
 
     let user = state
-        .user_repository()
+        .user_repository
         .lock()
         .await
         .get_by_id(&user.id)
@@ -234,12 +234,12 @@ pub async fn update_profile(
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
-            match state.user_repository().lock().await.save(&user).await {
+            match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 
                     let result = state
-                        .message_publisher()
+                        .message_publisher
                         .lock()
                         .await
                         .publish(&UserEvents::Updated {
@@ -283,14 +283,14 @@ pub async fn verify(
     VerificationRequest(user): VerificationRequest,
 ) -> impl IntoResponse {
     let user = state
-        .user_repository()
+        .user_repository
         .lock()
         .await
         .get_by_id(&user.id)
         .await;
     match user {
         Ok(mut user) => {
-            if !state.config().verification_required() {
+            if !state.config.verification_required() {
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(MessageResponse {
@@ -309,12 +309,12 @@ pub async fn verify(
                     .into_response();
             }
             user.verify();
-            match state.user_repository().lock().await.save(&user).await {
+            match state.user_repository.lock().await.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 
                     let result = state
-                        .message_publisher()
+                        .message_publisher
                         .lock()
                         .await
                         .publish(&UserEvents::Verified {

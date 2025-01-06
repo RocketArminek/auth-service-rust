@@ -28,7 +28,7 @@ pub async fn login(
     let email = request.email.clone();
     let password = request.password.clone();
     let user = state
-        .user_repository()
+        .user_repository
         .lock()
         .await
         .get_by_email(&email)
@@ -36,11 +36,11 @@ pub async fn login(
 
     match user {
         Ok(user) => {
-            let hasher = SchemeAwareHasher::with_scheme(state.config().password_hashing_scheme());
-            let verification_required = state.config().verification_required();
-            let at_duration_in_seconds = state.config().at_duration_in_seconds().to_signed();
-            let rt_duration_in_seconds = state.config().rt_duration_in_seconds().to_signed();
-            let secret = state.config().secret().to_string();
+            let hasher = SchemeAwareHasher::with_scheme(state.config.password_hashing_scheme());
+            let verification_required = state.config.verification_required();
+            let at_duration_in_seconds = state.config.at_duration_in_seconds().to_signed();
+            let rt_duration_in_seconds = state.config.rt_duration_in_seconds().to_signed();
+            let secret = state.config.secret().to_string();
 
             if !user.verify_password(&hasher, &password) {
                 return (
@@ -53,7 +53,7 @@ pub async fn login(
             }
             if hasher.is_password_outdated(&user.password) {
                 let mut outdated_user = user.clone();
-                let scheme = state.config().password_hashing_scheme();
+                let scheme = state.config.password_hashing_scheme();
                 tokio::task::spawn(async move {
                     tracing::warn!(
                         "Password hash outdated for {}({}), updating...",
@@ -66,7 +66,7 @@ pub async fn login(
                     outdated_user.set_password(new_password);
                     let outdated_user = outdated_user.into();
                     match state
-                        .user_repository()
+                        .user_repository
                         .lock()
                         .await
                         .save(&outdated_user)
@@ -188,7 +188,7 @@ pub async fn refresh(
     RefreshRequest(request): RefreshRequest,
 ) -> impl IntoResponse {
     let user = state
-        .user_repository()
+        .user_repository
         .lock()
         .await
         .get_by_email(&request.email)
@@ -199,7 +199,7 @@ pub async fn refresh(
             let user_response = UserDTO::from(user);
 
             let now = Utc::now();
-            let at_duration = Duration::new(state.config().at_duration_in_seconds().to_signed(), 0)
+            let at_duration = Duration::new(state.config.at_duration_in_seconds().to_signed(), 0)
                 .unwrap_or_default();
             let at_exp = now.add(at_duration);
 
@@ -211,10 +211,10 @@ pub async fn refresh(
             let access_token = encode(
                 &Header::default(),
                 &at_body,
-                &EncodingKey::from_secret(state.config().secret().to_string().as_ref()),
+                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
             );
 
-            let rt_duration = Duration::new(state.config().rt_duration_in_seconds().to_signed(), 0)
+            let rt_duration = Duration::new(state.config.rt_duration_in_seconds().to_signed(), 0)
                 .unwrap_or_default();
             let rt_exp = now.add(rt_duration);
             let rt_body = Claims::new(
@@ -226,7 +226,7 @@ pub async fn refresh(
             let refresh_token = encode(
                 &Header::default(),
                 &rt_body,
-                &EncodingKey::from_secret(state.config().secret().to_string().as_ref()),
+                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
             );
 
             match (access_token, refresh_token) {

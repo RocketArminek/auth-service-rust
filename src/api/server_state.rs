@@ -7,10 +7,10 @@ use crate::application::app_configuration::AppConfiguration;
 
 #[derive(Clone)]
 pub struct ServerState {
-    config: AppConfiguration,
-    user_repository: Arc<Mutex<dyn UserRepository>>,
-    role_repository: Arc<Mutex<dyn RoleRepository>>,
-    message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+    pub config: AppConfiguration,
+    pub user_repository: Arc<Mutex<dyn UserRepository>>,
+    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
+    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
 }
 
 impl ServerState {
@@ -26,22 +26,6 @@ impl ServerState {
             role_repository,
             message_publisher,
         }
-    }
-
-    pub fn config(&self) -> AppConfiguration {
-        self.config.clone()
-    }
-
-    pub fn user_repository(&self) -> &Arc<Mutex<dyn UserRepository>> {
-        &self.user_repository
-    }
-
-    pub fn role_repository(&self) -> &Arc<Mutex<dyn RoleRepository>> {
-        &self.role_repository
-    }
-
-    pub fn message_publisher(&self) -> &Arc<Mutex<dyn MessagePublisher<UserEvents>>> {
-        &self.message_publisher
     }
 }
 

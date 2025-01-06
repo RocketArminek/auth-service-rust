@@ -17,7 +17,7 @@ pub async fn restricted_acl(
 
     let is_allowed = user.roles.iter().any(|role| {
         state
-            .config()
+            .config
             .restricted_role_pattern()
             .is_match(role.as_str())
     });
