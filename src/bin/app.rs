@@ -473,9 +473,10 @@ async fn init_user(
 
     let password = config.super_admin_password().to_string();
 
-    let user = User::now_with_email_and_password(email, password, None, None, Some(true))
+    let mut user = User::now_with_email_and_password(email, password, None, None, Some(true))
         .unwrap()
         .with_roles(vec![role]);
+    user.hash_password(&SchemeAwareHasher::with_scheme(config.password_hashing_scheme())).unwrap();
 
     let r = user_repository.lock().await.save(&user).await;
     if let Err(e) = r {

@@ -111,7 +111,7 @@ impl DatabaseConfigurationBuilder {
             self.database_engine.clone().unwrap_or_default(),
             self.database_url.clone().unwrap_or_default(),
             self.database_max_connections.unwrap_or(5),
-            self.database_timeout_ms.unwrap_or(50),
+            self.database_timeout_ms.unwrap_or(500),
         )
     }
 }

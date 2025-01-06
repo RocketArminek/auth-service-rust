@@ -4,6 +4,30 @@ use crate::application::app_configuration::{AppConfiguration, AppConfigurationBu
 use crate::application::database_configuration::{DatabaseConfiguration, DatabaseConfigurationBuilder};
 use crate::application::message_publisher_configuration::{MessagePublisherConfiguration, MessagePublisherConfigurationBuilder};
 
+pub struct ConfigurationBuilder {
+    pub app: AppConfigurationBuilder,
+    pub db: DatabaseConfigurationBuilder,
+    pub publisher: MessagePublisherConfigurationBuilder,
+}
+
+impl ConfigurationBuilder {
+    pub fn new(
+        app: AppConfigurationBuilder,
+        db: DatabaseConfigurationBuilder,
+        publisher: MessagePublisherConfigurationBuilder,
+    ) -> Self {
+        ConfigurationBuilder { app, db, publisher }
+    }
+
+    pub fn build(&self) -> Configuration {
+        Configuration::new(
+            self.app.build(),
+            self.db.build(),
+            self.publisher.build()
+        )
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Configuration {
     app: AppConfiguration,
