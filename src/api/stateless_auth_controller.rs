@@ -27,12 +27,7 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let user = state
-        .user_repository
-        .lock()
-        .await
-        .get_by_email(&email)
-        .await;
+    let user = state.user_repository.lock().await.get_by_email(&email).await;
 
     match user {
         Ok(user) => {
@@ -65,13 +60,7 @@ pub async fn login(
                         .unwrap_or(outdated_user.password.clone());
                     outdated_user.set_password(new_password);
                     let outdated_user = outdated_user.into();
-                    match state
-                        .user_repository
-                        .lock()
-                        .await
-                        .save(&outdated_user)
-                        .await
-                    {
+                    match state.user_repository.lock().await.save(&outdated_user).await {
                         Ok(_) => tracing::info!(
                             "Password updated for {}({})",
                             &outdated_user.email,
@@ -187,10 +176,11 @@ pub async fn refresh(
     State(state): State<ServerState>,
     RefreshRequest(request): RefreshRequest,
 ) -> impl IntoResponse {
-    let user = state
+    let locked_user_repository = state
         .user_repository
         .lock()
-        .await
+        .await;
+    let user = locked_user_repository
         .get_by_email(&request.email)
         .await;
 

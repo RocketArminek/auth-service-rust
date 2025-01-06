@@ -227,11 +227,10 @@ pub async fn delete_user(
     State(state): State<ServerState>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match state.user_repository.lock().await.get_by_id(&id).await {
-        Ok(user) => match state
-            .user_repository
-            .lock()
-            .await
+    let locked_user_repository = state.user_repository.lock().await;
+
+    match locked_user_repository.get_by_id(&id).await {
+        Ok(user) => match locked_user_repository
             .delete_by_email(&user.email)
             .await
         {
@@ -295,8 +294,9 @@ pub async fn update_user(
     let first_name = request.first_name.clone();
     let last_name = request.last_name.clone();
     let avatar_path = request.avatar_path.clone();
+    let user_locked_repository = state.user_repository.lock().await;
 
-    let user = state.user_repository.lock().await.get_by_id(&id).await;
+    let user = user_locked_repository.get_by_id(&id).await;
     match user {
         Ok(old_user) => {
             let mut user = old_user.clone();
@@ -304,7 +304,7 @@ pub async fn update_user(
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
-            match state.user_repository.lock().await.save(&user).await {
+            match user_locked_repository.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 
