@@ -11,7 +11,7 @@ pub fn init_test_publisher_configuration_builder(
     builder.load_env();
     builder.rabbitmq_exchange_name(format!(
         "{}_{}",
-        builder.rabbitmq_exchange_name.clone().unwrap(),
+        builder.rabbitmq_exchange_name.clone().unwrap_or(test_case_id.to_string()),
         test_case_id
     ));
     configurator(&mut builder);
@@ -27,7 +27,7 @@ pub fn init_test_database_configuration_builder(
     builder.load_env();
     builder.database_url(format!(
         "{}_{}",
-        builder.database_url.clone().unwrap(),
+        builder.database_url.clone().unwrap_or(test_case_id.to_string()),
         test_case_id
     ));
     configurator(&mut builder);
