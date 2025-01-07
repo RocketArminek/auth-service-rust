@@ -45,7 +45,7 @@ impl Configuration {
         Configuration { app, db, publisher }
     }
 
-    pub fn load<F>(loader: F, dot_env_file_name: Option<&str>) -> Self
+    pub fn load<F>(loader: F) -> Self
     where
         F: FnOnce(
             AppConfigurationBuilder,
@@ -57,10 +57,11 @@ impl Configuration {
             MessagePublisherConfiguration,
         ),
     {
-        from_filename(dot_env_file_name.unwrap_or(".env.local"))
-            .or(dotenv())
-            .ok();
-        let (app, db, publisher) = loader(
+        let (
+            app,
+            db,
+            publisher
+        ) = loader(
             AppConfigurationBuilder::new(),
             DatabaseConfigurationBuilder::new(),
             MessagePublisherConfigurationBuilder::new(),
@@ -103,13 +104,14 @@ impl Default for Configuration {
     fn default() -> Self {
         Configuration::load(
             |mut app, mut db, mut publisher| {
+                from_filename(".env.local").or(dotenv()).ok();
+
                 (
                     app.load_env().build(),
                     db.load_env().build(),
                     publisher.load_env().build(),
                 )
-            },
-            None,
+            }
         )
     }
 }
