@@ -85,6 +85,14 @@ pub async fn run_message_publisher_test<F, Fut, C>(
     test(PublisherTestContext::new(message_publisher, consumer)).await
 }
 
+pub async fn run_integration_test_with_default<F, Fut>(test: F)
+where
+    F: Fn(AcceptanceTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+{
+    run_integration_test(NONE_CONFIGURATOR, test).await;
+}
+
 pub async fn run_integration_test<F, Fut, C>(
     configurator: C,
     test: F,
@@ -120,12 +128,4 @@ pub async fn run_integration_test<F, Fut, C>(
     test(AcceptanceTestContext::new(user_repository, role_repository, server, consumer)).await;
 
     drop_database(&pool, config.db().database_url()).await;
-}
-
-pub async fn run_integration_test_with_default<F, Fut>(test: F)
-where
-    F: Fn(AcceptanceTestContext) -> Fut,
-    Fut: Future<Output = ()>,
-{
-    run_integration_test(NONE_CONFIGURATOR, test).await;
 }
