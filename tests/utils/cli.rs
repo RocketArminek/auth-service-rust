@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use std::process::Command;
 use assert_cmd::cargo::{CargoError, CommandCargoExt};
 use auth_service::application::configuration::Configuration;
+use std::collections::HashMap;
+use std::process::Command;
 
 pub struct CommandFactory {
     envs: HashMap<String, String>,

@@ -1,12 +1,12 @@
-use std::sync::Arc;
-use axum_test::TestServer;
-use lapin::Consumer;
-use tokio::sync::Mutex;
+use crate::utils::cli::CommandFactory;
+use crate::utils::events::wait_for_event;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
-use crate::utils::cli::CommandFactory;
-use crate::utils::events::wait_for_event;
+use axum_test::TestServer;
+use lapin::Consumer;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub struct PublisherTestContext {
     pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
@@ -18,12 +18,15 @@ impl PublisherTestContext {
         message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
         consumer: Consumer,
     ) -> PublisherTestContext {
-        PublisherTestContext { message_publisher, consumer }
+        PublisherTestContext {
+            message_publisher,
+            consumer,
+        }
     }
 
     pub async fn wait_for_event<F>(&self, timeout: u64, predicate: F) -> Option<UserEvents>
     where
-        F: Fn(&UserEvents) -> bool
+        F: Fn(&UserEvents) -> bool,
     {
         wait_for_event(self.consumer.clone(), timeout, predicate).await
     }
@@ -39,7 +42,10 @@ impl DatabaseTestContext {
         user_repository: Arc<Mutex<dyn UserRepository>>,
         role_repository: Arc<Mutex<dyn RoleRepository>>,
     ) -> DatabaseTestContext {
-        DatabaseTestContext { user_repository, role_repository }
+        DatabaseTestContext {
+            user_repository,
+            role_repository,
+        }
     }
 }
 
@@ -67,7 +73,7 @@ impl AcceptanceTestContext {
 
     pub async fn wait_for_event<F>(&self, timeout: u64, predicate: F) -> Option<UserEvents>
     where
-        F: Fn(&UserEvents) -> bool
+        F: Fn(&UserEvents) -> bool,
     {
         wait_for_event(self.consumer.clone(), timeout, predicate).await
     }
@@ -88,7 +94,7 @@ impl CliTestContext {
         CliTestContext {
             user_repository,
             role_repository,
-            cf
+            cf,
         }
     }
 }

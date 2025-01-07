@@ -1,9 +1,13 @@
-use std::collections::HashMap;
-use dotenv::{dotenv, from_filename};
-use std::fmt::{Debug};
 use crate::application::app_configuration::{AppConfiguration, AppConfigurationBuilder};
-use crate::application::database_configuration::{DatabaseConfiguration, DatabaseConfigurationBuilder};
-use crate::application::message_publisher_configuration::{EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder};
+use crate::application::database_configuration::{
+    DatabaseConfiguration, DatabaseConfigurationBuilder,
+};
+use crate::application::message_publisher_configuration::{
+    EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
+};
+use dotenv::{dotenv, from_filename};
+use std::collections::HashMap;
+use std::fmt::Debug;
 
 pub struct ConfigurationBuilder {
     pub app: AppConfigurationBuilder,
@@ -21,11 +25,7 @@ impl ConfigurationBuilder {
     }
 
     pub fn build(&self) -> Configuration {
-        Configuration::new(
-            self.app.build(),
-            self.db.build(),
-            self.publisher.build()
-        )
+        Configuration::new(self.app.build(), self.db.build(), self.publisher.build())
     }
 }
 
@@ -40,7 +40,7 @@ impl Configuration {
     pub fn new(
         app: AppConfiguration,
         db: DatabaseConfiguration,
-        publisher: MessagePublisherConfiguration
+        publisher: MessagePublisherConfiguration,
     ) -> Self {
         Configuration { app, db, publisher }
     }
@@ -50,18 +50,21 @@ impl Configuration {
         F: FnOnce(
             AppConfigurationBuilder,
             DatabaseConfigurationBuilder,
-            MessagePublisherConfigurationBuilder
-        ) -> (AppConfiguration, DatabaseConfiguration, MessagePublisherConfiguration),
+            MessagePublisherConfigurationBuilder,
+        ) -> (
+            AppConfiguration,
+            DatabaseConfiguration,
+            MessagePublisherConfiguration,
+        ),
     {
         from_filename(dot_env_file_name.unwrap_or(".env.local"))
             .or(dotenv())
             .ok();
-        let (app, db, publisher) =
-            loader(
-                AppConfigurationBuilder::new(),
-                DatabaseConfigurationBuilder::new(),
-                MessagePublisherConfigurationBuilder::new(),
-            );
+        let (app, db, publisher) = loader(
+            AppConfigurationBuilder::new(),
+            DatabaseConfigurationBuilder::new(),
+            MessagePublisherConfigurationBuilder::new(),
+        );
 
         Configuration { app, db, publisher }
     }
@@ -99,9 +102,14 @@ impl Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Configuration::load(
-            |mut app, mut db, mut publisher|
-                (app.load_env().build(), db.load_env().build(), publisher.load_env().build()),
-            None
+            |mut app, mut db, mut publisher| {
+                (
+                    app.load_env().build(),
+                    db.load_env().build(),
+                    publisher.load_env().build(),
+                )
+            },
+            None,
         )
     }
 }

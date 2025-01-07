@@ -1,7 +1,7 @@
+use lapin::options::ExchangeDeclareOptions;
+use lapin::ExchangeKind;
 use std::collections::HashMap;
 use std::env;
-use lapin::ExchangeKind;
-use lapin::options::ExchangeDeclareOptions;
 
 pub struct MessagePublisherConfigurationBuilder {
     pub rabbitmq_url: Option<String>,
@@ -77,21 +77,28 @@ impl MessagePublisherConfigurationBuilder {
         match self.event_driven.unwrap_or(true) {
             true => {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
-                    auto_delete: self.rabbitmq_exchange_auto_delete.clone().unwrap_or_default(),
+                    auto_delete: self
+                        .rabbitmq_exchange_auto_delete
+                        .clone()
+                        .unwrap_or_default(),
                     durable: self.rabbitmq_exchange_durable.clone().unwrap_or_default(),
                     ..ExchangeDeclareOptions::default()
                 };
 
-                MessagePublisherConfiguration::Rabbitmq(
-                    RabbitmqConfiguration::new(
-                        self.rabbitmq_url.clone().unwrap_or("amqp://localhost:5672".to_string()),
-                        self.rabbitmq_exchange_name.clone().unwrap_or("nebula.auth.events".to_string()),
-                        self.rabbitmq_exchange_kind.clone().unwrap_or(ExchangeKind::Fanout),
-                        rabbitmq_exchange_declare_options
-                    )
-                )
+                MessagePublisherConfiguration::Rabbitmq(RabbitmqConfiguration::new(
+                    self.rabbitmq_url
+                        .clone()
+                        .unwrap_or("amqp://localhost:5672".to_string()),
+                    self.rabbitmq_exchange_name
+                        .clone()
+                        .unwrap_or("nebula.auth.events".to_string()),
+                    self.rabbitmq_exchange_kind
+                        .clone()
+                        .unwrap_or(ExchangeKind::Fanout),
+                    rabbitmq_exchange_declare_options,
+                ))
             }
-            false => MessagePublisherConfiguration::None
+            false => MessagePublisherConfiguration::None,
         }
     }
 
@@ -155,10 +162,13 @@ impl RabbitmqConfiguration {
         let mut envs = HashMap::new();
 
         envs.insert(EnvNames::RABBITMQ_URL.to_owned(), self.rabbitmq_url.clone());
-        envs.insert(EnvNames::RABBITMQ_EXCHANGE_NAME.to_owned(), self.rabbitmq_exchange_name.clone());
+        envs.insert(
+            EnvNames::RABBITMQ_EXCHANGE_NAME.to_owned(),
+            self.rabbitmq_exchange_name.clone(),
+        );
         envs.insert(
             EnvNames::RABBITMQ_EXCHANGE_KIND.to_owned(),
-            Self::exchange_kind_to_string(self.rabbitmq_exchange_kind.clone())
+            Self::exchange_kind_to_string(self.rabbitmq_exchange_kind.clone()),
         );
 
         envs.insert(
@@ -167,7 +177,9 @@ impl RabbitmqConfiguration {
         );
         envs.insert(
             EnvNames::RABBITMQ_EXCHANGE_AUTO_DELETE.to_owned(),
-            self.rabbitmq_exchange_declare_options.auto_delete.to_string(),
+            self.rabbitmq_exchange_declare_options
+                .auto_delete
+                .to_string(),
         );
 
         envs

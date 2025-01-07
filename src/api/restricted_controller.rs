@@ -50,12 +50,7 @@ pub async fn create_restricted_user(
             .into_response();
     }
 
-    let existing_role = state
-        .role_repository
-        .lock()
-        .await
-        .get_by_name(&role)
-        .await;
+    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
 
     if let Err(_) = existing_role {
         return (
@@ -230,10 +225,7 @@ pub async fn delete_user(
     let locked_user_repository = state.user_repository.lock().await;
 
     match locked_user_repository.get_by_id(&id).await {
-        Ok(user) => match locked_user_repository
-            .delete_by_email(&user.email)
-            .await
-        {
+        Ok(user) => match locked_user_repository.delete_by_email(&user.email).await {
             Ok(_) => {
                 let result = state
                     .message_publisher

@@ -62,12 +62,7 @@ pub async fn create_user(
             .into_response();
     }
 
-    let existing_role = state
-        .role_repository
-        .lock()
-        .await
-        .get_by_name(&role)
-        .await;
+    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
     if let Err(_) = existing_role {
         return (
             StatusCode::BAD_REQUEST,
@@ -107,11 +102,9 @@ pub async fn create_user(
 
                         if !user_dto.is_verified {
                             let now = Utc::now();
-                            let vr_duration = Duration::new(
-                                state.config.vr_duration_in_seconds().to_signed(),
-                                0,
-                            )
-                            .unwrap_or_default();
+                            let vr_duration =
+                                Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
+                                    .unwrap_or_default();
                             let vr_exp = now.add(vr_duration);
 
                             let vr_body = Claims::new(
@@ -221,12 +214,7 @@ pub async fn update_profile(
     let last_name = request.last_name.clone();
     let avatar_path = request.avatar_path.clone();
 
-    let user = state
-        .user_repository
-        .lock()
-        .await
-        .get_by_id(&user.id)
-        .await;
+    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
     match user {
         Ok(old_user) => {
             let mut user = old_user.clone();
@@ -282,12 +270,7 @@ pub async fn verify(
     State(state): State<ServerState>,
     VerificationRequest(user): VerificationRequest,
 ) -> impl IntoResponse {
-    let user = state
-        .user_repository
-        .lock()
-        .await
-        .get_by_id(&user.id)
-        .await;
+    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
     match user {
         Ok(mut user) => {
             if !state.config.verification_required() {

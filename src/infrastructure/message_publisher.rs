@@ -1,10 +1,10 @@
+use crate::application::message_publisher_configuration::MessagePublisherConfiguration;
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_publisher;
 use axum::async_trait;
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::application::message_publisher_configuration::MessagePublisherConfiguration;
 
 #[async_trait]
 pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {

@@ -1,6 +1,6 @@
+use crate::infrastructure::database::DatabaseEngine;
 use std::collections::HashMap;
 use std::env;
-use crate::infrastructure::database::DatabaseEngine;
 
 pub struct DatabaseConfigurationBuilder {
     pub database_engine: Option<DatabaseEngine>,
@@ -50,12 +50,14 @@ impl DatabaseConfigurationBuilder {
             },
             _ => env::var(EnvNames::DATABASE_ENGINE)
                 .ok()
-                .map(|v| v.try_into().unwrap_or_default())
+                .map(|v| v.try_into().unwrap_or_default()),
         };
 
-        self.database_max_connections = env::var(EnvNames::DATABASE_MAX_CONNECTIONS).ok()
+        self.database_max_connections = env::var(EnvNames::DATABASE_MAX_CONNECTIONS)
+            .ok()
             .map(|v| v.parse::<u32>().unwrap());
-        self.database_timeout_ms = env::var(EnvNames::DATABASE_TIMEOUT_MS).ok()
+        self.database_timeout_ms = env::var(EnvNames::DATABASE_TIMEOUT_MS)
+            .ok()
             .map(|v| v.parse::<u64>().unwrap());
 
         match self.database_engine {
@@ -80,7 +82,10 @@ impl DatabaseConfigurationBuilder {
         )
     }
 
-    fn get_mysql_database_url(&self, database_url: Result<String, env::VarError>) -> Option<String> {
+    fn get_mysql_database_url(
+        &self,
+        database_url: Result<String, env::VarError>,
+    ) -> Option<String> {
         match database_url {
             Ok(url) if !url.is_empty() => Some(url),
             _ => {
@@ -91,24 +96,24 @@ impl DatabaseConfigurationBuilder {
                 let name = env::var(EnvNames::DATABASE_NAME).ok();
 
                 match (user, password, host, port, name) {
-                    (Some(user), Some(password), Some(host), Some(port), Some(name)) => {
-                        Some(format!(
-                            "mysql://{}:{}@{}:{}/{}",
-                            user, password, host, port, name
-                        ))
-                    }
-                    _ => None
+                    (Some(user), Some(password), Some(host), Some(port), Some(name)) => Some(
+                        format!("mysql://{}:{}@{}:{}/{}", user, password, host, port, name),
+                    ),
+                    _ => None,
                 }
             }
         }
     }
 
-    fn get_sqlite_database_url(&self, database_url: Result<String, env::VarError>) -> Option<String> {
+    fn get_sqlite_database_url(
+        &self,
+        database_url: Result<String, env::VarError>,
+    ) -> Option<String> {
         match database_url {
             Ok(url) if !url.is_empty() => Some(url),
             _ => env::var(EnvNames::SQLITE_PATH)
                 .ok()
-                .map(|path| format!("sqlite://{}", path))
+                .map(|path| format!("sqlite://{}", path)),
         }
     }
 }
@@ -156,7 +161,10 @@ impl DatabaseConfiguration {
         let mut envs = HashMap::new();
 
         envs.insert(EnvNames::DATABASE_URL.to_owned(), self.database_url.clone());
-        envs.insert(EnvNames::DATABASE_ENGINE.to_owned(), self.database_engine.to_string());
+        envs.insert(
+            EnvNames::DATABASE_ENGINE.to_owned(),
+            self.database_engine.to_string(),
+        );
         envs.insert(
             EnvNames::DATABASE_MAX_CONNECTIONS.to_owned(),
             self.database_max_connections.to_string(),

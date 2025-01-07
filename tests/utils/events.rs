@@ -1,11 +1,11 @@
-use std::fmt::Debug;
-use std::time::Duration;
+use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 use futures_lite::StreamExt;
-use lapin::{Channel, Connection, ConnectionProperties, Consumer};
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
+use lapin::{Channel, Connection, ConnectionProperties, Consumer};
+use std::fmt::Debug;
+use std::time::Duration;
 use tokio::time::sleep;
-use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 
 pub async fn wait_for_event<T: Debug>(
     mut consumer: Consumer,
@@ -55,8 +55,8 @@ pub async fn setup_test_consumer(
                 config.rabbitmq_url(),
                 ConnectionProperties::default().with_connection_name("test_consumer".into()),
             )
-                .await
-                .expect("Failed to connect to RabbitMQ");
+            .await
+            .expect("Failed to connect to RabbitMQ");
 
             let channel = conn
                 .create_channel()

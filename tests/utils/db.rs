@@ -1,6 +1,6 @@
-use sqlx::{MySql, Sqlite};
-use sqlx::migrate::MigrateDatabase;
 use auth_service::infrastructure::database::DatabasePool;
+use sqlx::migrate::MigrateDatabase;
+use sqlx::{MySql, Sqlite};
 
 pub async fn drop_database(database_pool: &DatabasePool, database_url: &str) {
     match database_pool {

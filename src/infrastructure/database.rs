@@ -1,9 +1,9 @@
+use crate::application::database_configuration::DatabaseConfiguration;
 use sqlx::migrate::{MigrateDatabase, MigrateError};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
-use crate::application::database_configuration::DatabaseConfiguration;
 
 #[derive(Debug, Clone)]
 pub enum DatabaseEngine {

@@ -5,7 +5,7 @@ use auth_service::application::message_publisher_configuration::MessagePublisher
 
 pub fn init_test_publisher_configuration_builder(
     test_case_id: &str,
-    configurator: impl FnOnce(&mut MessagePublisherConfigurationBuilder)
+    configurator: impl FnOnce(&mut MessagePublisherConfigurationBuilder),
 ) -> MessagePublisherConfigurationBuilder {
     let mut builder = MessagePublisherConfigurationBuilder::new();
     builder.load_env();
@@ -21,13 +21,15 @@ pub fn init_test_publisher_configuration_builder(
 
 pub fn init_test_database_configuration_builder(
     test_case_id: &str,
-    configurator: impl FnOnce(&mut DatabaseConfigurationBuilder)
+    configurator: impl FnOnce(&mut DatabaseConfigurationBuilder),
 ) -> DatabaseConfigurationBuilder {
     let mut builder = DatabaseConfigurationBuilder::new();
     builder.load_env();
-    builder.database_url(
-        format!("{}_{}", builder.database_url.clone().unwrap(), test_case_id)
-    );
+    builder.database_url(format!(
+        "{}_{}",
+        builder.database_url.clone().unwrap(),
+        test_case_id
+    ));
     configurator(&mut builder);
 
     builder
@@ -35,7 +37,7 @@ pub fn init_test_database_configuration_builder(
 
 pub fn init_test_app_configuration_builder(
     _test_case_id: &str,
-    _configurator: impl FnOnce(&mut AppConfigurationBuilder)
+    _configurator: impl FnOnce(&mut AppConfigurationBuilder),
 ) -> AppConfigurationBuilder {
     let mut builder = AppConfigurationBuilder::new();
     builder.load_env();
@@ -45,21 +47,12 @@ pub fn init_test_app_configuration_builder(
 
 pub fn init_test_config_builder(
     test_case_id: &str,
-    configurator: impl FnOnce(&mut ConfigurationBuilder)
+    configurator: impl FnOnce(&mut ConfigurationBuilder),
 ) -> ConfigurationBuilder {
     let mut builder = ConfigurationBuilder::new(
-        init_test_app_configuration_builder(
-            test_case_id,
-            |_| {}
-        ),
-        init_test_database_configuration_builder(
-            test_case_id,
-            |_| {}
-        ),
-        init_test_publisher_configuration_builder(
-            test_case_id,
-            |_| {}
-        ),
+        init_test_app_configuration_builder(test_case_id, |_| {}),
+        init_test_database_configuration_builder(test_case_id, |_| {}),
+        init_test_publisher_configuration_builder(test_case_id, |_| {}),
     );
 
     configurator(&mut builder);

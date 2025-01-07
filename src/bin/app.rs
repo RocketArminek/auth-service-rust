@@ -1,5 +1,8 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
+use auth_service::application::app_configuration::AppConfiguration;
+use auth_service::application::configuration::Configuration;
+use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
@@ -20,9 +23,6 @@ use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::Mutex;
-use auth_service::application::app_configuration::AppConfiguration;
-use auth_service::application::configuration::Configuration;
-use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -476,7 +476,10 @@ async fn init_user(
     let mut user = User::now_with_email_and_password(email, password, None, None, Some(true))
         .unwrap()
         .with_roles(vec![role]);
-    user.hash_password(&SchemeAwareHasher::with_scheme(config.password_hashing_scheme())).unwrap();
+    user.hash_password(&SchemeAwareHasher::with_scheme(
+        config.password_hashing_scheme(),
+    ))
+    .unwrap();
 
     let r = user_repository.lock().await.save(&user).await;
     if let Err(e) = r {
