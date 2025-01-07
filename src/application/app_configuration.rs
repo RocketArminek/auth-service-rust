@@ -82,6 +82,11 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn secret(&mut self, value: HiddenString) -> &mut Self {
+        self.secret = Some(value);
+        self
+    }
+
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var("ADMIN_EMAIL").ok();
         self.super_admin_password = env::var("ADMIN_PASSWORD")
@@ -115,7 +120,7 @@ impl AppConfigurationBuilder {
             self.restricted_role_name.clone().unwrap_or("ADMIN".to_string()),
             self.restricted_role_pattern.clone()
                 .unwrap_or(Regex::new(format!("(?i)^{}.*", "ADMIN").as_str()).unwrap()),
-            self.password_hashing_scheme.clone().unwrap_or(HashingScheme::Bcrypt),
+            self.password_hashing_scheme.clone().unwrap_or(HashingScheme::BcryptLow),
             self.at_duration_in_seconds.clone().unwrap_or(DurationInSeconds(300)),
             self.rt_duration_in_seconds.clone().unwrap_or(DurationInSeconds(2592000)),
             self.verification_required.clone().unwrap_or(true),
