@@ -31,7 +31,7 @@ pub fn routes(state: ServerState) -> Router {
                     post(create_restricted_user).get(get_all_users),
                 )
                 .route(
-                    "/v1/restricted/users/:id",
+                    "/v1/restricted/users/{id}",
                     get(get_user).delete(delete_user).put(update_user),
                 )
                 .layer(

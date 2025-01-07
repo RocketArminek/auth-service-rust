@@ -2,7 +2,7 @@ use crate::api::dto::MessageResponse;
 use crate::api::server_state::{SecretAware, VerificationRequired};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use axum::{
-    async_trait, extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode,
+    extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode,
     Json,
 };
 use jsonwebtoken::{DecodingKey, Validation};
@@ -19,7 +19,6 @@ pub struct RefreshRequest(pub UserDTO);
 #[derive(Debug, Clone)]
 pub struct VerificationRequest(pub UserDTO);
 
-#[async_trait]
 impl<S> FromRequestParts<S> for BearerToken
 where
     S: Send + Sync,
@@ -54,7 +53,6 @@ where
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for StatelessLoggedInUser
 where
     S: SecretAware + VerificationRequired + Send + Sync,
@@ -136,7 +134,6 @@ where
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for RefreshRequest
 where
     S: SecretAware + Send + Sync,
@@ -206,7 +203,6 @@ where
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for VerificationRequest
 where
     S: SecretAware + VerificationRequired + Send + Sync,

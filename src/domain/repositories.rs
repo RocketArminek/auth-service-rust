@@ -1,7 +1,7 @@
+use async_trait::async_trait;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::repository::RepositoryError;
-use axum::async_trait;
 use sqlx::Error;
 use uuid::Uuid;
 

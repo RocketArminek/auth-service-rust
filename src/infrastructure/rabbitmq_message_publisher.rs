@@ -1,12 +1,12 @@
 use crate::application::message_publisher_configuration::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
-use axum::async_trait;
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
+use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
