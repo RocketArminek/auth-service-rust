@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use lapin::ExchangeKind;
 use lapin::options::ExchangeDeclareOptions;
@@ -54,16 +55,20 @@ impl MessagePublisherConfigurationBuilder {
     }
 
     pub fn load_env(&mut self) -> &mut Self {
-        self.rabbitmq_url = env::var("RABBITMQ_URL").ok();
-        self.rabbitmq_exchange_name = env::var("RABBITMQ_EXCHANGE_NAME").ok();
-        self.rabbitmq_exchange_kind = env::var("RABBITMQ_EXCHANGE_KIND")
-            .and_then(|v| Ok(Self::exchange_kind_from_string(v))).ok();
-        self.rabbitmq_exchange_durable = env::var("RABBITMQ_EXCHANGE_DURABLE")
-            .and_then(|v| Ok(v.parse::<bool>().unwrap())).ok();
-        self.rabbitmq_exchange_auto_delete = env::var("RABBITMQ_EXCHANGE_AUTO_DELETE")
-            .and_then(|v| Ok(v.parse::<bool>().unwrap())).ok();
-        self.event_driven = env::var("EVENT_DRIVEN")
-            .and_then(|v| Ok(v.parse::<bool>().unwrap())).ok();
+        self.rabbitmq_url = env::var(EnvNames::RABBITMQ_URL).ok();
+        self.rabbitmq_exchange_name = env::var(EnvNames::RABBITMQ_EXCHANGE_NAME).ok();
+        self.rabbitmq_exchange_kind = env::var(EnvNames::RABBITMQ_EXCHANGE_KIND)
+            .and_then(|v| Ok(Self::exchange_kind_from_string(v)))
+            .ok();
+        self.rabbitmq_exchange_durable = env::var(EnvNames::RABBITMQ_EXCHANGE_DURABLE)
+            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .ok();
+        self.rabbitmq_exchange_auto_delete = env::var(EnvNames::RABBITMQ_EXCHANGE_AUTO_DELETE)
+            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .ok();
+        self.event_driven = env::var(EnvNames::EVENT_DRIVEN)
+            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .ok();
 
         self
     }
@@ -145,4 +150,47 @@ impl RabbitmqConfiguration {
     pub fn rabbitmq_exchange_declare_options(&self) -> ExchangeDeclareOptions {
         self.rabbitmq_exchange_declare_options
     }
+
+    pub fn envs(&self) -> HashMap<String, String> {
+        let mut envs = HashMap::new();
+
+        envs.insert(EnvNames::RABBITMQ_URL.to_owned(), self.rabbitmq_url.clone());
+        envs.insert(EnvNames::RABBITMQ_EXCHANGE_NAME.to_owned(), self.rabbitmq_exchange_name.clone());
+        envs.insert(
+            EnvNames::RABBITMQ_EXCHANGE_KIND.to_owned(),
+            Self::exchange_kind_to_string(self.rabbitmq_exchange_kind.clone())
+        );
+
+        envs.insert(
+            EnvNames::RABBITMQ_EXCHANGE_DURABLE.to_owned(),
+            self.rabbitmq_exchange_declare_options.durable.to_string(),
+        );
+        envs.insert(
+            EnvNames::RABBITMQ_EXCHANGE_AUTO_DELETE.to_owned(),
+            self.rabbitmq_exchange_declare_options.auto_delete.to_string(),
+        );
+
+        envs
+    }
+
+    fn exchange_kind_to_string(value: ExchangeKind) -> String {
+        match value {
+            ExchangeKind::Custom(_) => "custom".to_string(),
+            ExchangeKind::Direct => "direct".to_string(),
+            ExchangeKind::Fanout => "fanout".to_string(),
+            ExchangeKind::Headers => "headers".to_string(),
+            ExchangeKind::Topic => "topic".to_string(),
+        }
+    }
+}
+
+pub struct EnvNames;
+
+impl EnvNames {
+    pub const RABBITMQ_URL: &'static str = "RABBITMQ_URL";
+    pub const RABBITMQ_EXCHANGE_NAME: &'static str = "RABBITMQ_EXCHANGE_NAME";
+    pub const RABBITMQ_EXCHANGE_KIND: &'static str = "RABBITMQ_EXCHANGE_KIND";
+    pub const RABBITMQ_EXCHANGE_DURABLE: &'static str = "RABBITMQ_EXCHANGE_DURABLE";
+    pub const RABBITMQ_EXCHANGE_AUTO_DELETE: &'static str = "RABBITMQ_EXCHANGE_AUTO_DELETE";
+    pub const EVENT_DRIVEN: &'static str = "EVENT_DRIVEN";
 }

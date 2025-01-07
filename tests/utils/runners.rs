@@ -7,8 +7,9 @@ use uuid::Uuid;
 use auth_service::application::configuration::{ConfigurationBuilder};
 use auth_service::application::database_configuration::DatabaseConfigurationBuilder;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfigurationBuilder;
+use crate::utils::cli::CommandFactory;
 use crate::utils::config::{init_test_config_builder, init_test_database_configuration_builder, init_test_publisher_configuration_builder};
-use crate::utils::context::{AcceptanceTestContext, DatabaseTestContext, PublisherTestContext};
+use crate::utils::context::{AcceptanceTestContext, CliTestContext, DatabaseTestContext, PublisherTestContext};
 use crate::utils::db::drop_database;
 use crate::utils::events::setup_test_consumer;
 use crate::utils::server::create_test_server;
@@ -126,6 +127,41 @@ pub async fn run_integration_test<F, Fut, C>(
     ).await;
 
     test(AcceptanceTestContext::new(user_repository, role_repository, server, consumer)).await;
+
+    drop_database(&pool, config.db().database_url()).await;
+}
+
+pub async fn run_cli_test_with_default<F, Fut>(test: F)
+where
+    F: Fn(CliTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+{
+    run_cli_test(NONE_CONFIGURATOR, test).await;
+}
+
+pub async fn run_cli_test<F, Fut, C>(configurator: C, test: F)
+where
+    F: Fn(CliTestContext) -> Fut,
+    Fut: Future<Output = ()>,
+    C: FnOnce(&mut ConfigurationBuilder)
+{
+    from_filename(".env.test").or(dotenv()).ok();
+    let case = Uuid::new_v4().to_string().replace("-", "_");
+    let builder = init_test_config_builder(
+        &case,
+        configurator
+    );
+
+    let config = builder.build();
+
+    let command_factory = CommandFactory::new(&config);
+
+    let pool = create_pool(config.db()).await.unwrap();
+    pool.migrate().await;
+    let user_repository = create_user_repository(pool.clone());
+    let role_repository = create_role_repository(pool.clone());
+
+    test(CliTestContext::new(user_repository, role_repository, command_factory)).await;
 
     drop_database(&pool, config.db().database_url()).await;
 }

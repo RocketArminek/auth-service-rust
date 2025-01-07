@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use regex::Regex;
 use crate::application::configuration_types::{DurationInSeconds, HiddenString};
@@ -88,26 +89,35 @@ impl AppConfigurationBuilder {
     }
 
     pub fn load_env(&mut self) -> &mut Self {
-        self.super_admin_email = env::var("ADMIN_EMAIL").ok();
-        self.super_admin_password = env::var("ADMIN_PASSWORD")
-            .and_then(|v| Ok(HiddenString(v))).ok();
-        self.regular_role_name = env::var("REGULAR_ROLE_NAME").ok();
-        self.restricted_role_name = env::var("RESTRICTED_ROLE_NAME").ok();
+        self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
+        self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
+            .and_then(|v| Ok(HiddenString(v)))
+            .ok();
+        self.regular_role_name = env::var(EnvNames::REGULAR_ROLE_NAME).ok();
+        self.restricted_role_name = env::var(EnvNames::RESTRICTED_ROLE_NAME).ok();
         self.restricted_role_pattern = match &self.restricted_role_name {
             None => None,
             Some(name) => Some(Regex::new(format!("(?i)^{}.*", name).as_str()).unwrap())
         };
-        self.password_hashing_scheme = env::var("ADMIN_PASSWORD")
-            .and_then(|v| Ok(HashingScheme::from_string(v).unwrap())).ok();
+        self.password_hashing_scheme = env::var(EnvNames::PASSWORD_HASHING_SCHEME)
+            .and_then(|v| Ok(HashingScheme::from_string(v).unwrap()))
+            .ok();
 
-        self.at_duration_in_seconds = env::var("AT_DURATION_IN_SECONDS")
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap())).ok();
-        self.rt_duration_in_seconds = env::var("RT_DURATION_IN_SECONDS")
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap())).ok();
-        self.verification_required = env::var("VERIFICATION_REQUIRED").and_then(|v| Ok(v.parse::<bool>().unwrap())).ok();
-        self.vr_duration_in_seconds = env::var("VR_DURATION_IN_SECONDS")
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap())).ok();
-        self.secret = env::var("SECRET").and_then(|v| Ok(HiddenString(v))).ok();
+        self.at_duration_in_seconds = env::var(EnvNames::AT_DURATION_IN_SECONDS)
+            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .ok();
+        self.rt_duration_in_seconds = env::var(EnvNames::RT_DURATION_IN_SECONDS)
+            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .ok();
+        self.verification_required = env::var(EnvNames::VERIFICATION_REQUIRED)
+            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .ok();
+        self.vr_duration_in_seconds = env::var(EnvNames::VR_DURATION_IN_SECONDS)
+            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .ok();
+        self.secret = env::var(EnvNames::SECRET)
+            .and_then(|v| Ok(HiddenString(v)))
+            .ok();
 
         self
     }
@@ -217,4 +227,36 @@ impl AppConfiguration {
     pub fn restricted_role_pattern(&self) -> Regex {
         self.restricted_role_pattern.clone()
     }
+
+    pub fn envs(&self) -> HashMap<String, String> {
+        let mut envs = HashMap::new();
+
+        envs.insert(EnvNames::ADMIN_EMAIL.to_owned(), self.super_admin_email.clone());
+        envs.insert(EnvNames::ADMIN_PASSWORD.to_owned(), self.super_admin_password.0.clone());
+        envs.insert(EnvNames::REGULAR_ROLE_NAME.to_owned(), self.regular_role_name.clone());
+        envs.insert(EnvNames::RESTRICTED_ROLE_NAME.to_owned(), self.restricted_role_name.clone());
+        envs.insert(EnvNames::PASSWORD_HASHING_SCHEME.to_owned(), self.password_hashing_scheme.to_string());
+        envs.insert(EnvNames::AT_DURATION_IN_SECONDS.to_owned(), self.at_duration_in_seconds.0.to_string());
+        envs.insert(EnvNames::RT_DURATION_IN_SECONDS.to_owned(), self.rt_duration_in_seconds.0.to_string());
+        envs.insert(EnvNames::VERIFICATION_REQUIRED.to_owned(), self.verification_required.to_string());
+        envs.insert(EnvNames::VR_DURATION_IN_SECONDS.to_owned(), self.vr_duration_in_seconds.0.to_string());
+        envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
+
+        envs
+    }
+}
+
+pub struct EnvNames;
+
+impl EnvNames {
+    pub const ADMIN_EMAIL: &'static str = "ADMIN_EMAIL";
+    pub const ADMIN_PASSWORD: &'static str = "ADMIN_PASSWORD";
+    pub const REGULAR_ROLE_NAME: &'static str = "REGULAR_ROLE_NAME";
+    pub const RESTRICTED_ROLE_NAME: &'static str = "RESTRICTED_ROLE_NAME";
+    pub const PASSWORD_HASHING_SCHEME: &'static str = "PASSWORD_HASHING_SCHEME";
+    pub const AT_DURATION_IN_SECONDS: &'static str = "AT_DURATION_IN_SECONDS";
+    pub const RT_DURATION_IN_SECONDS: &'static str = "RT_DURATION_IN_SECONDS";
+    pub const VERIFICATION_REQUIRED: &'static str = "VERIFICATION_REQUIRED";
+    pub const VR_DURATION_IN_SECONDS: &'static str = "VR_DURATION_IN_SECONDS";
+    pub const SECRET: &'static str = "SECRET";
 }

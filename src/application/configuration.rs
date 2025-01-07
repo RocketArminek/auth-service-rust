@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use dotenv::{dotenv, from_filename};
 use std::fmt::{Debug};
 use crate::application::app_configuration::{AppConfiguration, AppConfigurationBuilder};
 use crate::application::database_configuration::{DatabaseConfiguration, DatabaseConfigurationBuilder};
-use crate::application::message_publisher_configuration::{MessagePublisherConfiguration, MessagePublisherConfigurationBuilder};
+use crate::application::message_publisher_configuration::{EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder};
 
 pub struct ConfigurationBuilder {
     pub app: AppConfigurationBuilder,
@@ -63,6 +64,23 @@ impl Configuration {
             );
 
         Configuration { app, db, publisher }
+    }
+
+    pub fn envs(&self) -> HashMap<String, String> {
+        let mut envs = HashMap::new();
+        envs.extend(self.app.envs());
+        envs.extend(self.db.envs());
+        match &self.publisher {
+            MessagePublisherConfiguration::Rabbitmq(config) => {
+                envs.extend(config.envs());
+                envs.insert(EnvNames::EVENT_DRIVEN.to_owned(), "true".to_string());
+            }
+            MessagePublisherConfiguration::None => {
+                envs.insert(EnvNames::EVENT_DRIVEN.to_owned(), "false".to_string());
+            }
+        }
+
+        envs
     }
 
     pub fn app(&self) -> &AppConfiguration {

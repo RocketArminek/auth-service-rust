@@ -3,7 +3,6 @@ use auth_service::application::configuration::ConfigurationBuilder;
 use auth_service::application::database_configuration::DatabaseConfigurationBuilder;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfigurationBuilder;
 
-
 pub fn init_test_publisher_configuration_builder(
     test_case_id: &str,
     configurator: impl FnOnce(&mut MessagePublisherConfigurationBuilder)

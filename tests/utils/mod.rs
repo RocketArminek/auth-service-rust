@@ -4,3 +4,4 @@ pub mod config;
 pub mod events;
 pub mod server;
 pub mod db;
+pub mod cli;

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use crate::infrastructure::database::DatabaseEngine;
 
@@ -39,7 +40,7 @@ impl DatabaseConfigurationBuilder {
     }
 
     pub fn load_env(&mut self) -> &mut Self {
-        let database_url = env::var("DATABASE_URL");
+        let database_url = env::var(EnvNames::DATABASE_URL);
 
         self.database_engine = match database_url.clone() {
             Ok(url) if !url.is_empty() => match url.to_lowercase() {
@@ -47,60 +48,24 @@ impl DatabaseConfigurationBuilder {
                 url if url.starts_with("mysql:") => Some(DatabaseEngine::Mysql),
                 _ => None,
             },
-            _ => env::var("DATABASE_ENGINE")
+            _ => env::var(EnvNames::DATABASE_ENGINE)
                 .ok()
                 .map(|v| v.try_into().unwrap_or_default())
         };
 
-        self.database_max_connections = env::var("DATABASE_MAX_CONNECTIONS").ok()
+        self.database_max_connections = env::var(EnvNames::DATABASE_MAX_CONNECTIONS).ok()
             .map(|v| v.parse::<u32>().unwrap());
-        self.database_timeout_ms = env::var("DATABASE_TIMEOUT_MS").ok()
+        self.database_timeout_ms = env::var(EnvNames::DATABASE_TIMEOUT_MS).ok()
             .map(|v| v.parse::<u64>().unwrap());
 
         match self.database_engine {
-            None => {}
             Some(DatabaseEngine::Mysql) => {
-                match database_url {
-                    Ok(url) if !url.is_empty() => self.database_url = Some(url),
-                    _ => {
-                        let user = env::var("DATABASE_USER").ok();
-                        let password = env::var("DATABASE_PASSWORD").ok();
-                        let host = env::var("DATABASE_HOST").ok();
-                        let port = env::var("DATABASE_PORT").ok();
-                        let name = env::var("DATABASE_NAME").ok();
-
-                        match (user, password, host, port, name) {
-                            (
-                                Some(user),
-                                Some(password),
-                                Some(host),
-                                Some(port),
-                                Some(name)
-                            ) =>
-                                self.database_url = Some(
-                                    format!(
-                                        "mysql://{}:{}@{}:{}/{}",
-                                        user,
-                                        password,
-                                        host,
-                                        port,
-                                        name,
-                                    )
-                                ),
-                            _ => {}
-                        }
-                    }
-                }
+                self.database_url = self.get_mysql_database_url(database_url);
             }
             Some(DatabaseEngine::Sqlite) => {
-                match database_url {
-                    Ok(url) if !url.is_empty() => self.database_url = Some(url),
-                    _ => {
-                        self.database_url = env::var("SQLITE_PATH").ok()
-                            .map(|path| format!("sqlite://{}", path));
-                    }
-                }
+                self.database_url = self.get_sqlite_database_url(database_url);
             }
+            None => {}
         }
 
         self
@@ -113,6 +78,38 @@ impl DatabaseConfigurationBuilder {
             self.database_max_connections.unwrap_or(5),
             self.database_timeout_ms.unwrap_or(500),
         )
+    }
+
+    fn get_mysql_database_url(&self, database_url: Result<String, env::VarError>) -> Option<String> {
+        match database_url {
+            Ok(url) if !url.is_empty() => Some(url),
+            _ => {
+                let user = env::var(EnvNames::DATABASE_USER).ok();
+                let password = env::var(EnvNames::DATABASE_PASSWORD).ok();
+                let host = env::var(EnvNames::DATABASE_HOST).ok();
+                let port = env::var(EnvNames::DATABASE_PORT).ok();
+                let name = env::var(EnvNames::DATABASE_NAME).ok();
+
+                match (user, password, host, port, name) {
+                    (Some(user), Some(password), Some(host), Some(port), Some(name)) => {
+                        Some(format!(
+                            "mysql://{}:{}@{}:{}/{}",
+                            user, password, host, port, name
+                        ))
+                    }
+                    _ => None
+                }
+            }
+        }
+    }
+
+    fn get_sqlite_database_url(&self, database_url: Result<String, env::VarError>) -> Option<String> {
+        match database_url {
+            Ok(url) if !url.is_empty() => Some(url),
+            _ => env::var(EnvNames::SQLITE_PATH)
+                .ok()
+                .map(|path| format!("sqlite://{}", path))
+        }
     }
 }
 
@@ -154,4 +151,38 @@ impl DatabaseConfiguration {
     pub fn database_timeout_ms(&self) -> u64 {
         self.database_timeout_ms
     }
+
+    pub fn envs(&self) -> HashMap<String, String> {
+        let mut envs = HashMap::new();
+
+        envs.insert(EnvNames::DATABASE_URL.to_owned(), self.database_url.clone());
+        envs.insert(EnvNames::DATABASE_ENGINE.to_owned(), self.database_engine.to_string());
+        envs.insert(
+            EnvNames::DATABASE_MAX_CONNECTIONS.to_owned(),
+            self.database_max_connections.to_string(),
+        );
+        envs.insert(
+            EnvNames::DATABASE_TIMEOUT_MS.to_owned(),
+            self.database_timeout_ms.to_string(),
+        );
+
+        envs
+    }
+}
+
+pub struct EnvNames;
+
+impl EnvNames {
+    pub const DATABASE_URL: &'static str = "DATABASE_URL";
+    pub const DATABASE_ENGINE: &'static str = "DATABASE_ENGINE";
+    pub const DATABASE_MAX_CONNECTIONS: &'static str = "DATABASE_MAX_CONNECTIONS";
+    pub const DATABASE_TIMEOUT_MS: &'static str = "DATABASE_TIMEOUT_MS";
+
+    pub const DATABASE_USER: &'static str = "DATABASE_USER";
+    pub const DATABASE_PASSWORD: &'static str = "DATABASE_PASSWORD";
+    pub const DATABASE_HOST: &'static str = "DATABASE_HOST";
+    pub const DATABASE_PORT: &'static str = "DATABASE_PORT";
+    pub const DATABASE_NAME: &'static str = "DATABASE_NAME";
+
+    pub const SQLITE_PATH: &'static str = "SQLITE_PATH";
 }
