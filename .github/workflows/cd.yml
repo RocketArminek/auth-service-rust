@@ -131,7 +131,7 @@ jobs:
       - name: Run tests
         run: |
           cd /app
-          cargo test --features ${{ matrix.db.engine }}
+          cargo test
 
   publish-server-image:
     runs-on: ubuntu-20.04
