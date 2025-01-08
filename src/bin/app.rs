@@ -108,9 +108,10 @@ async fn main() {
 
     match &cli.command {
         Some(Commands::Start) | None => {
-            let port = "8080";
-            let addr = &format!("0.0.0.0:{}", port);
-            let listener = tokio::net::TcpListener::bind(addr).await;
+            let port = config.app().port();
+            let host = config.app().host();
+            let addr = format!("{}:{}", host, port);
+            let listener = tokio::net::TcpListener::bind(&addr).await;
             let config = config.app().clone();
 
             let state =
@@ -118,7 +119,7 @@ async fn main() {
 
             match listener {
                 Ok(listener) => {
-                    tracing::info!("Server started at {}", addr);
+                    tracing::info!("Server started at {}", &addr);
                     axum::serve(listener, routes(state))
                         .with_graceful_shutdown(shutdown_signal())
                         .await

@@ -100,7 +100,7 @@ jobs:
           - engine: "sqlite"
             url: "sqlite://test.db"
           - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_dev"
+            url: "mysql://root:toor@mysql:3306/auth_service_test"
     runs-on: ubuntu-latest
     name: "Run tests"
     timeout-minutes: 3
@@ -127,7 +127,7 @@ jobs:
         image: ${{ (matrix.db.engine == 'mysql') && 'mysql:8.0' || '' }}
         env:
           MYSQL_ROOT_PASSWORD: toor
-          MYSQL_DATABASE: auth_service_dev
+          MYSQL_DATABASE: auth_service_test
     steps:
       - name: Wait for Services
         run: sleep 10

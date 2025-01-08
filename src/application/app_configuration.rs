@@ -16,6 +16,8 @@ pub struct AppConfigurationBuilder {
     pub rt_duration_in_seconds: Option<DurationInSeconds>,
     pub verification_required: Option<bool>,
     pub vr_duration_in_seconds: Option<DurationInSeconds>,
+    pub port: Option<String>,
+    pub host: Option<String>,
 }
 
 impl AppConfigurationBuilder {
@@ -32,6 +34,8 @@ impl AppConfigurationBuilder {
             rt_duration_in_seconds: None,
             verification_required: None,
             vr_duration_in_seconds: None,
+            port: None,
+            host: None,
         }
     }
 
@@ -87,6 +91,16 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn port(&mut self, value: String) -> &mut Self {
+        self.port = Some(value);
+        self
+    }
+
+    pub fn host(&mut self, value: String) -> &mut Self {
+        self.host = Some(value);
+        self
+    }
+
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
         self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
@@ -117,6 +131,8 @@ impl AppConfigurationBuilder {
         self.secret = env::var(EnvNames::SECRET)
             .and_then(|v| Ok(HiddenString(v)))
             .ok();
+        self.port = env::var(EnvNames::PORT).ok();
+        self.host = env::var(EnvNames::HOST).ok();
 
         self
     }
@@ -150,6 +166,8 @@ impl AppConfigurationBuilder {
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
             self.secret.clone().unwrap_or("secret".to_string().into()),
+            self.port.clone().unwrap_or("8080".to_string()),
+            self.host.clone().unwrap_or("0.0.0.0".to_string()),
         )
     }
 }
@@ -167,6 +185,8 @@ pub struct AppConfiguration {
     verification_required: bool,
     vr_duration_in_seconds: DurationInSeconds,
     secret: HiddenString,
+    port: String,
+    host: String,
 }
 
 impl AppConfiguration {
@@ -182,6 +202,8 @@ impl AppConfiguration {
         verification_required: bool,
         vr_duration_in_seconds: DurationInSeconds,
         secret: HiddenString,
+        port: String,
+        host: String,
     ) -> Self {
         AppConfiguration {
             super_admin_email,
@@ -195,6 +217,8 @@ impl AppConfiguration {
             verification_required,
             vr_duration_in_seconds,
             secret,
+            port,
+            host,
         }
     }
 
@@ -242,6 +266,10 @@ impl AppConfiguration {
         self.restricted_role_pattern.clone()
     }
 
+    pub fn port(&self) -> &str { &self.port }
+
+    pub fn host(&self) -> &str { &self.host }
+
     pub fn envs(&self) -> HashMap<String, String> {
         let mut envs = HashMap::new();
 
@@ -282,6 +310,8 @@ impl AppConfiguration {
             self.vr_duration_in_seconds.0.to_string(),
         );
         envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
+        envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
+        envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
 
         envs
     }
@@ -300,4 +330,6 @@ impl EnvNames {
     pub const VERIFICATION_REQUIRED: &'static str = "VERIFICATION_REQUIRED";
     pub const VR_DURATION_IN_SECONDS: &'static str = "VR_DURATION_IN_SECONDS";
     pub const SECRET: &'static str = "SECRET";
+    pub const PORT: &'static str = "PORT";
+    pub const HOST: &'static str = "HOST";
 }

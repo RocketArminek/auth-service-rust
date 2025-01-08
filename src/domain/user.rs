@@ -29,7 +29,9 @@ impl User {
         created_at: DateTime<Utc>,
         is_verified: Option<bool>,
     ) -> Result<Self, UserError> {
-        let email_regex = regex!(r#"(?i)^[a-z0-9.+-]+@[a-z0-9-]+\.[a-z0-9-.]+$"#);
+        let email_regex = regex!(
+            r#"(?i)^[a-z0-9.+_-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z0-9-]+$"#
+        );
         let password_digit_check = regex!(r#"\d"#);
         let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
         let password_uppercase_check = regex!(r#"[A-Z]"#);
