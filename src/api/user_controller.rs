@@ -93,7 +93,7 @@ pub async fn create_user(
                 user.add_roles(vec![existing_role.clone()]);
                 match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {
-                        tracing::info!("User created: {}", &user.email);
+                        tracing::debug!("User created: {}", &user.email);
                         let user_dto = UserDTO::from(user);
                         let user_created = UserEvents::Created {
                             user: user_dto.clone(),
@@ -164,7 +164,7 @@ pub async fn create_user(
                 .into_response()
         }
         Err(error) => {
-            tracing::info!("Failed to create user {:?}", error);
+            tracing::debug!("Failed to create user {:?}", error);
             match error {
                 UserError::InvalidEmail { email } => (
                     StatusCode::BAD_REQUEST,

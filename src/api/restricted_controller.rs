@@ -13,6 +13,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use uuid::Uuid;
+use crate::infrastructure::repository::RepositoryError;
 
 #[utoipa::path(post, path = "/v1/restricted/users",
     tag="admin",
@@ -81,7 +82,7 @@ pub async fn create_restricted_user(
                 user.add_roles(vec![existing_role.clone()]);
                 match state.user_repository.lock().await.save(&user).await {
                     Ok(_) => {
-                        tracing::info!("User created: {}", user.email);
+                        tracing::debug!("User created: {}", user.email);
                         let result = state
                             .message_publisher
                             .lock()
@@ -106,7 +107,7 @@ pub async fn create_restricted_user(
                 .into_response()
         }
         Err(error) => {
-            tracing::info!("Failed to create user {:?}", error);
+            tracing::debug!("Failed to create user {:?}", error);
             match error {
                 UserError::InvalidEmail { email } => (
                     StatusCode::BAD_REQUEST,
@@ -200,7 +201,15 @@ pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) ->
     match state.user_repository.lock().await.get_by_id(&id).await {
         Ok(user) => (StatusCode::OK, Json(UserDTO::from(user))).into_response(),
         Err(e) => {
-            tracing::error!("Failed to get user");
+            match &e {
+                RepositoryError::NotFound(e) => {
+                    tracing::debug!("User not found {}", e);
+                }
+                e => {
+                    tracing::error!("Failed to get user -> {:?}", e);
+                }
+            }
+
             e.into_response()
         }
     }

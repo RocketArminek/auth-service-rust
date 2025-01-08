@@ -69,7 +69,7 @@ where
 
         match decoded {
             Ok(decoded_token) => {
-                tracing::info!("Decoded token: {:?}", decoded_token.claims);
+                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
                     TokenType::Access => {
                         if state.get_verification_required() {
@@ -94,7 +94,7 @@ where
             }
             Err(error) => match error.kind() {
                 jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                    tracing::info!("Invalid token: {:?}", error);
+                    tracing::debug!("Invalid token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -103,7 +103,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                    tracing::info!("Invalid signature: {:?}", error);
+                    tracing::debug!("Invalid signature: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -112,7 +112,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                    tracing::info!("Expired token: {:?}", error);
+                    tracing::debug!("Expired token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -121,7 +121,7 @@ where
                     ))
                 }
                 _ => {
-                    tracing::info!("Unknown error: {:?}", error);
+                    tracing::warn!("Unknown error: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -150,7 +150,7 @@ where
 
         match decoded {
             Ok(decoded_token) => {
-                tracing::info!("Decoded token: {:?}", decoded_token.claims);
+                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
                     TokenType::Refresh => Ok(RefreshRequest(decoded_token.claims.user)),
                     _ => Err((
@@ -163,7 +163,7 @@ where
             }
             Err(error) => match error.kind() {
                 jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                    tracing::info!("Invalid token: {:?}", error);
+                    tracing::debug!("Invalid token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -172,7 +172,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                    tracing::info!("Invalid signature: {:?}", error);
+                    tracing::debug!("Invalid signature: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -181,7 +181,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                    tracing::info!("Expired token: {:?}", error);
+                    tracing::debug!("Expired token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -190,7 +190,7 @@ where
                     ))
                 }
                 _ => {
-                    tracing::info!("Unknown error: {:?}", error);
+                    tracing::warn!("Unknown error: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -219,7 +219,7 @@ where
 
         match decoded {
             Ok(decoded_token) => {
-                tracing::info!("Decoded token: {:?}", decoded_token.claims);
+                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
                     TokenType::Verification => Ok(VerificationRequest(decoded_token.claims.user)),
                     _ => Err((
@@ -232,7 +232,7 @@ where
             }
             Err(error) => match error.kind() {
                 jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                    tracing::info!("Invalid token: {:?}", error);
+                    tracing::debug!("Invalid token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -241,7 +241,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                    tracing::info!("Invalid signature: {:?}", error);
+                    tracing::debug!("Invalid signature: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -250,7 +250,7 @@ where
                     ))
                 }
                 jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                    tracing::info!("Expired token: {:?}", error);
+                    tracing::debug!("Expired token: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -259,7 +259,7 @@ where
                     ))
                 }
                 _ => {
-                    tracing::info!("Unknown error: {:?}", error);
+                    tracing::warn!("Unknown error: {:?}", error);
                     Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {

@@ -1,6 +1,6 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
-use auth_service::application::app_configuration::AppConfiguration;
+use auth_service::application::app_configuration::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::Configuration;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 use auth_service::domain::crypto::SchemeAwareHasher;
@@ -87,13 +87,12 @@ enum Commands {
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
-    let cli = Cli::parse();
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
-
     let config = Configuration::default();
-    tracing::info!("{:#?}", config);
+    let cli = Cli::parse();
+
+    setup_logging(&config);
+
+    debug_config(&config);
 
     let db_pool = create_pool(config.db()).await.unwrap();
     db_pool.migrate().await;
@@ -538,4 +537,38 @@ async fn init_role(
     );
 
     Ok(role)
+}
+
+fn setup_logging(config: &Configuration) {
+    tracing_subscriber::fmt()
+        .with_target(true)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .with_file(true)
+        .with_line_number(true)
+        .with_max_level(config.app().log_level())
+        .json()
+        .init();
+
+    tracing::info!(
+        version = env!("CARGO_PKG_VERSION"),
+        "Starting auth service"
+    );
+}
+
+fn debug_config(config: &Configuration) {
+    let message = "Configuration loaded successfully";
+    for (name, value) in config.envs() {
+        match name.as_str() {
+            AppEnvNames::ADMIN_PASSWORD => {
+                tracing::debug!(message, env = name, value = "****");
+            }
+            AppEnvNames::SECRET => {
+                tracing::debug!(message, env = name, value = "****");
+            }
+            _ => {
+                tracing::debug!(message, env = name, value = %value);
+            }
+        }
+    }
 }

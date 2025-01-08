@@ -19,7 +19,7 @@ mysql = []
 [dependencies]
 axum = "0.8.1"
 tokio = { version = "1.42.0", features = ["signal", "rt-multi-thread", "net"] }
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["json"] }
 serde = { version = "1.0.217", features = ["derive"] }
 clap = { version = "4.5.23", features = ["derive"] }
 utoipa = { version = "5.3.1", features = ["uuid"] }

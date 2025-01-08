@@ -3,6 +3,9 @@ use crate::domain::crypto::HashingScheme;
 use regex::Regex;
 use std::collections::HashMap;
 use std::env;
+use std::env::VarError;
+use std::str::FromStr;
+use tracing::Level;
 
 pub struct AppConfigurationBuilder {
     pub secret: Option<HiddenString>,
@@ -18,6 +21,7 @@ pub struct AppConfigurationBuilder {
     pub vr_duration_in_seconds: Option<DurationInSeconds>,
     pub port: Option<String>,
     pub host: Option<String>,
+    pub log_level: Option<Level>,
 }
 
 impl AppConfigurationBuilder {
@@ -36,6 +40,7 @@ impl AppConfigurationBuilder {
             vr_duration_in_seconds: None,
             port: None,
             host: None,
+            log_level: None,
         }
     }
 
@@ -101,6 +106,11 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn log_level(&mut self, value: Level) -> &mut Self {
+        self.log_level = Some(value);
+        self
+    }
+
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
         self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
@@ -133,6 +143,9 @@ impl AppConfigurationBuilder {
             .ok();
         self.port = env::var(EnvNames::PORT).ok();
         self.host = env::var(EnvNames::HOST).ok();
+        self.log_level = env::var(EnvNames::LOG_LEVEL)
+            .and_then(|v| Level::from_str(v.as_str()).map_err(|_| VarError::NotPresent ))
+            .ok();
 
         self
     }
@@ -168,6 +181,7 @@ impl AppConfigurationBuilder {
             self.secret.clone().unwrap_or("secret".to_string().into()),
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
+            self.log_level.clone().unwrap_or(Level::INFO),
         )
     }
 }
@@ -187,6 +201,7 @@ pub struct AppConfiguration {
     secret: HiddenString,
     port: String,
     host: String,
+    log_level: Level
 }
 
 impl AppConfiguration {
@@ -204,6 +219,7 @@ impl AppConfiguration {
         secret: HiddenString,
         port: String,
         host: String,
+        log_level: Level
     ) -> Self {
         AppConfiguration {
             super_admin_email,
@@ -219,6 +235,7 @@ impl AppConfiguration {
             secret,
             port,
             host,
+            log_level
         }
     }
 
@@ -270,6 +287,8 @@ impl AppConfiguration {
 
     pub fn host(&self) -> &str { &self.host }
 
+    pub fn log_level(&self) -> Level { self.log_level }
+
     pub fn envs(&self) -> HashMap<String, String> {
         let mut envs = HashMap::new();
 
@@ -312,6 +331,7 @@ impl AppConfiguration {
         envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
+        envs.insert(EnvNames::LOG_LEVEL.to_owned(), self.log_level.to_string());
 
         envs
     }
@@ -332,4 +352,5 @@ impl EnvNames {
     pub const SECRET: &'static str = "SECRET";
     pub const PORT: &'static str = "PORT";
     pub const HOST: &'static str = "HOST";
+    pub const LOG_LEVEL: &'static str = "LOG_LEVEL";
 }

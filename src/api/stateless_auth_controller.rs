@@ -55,7 +55,7 @@ pub async fn login(
                 let mut outdated_user = user.clone();
                 let scheme = state.config.password_hashing_scheme();
                 tokio::task::spawn(async move {
-                    tracing::warn!(
+                    tracing::debug!(
                         "Password hash outdated for {}({}), updating...",
                         &outdated_user.email,
                         &outdated_user.id
@@ -72,7 +72,7 @@ pub async fn login(
                         .save(&outdated_user)
                         .await
                     {
-                        Ok(_) => tracing::info!(
+                        Ok(_) => tracing::debug!(
                             "Password updated for {}({})",
                             &outdated_user.email,
                             &outdated_user.id

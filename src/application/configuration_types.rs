@@ -1,7 +1,8 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::num::ParseIntError;
+use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct DurationInSeconds(pub u64);
 
 impl DurationInSeconds {
@@ -57,7 +58,7 @@ impl TryFrom<String> for DurationInSeconds {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct HiddenString(pub String);
 
 impl HiddenString {

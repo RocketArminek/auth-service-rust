@@ -13,7 +13,7 @@ pub async fn restricted_acl(
     request: Request,
     next: Next,
 ) -> impl IntoResponse {
-    tracing::info!("User: {:?}", user);
+    tracing::debug!("User: {:?}", user);
 
     let is_allowed = user.roles.iter().any(|role| {
         state
