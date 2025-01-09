@@ -76,7 +76,7 @@ enum Commands {
         name: String,
     },
     InitRestrictedRole,
-    CheckRabbitmqConnection,
+    CheckDependencies,
     ConsumeRabbitmqMessages {
         #[arg(short, long)]
         exchange_name: String,
@@ -322,13 +322,8 @@ async fn main() {
 
             println!("Role deleted for {}", name);
         }
-        Some(Commands::CheckRabbitmqConnection) => match config.publisher() {
-            MessagePublisherConfiguration::Rabbitmq(config) => {
-                create_rabbitmq_connection(config).await;
-            }
-            MessagePublisherConfiguration::None => {
-                println!("No publisher configuration found");
-            }
+        Some(Commands::CheckDependencies) => {
+            println!("{:?}", config)
         },
         Some(Commands::ConsumeRabbitmqMessages {
             exchange_name,

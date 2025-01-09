@@ -239,11 +239,11 @@ async fn it_initializes_auth_owner_role() {
 }
 
 #[tokio::test]
-async fn it_checks_rabbitmq_connection() {
+async fn it_checks_external_deps() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
 
-        cmd.arg("check-rabbitmq-connection").assert().success();
+        cmd.arg("check-dependencies").assert().success();
     })
     .await;
 }

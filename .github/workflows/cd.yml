@@ -126,12 +126,24 @@ jobs:
         image: rabbitmq:${{matrix.rabbitmq.version}}-management
         ports:
           - 5672:5672
+        options: >-
+          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
       mysql:
         image: ${{ (matrix.db.service) && matrix.db.service || '' }}
         ports:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: toor
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
     env:
       DATABASE_ENGINE: ${{ matrix.db.engine }}
       DATABASE_URL: ${{ matrix.db.url }}
@@ -156,8 +168,6 @@ jobs:
             target/debug/.cargo-lock
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
-      - name: Wait for services
-        run: sleep 10
       - name: Run tests
         run: cargo test
 
@@ -206,7 +216,7 @@ jobs:
           VERIFICATION_REQUIRED: false
           EVENT_DRIVEN: true
         options: >-
-          --health-cmd="curl -f http://localhost:8080/v1/health || exit 1"
+          --health-cmd="app check-dependencies"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -217,10 +227,6 @@ jobs:
         run: |
           curl https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
           sudo cp k6 /usr/local/bin
-      - name: Wait for services
-        run: |
-          echo "Waiting for services to be ready..."
-          sleep 10
       - name: Run k6 auth flow test
         run: k6 run tests/performance/scenarios/auth_flow.js --throw
       - name: Run k6 admin test
