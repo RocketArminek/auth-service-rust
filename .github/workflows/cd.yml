@@ -118,29 +118,29 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
 
-      - name: Setup vendored dependencies
-        if: steps.restore-build.outputs.cache-hit != 'true'
-        run: |
-          echo "CACHE HIT"
-          echo ${{steps.restore-build.outputs.cache-hit}}
-          cargo vendor
-
-      - name: Build tests
-        if: steps.restore-build.outputs.cache-hit != 'true'
-        run: cargo test --no-run
-
-      - name: Save cache
-        if: steps.restore-build.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            vendor
-            target/debug/deps
-            target/debug/build
-            target/debug/.fingerprint
-            target/debug/.cargo-lock
-            target/debug/incremental
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+#      - name: Setup vendored dependencies
+#        if: steps.restore-build.outputs.cache-hit != 'true'
+#        run: |
+#          echo "CACHE HIT"
+#          echo ${{steps.restore-build.outputs.cache-hit}}
+#          cargo vendor
+#
+#      - name: Build tests
+#        if: steps.restore-build.outputs.cache-hit != 'true'
+#        run: cargo test --no-run
+#
+#      - name: Save cache
+#        if: steps.restore-build.outputs.cache-hit != 'true'
+#        uses: actions/cache/save@v4
+#        with:
+#          path: |
+#            vendor
+#            target/debug/deps
+#            target/debug/build
+#            target/debug/.fingerprint
+#            target/debug/.cargo-lock
+#            target/debug/incremental
+#          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
 
   test2:
     needs:
@@ -197,9 +197,6 @@ jobs:
             target/debug/.cargo-lock
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
-            ${{ runner.os }}-cargo-
       - name: Wait for services
         run: sleep 10
       - name: Run tests
