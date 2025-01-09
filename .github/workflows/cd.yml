@@ -166,7 +166,7 @@ jobs:
       - test-acceptance
     runs-on: ubuntu-22.04
     name: "Running k6 performance tests"
-    timeout-minutes: 10
+    timeout-minutes: 20
     services:
       mysql:
         image: mysql:8.4
