@@ -153,9 +153,6 @@ jobs:
     timeout-minutes: 3
     strategy:
       matrix:
-        rabbitmq:
-          - version: "4"
-          - version: "3"
         db:
           - engine: "sqlite"
             url: "sqlite://test.db"
@@ -165,6 +162,9 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@localhost:3306/auth_service_test"
             service: "mysql:8.0"
+        rabbitmq:
+          - version: "4"
+          - version: "3"
     services:
       rabbit:
         image: rabbitmq:${{matrix.rabbitmq.version}}-management
