@@ -166,7 +166,7 @@ jobs:
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
-          VERIFICATION_REQUIRED: true
+          VERIFICATION_REQUIRED: false
           EVENT_DRIVEN: true
       mysql:
         image: mysql:8.4
