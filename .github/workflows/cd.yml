@@ -129,7 +129,7 @@ jobs:
         run: cargo test --no-run
 
       - name: Upload vendored dependencies
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: vendored-deps
           path: |
@@ -137,7 +137,7 @@ jobs:
             .cargo/config.toml
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
