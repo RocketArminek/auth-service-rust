@@ -154,10 +154,10 @@ jobs:
           - engine: "sqlite"
             url: "sqlite://test.db"
           - engine: "mysql"
-            url: "mysql://root:toor@localhost:3306/auth_service_test"
+            url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:8.4"
           - engine: "mysql"
-            url: "mysql://root:toor@localhost:3306/auth_service_test"
+            url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:8.0"
         rabbitmq:
           - version: "4"
@@ -165,14 +165,18 @@ jobs:
     services:
       rabbit:
         image: rabbitmq:${{matrix.rabbitmq.version}}-management
+        ports:
+          - 5672:5672
       mysql:
         image: ${{ (matrix.db.service) && matrix.db.service || '' }}
+        ports:
+          - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: toor
     env:
       DATABASE_ENGINE: ${{ matrix.db.engine }}
       DATABASE_URL: ${{ matrix.db.url }}
-      RABBITMQ_URL: amqp://localhost:5672
+      RABBITMQ_URL: amqp://127.0.0.1:5672
       RABBITMQ_EXCHANGE_AUTO_DELETE: true
       RABBITMQ_EXCHANGE_DURABLE: false
       RABBITMQ_EXCHANGE_NAME: nebula.auth.test
