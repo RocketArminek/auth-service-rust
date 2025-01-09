@@ -76,23 +76,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-cache,mode=max
 
-# Until finding the infrastructure
-#  plan:
-#    runs-on: ubuntu-20.04
-#    name: "Validate & plan cluster changes"
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: hashicorp/setup-terraform@v2
-#        with:
-#          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-#      - run: |
-#          mkdir ${HOME}/.kube
-#          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
-#          cd .ops/terraform
-#          terraform init
-#          terraform validate
-#          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock=false
-
   prepare:
     runs-on: ubuntu-22.04
     name: "Download vendors & Build tests"
@@ -142,7 +125,7 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
-  test2:
+  test:
     needs:
       - prepare
     runs-on: ubuntu-22.04
@@ -202,55 +185,11 @@ jobs:
       - name: Run tests
         run: cargo test
 
-  tests:
-    strategy:
-      matrix:
-        db:
-          - engine: "sqlite"
-            url: "sqlite://test.db"
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-    runs-on: ubuntu-latest
-    name: "Run tests"
-    timeout-minutes: 3
-    needs:
-      - publish-test-image
-    container:
-      image: ghcr.io/rocketarminek/auth-api-rust:test-latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        DATABASE_ENGINE: ${{ matrix.db.engine }}
-        DATABASE_URL: ${{ matrix.db.url }}
-        RABBITMQ_URL: amqp://rabbit:5672
-        RABBITMQ_EXCHANGE_AUTO_DELETE: true
-        RABBITMQ_EXCHANGE_DURABLE: false
-        RABBITMQ_EXCHANGE_NAME: nebula.auth.test
-        SECRET: secret
-        PASSWORD_HASHING_SCHEME: bcrypt_low
-    services:
-      rabbit:
-        image: rabbitmq:3-management
-      mysql:
-        image: ${{ (matrix.db.engine == 'mysql') && 'mysql:8.0' || '' }}
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-          MYSQL_DATABASE: auth_service_test
-    steps:
-      - name: Wait for Services
-        run: sleep 10
-      - name: Run tests
-        run: |
-          cd /app
-          cargo test
-
   publish-server-image:
     runs-on: ubuntu-20.04
     name: "Publish server image"
     needs:
-      - tests
-      - test2
+      - test
       - dist-cache
     steps:
       - uses: actions/checkout@v4
@@ -299,3 +238,18 @@ jobs:
 #          cd .ops/terraform
 #          terraform init
 #          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock-timeout=10m
+#  plan:
+#    runs-on: ubuntu-20.04
+#    name: "Validate & plan cluster changes"
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: hashicorp/setup-terraform@v2
+#        with:
+#          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+#      - run: |
+#          mkdir ${HOME}/.kube
+#          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
+#          cd .ops/terraform
+#          terraform init
+#          terraform validate
+#          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock=false
