@@ -175,11 +175,26 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: toor
           MYSQL_DATABASE: auth_service_test
+        healthcheck:
+          test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptoor" ]
+          interval: 5s
+          timeout: 5s
+          retries: 10
       rabbit:
         image: rabbitmq:4-management
         ports:
           - 5672:5672
+        healthcheck:
+          test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
+          interval: 5s
+          timeout: 5s
+          retries: 10
       app:
+        depends_on:
+          mysql:
+            condition: service_healthy
+          rabbit:
+            condition: service_healthy
         image: ghcr.io/rocketarminek/auth-api-rust:test-latest
         credentials:
           username: ${{ github.actor }}
@@ -204,11 +219,11 @@ jobs:
           echo "Waiting for services to be ready..."
           sleep 10
       - name: Run k6 auth flow test
-        run: k6 run tests/performance/scenarios/auth_flow.js
+        run: k6 run tests/performance/scenarios/auth_flow.js --throw
       - name: Run k6 admin test
-        run: k6 run tests/performance/scenarios/admin.js
+        run: k6 run tests/performance/scenarios/admin.js --throw
       - name: Run k6 spike test
-        run: k6 run tests/performance/scenarios/spike.js
+        run: k6 run tests/performance/scenarios/spike.js --throw
 
   publish-server-image:
     runs-on: ubuntu-20.04
