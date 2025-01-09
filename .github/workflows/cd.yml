@@ -20,7 +20,7 @@ env:
 jobs:
   dist-cache:
     runs-on: ubuntu-20.04
-    name: "Dist cache"
+    name: "Prepare production docker image"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
@@ -250,6 +250,7 @@ jobs:
     name: "Publish server image"
     needs:
       - tests
+      - test2
       - dist-cache
     steps:
       - uses: actions/checkout@v4
