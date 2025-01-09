@@ -173,7 +173,7 @@ jobs:
 
   performance-test:
     needs:
-      - test-acceptance
+      - dist-cache
     runs-on: ubuntu-22.04
     name: "Running k6 performance tests"
     timeout-minutes: 20
