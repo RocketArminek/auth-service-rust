@@ -124,6 +124,8 @@ jobs:
       - name: Setup vendored dependencies
         if: steps.restore-build.outputs.cache-hit != 'true'
         run: |
+          echo "CACHE HIT"
+          echo ${{steps.restore-build.outputs.cache-hit}}
           cargo vendor
 
       - name: Build tests
