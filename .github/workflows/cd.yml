@@ -107,7 +107,7 @@ jobs:
 
       - name: Restore cached dependencies
         id: restore-build
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v3
         with:
           path: |
             vendor
