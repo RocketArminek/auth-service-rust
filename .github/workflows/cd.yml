@@ -117,9 +117,6 @@ jobs:
             target/debug/.cargo-lock
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
-            ${{ runner.os }}-cargo-
 
       - name: Setup vendored dependencies
         if: steps.restore-build.outputs.cache-hit != 'true'
