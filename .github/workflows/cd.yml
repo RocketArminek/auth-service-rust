@@ -116,7 +116,7 @@ jobs:
             target/debug/.fingerprint
             target/debug/.cargo-lock
             target/debug/incremental
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
       - name: Setup vendored dependencies
         if: steps.restore-build.outputs.cache-hit != 'true'
@@ -140,7 +140,7 @@ jobs:
             target/debug/.fingerprint
             target/debug/.cargo-lock
             target/debug/incremental
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
   test2:
     needs:
@@ -196,7 +196,7 @@ jobs:
             target/debug/.fingerprint
             target/debug/.cargo-lock
             target/debug/incremental
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
       - name: Wait for services
         run: sleep 10
       - name: Run tests
