@@ -90,11 +90,11 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
-  test:
+  test-acceptance:
     needs:
       - prepare
     runs-on: ubuntu-22.04
-    name: "Running tests"
+    name: "Running acceptance tests"
     timeout-minutes: 3
     strategy:
       matrix:
@@ -150,11 +150,58 @@ jobs:
       - name: Run tests
         run: cargo test
 
+  performance-test:
+    needs:
+      - test-acceptance
+    runs-on: ubuntu-22.04
+    name: "Running k6 performance tests"
+    timeout-minutes: 10
+    services:
+      app:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+        ports:
+          - 8080:8080
+        env:
+          DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_test
+          PASSWORD_HASHING_SCHEME: bcrypt_low
+          SECRET: secret
+          RABBITMQ_URL: amqp://rabbit:5672
+          VERIFICATION_REQUIRED: true
+          EVENT_DRIVEN: true
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: toor
+          MYSQL_DATABASE: auth_service_test
+      rabbit:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+          sudo cp k6 /usr/local/bin
+      - name: Wait for services
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 10
+      - name: Run k6 auth flow test
+        run: k6 run tests/performance/scenarios/auth_flow.js
+      - name: Run k6 admin test
+        run: k6 run tests/performance/scenarios/admin.js
+      - name: Run k6 spike test
+        run: k6 run tests/performance/scenarios/spike.js
+
   publish-server-image:
     runs-on: ubuntu-20.04
     name: "Publish server image"
     needs:
-      - test
+      - test-acceptance
+      - performance-test
       - dist-cache
     steps:
       - uses: actions/checkout@v4
@@ -186,35 +233,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-
-# Until finding the infrastructure
-#  terraform-apply:
-#    runs-on: ubuntu-latest
-#    name: "Deploy"
-#    needs: [ "plan", "publish-server-image" ]
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: hashicorp/setup-terraform@v2
-#        with:
-#          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-#      - run: |
-#          mkdir ${HOME}/.kube
-#          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
-#          cd .ops/terraform
-#          terraform init
-#          terraform apply -auto-approve -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock-timeout=10m
-#  plan:
-#    runs-on: ubuntu-20.04
-#    name: "Validate & plan cluster changes"
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: hashicorp/setup-terraform@v2
-#        with:
-#          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-#      - run: |
-#          mkdir ${HOME}/.kube
-#          echo ${{ secrets.KUBE_CONFIG_OBRZEZNA_1 }} | base64 --decode > ${HOME}/.kube/config
-#          cd .ops/terraform
-#          terraform init
-#          terraform validate
-#          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock=false
