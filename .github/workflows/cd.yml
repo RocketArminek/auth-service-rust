@@ -96,54 +96,54 @@ jobs:
   prepare:
     runs-on: ubuntu-22.04
     name: "Download vendors & Build tests"
-    timeout-minutes: 5
+    timeout-minutes: 10
+    outputs:
+      cache-hit: ${{ steps.restore-build.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache vendor dependencies
-        id: cache-vendor
-        uses: actions/cache@v4
+      - name: Restore cached dependencies
+        id: restore-build
+        uses: actions/cache/restore@v4
         with:
-          path: |
-            vendor
-          key: ${{ runner.os }}-vendor-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Vendor dependencies
-        if: steps.cache-vendor.outputs.cache-hit != 'true'
-        run: |
-          cargo vendor
-
-      - name: Cache build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            target/debug/deps
-            target/debug/build
-            target/debug/.fingerprint
-          key: ${{ runner.os }}-test-build-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
-
-      - name: Build tests
-        run: cargo test --no-run
-
-      - name: Upload vendored dependencies
-        uses: actions/upload-artifact@v4
-        with:
-          name: vendored-deps
           path: |
             vendor
             .cargo/config.toml
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
             target/debug/deps
             target/debug/build
             target/debug/.fingerprint
+            target/debug/.cargo-lock
+            target/debug/incremental
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Setup vendored dependencies
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: |
+          cargo vendor
+
+      - name: Build tests
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: cargo test --no-run
+
+      - name: Save cache
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            vendor
+            .cargo/config.toml
+            target/debug/deps
+            target/debug/build
+            target/debug/.fingerprint
+            target/debug/.cargo-lock
+            target/debug/incremental
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
 
 #  test2:
 #    needs:
