@@ -168,6 +168,17 @@ jobs:
     name: "Running k6 performance tests"
     timeout-minutes: 10
     services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: toor
+          MYSQL_DATABASE: auth_service_test
+      rabbit:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
       app:
         image: ghcr.io/rocketarminek/auth-api-rust:test-latest
         credentials:
@@ -182,17 +193,6 @@ jobs:
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
           EVENT_DRIVEN: true
-      mysql:
-        image: mysql:8.4
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-          MYSQL_DATABASE: auth_service_test
-      rabbit:
-        image: rabbitmq:4-management
-        ports:
-          - 5672:5672
     steps:
       - uses: actions/checkout@v4
       - name: Install k6
