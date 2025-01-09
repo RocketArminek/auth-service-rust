@@ -159,6 +159,9 @@ jobs:
     services:
       app:
         image: ghcr.io/rocketarminek/auth-api-rust:cache
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         ports:
           - 8080:8080
         env:
