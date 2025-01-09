@@ -107,7 +107,7 @@ jobs:
 
       - name: Restore cached dependencies
         id: restore-build
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             vendor
@@ -118,29 +118,29 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
 
-#      - name: Setup vendored dependencies
-#        if: steps.restore-build.outputs.cache-hit != 'true'
-#        run: |
-#          echo "CACHE HIT"
-#          echo ${{steps.restore-build.outputs.cache-hit}}
-#          cargo vendor
-#
-#      - name: Build tests
-#        if: steps.restore-build.outputs.cache-hit != 'true'
-#        run: cargo test --no-run
-#
-#      - name: Save cache
-#        if: steps.restore-build.outputs.cache-hit != 'true'
-#        uses: actions/cache/save@v4
-#        with:
-#          path: |
-#            vendor
-#            target/debug/deps
-#            target/debug/build
-#            target/debug/.fingerprint
-#            target/debug/.cargo-lock
-#            target/debug/incremental
-#          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+      - name: Setup vendored dependencies
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: |
+          echo "CACHE HIT"
+          echo ${{steps.restore-build.outputs.cache-hit}}
+          cargo vendor
+
+      - name: Build tests
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: cargo test --no-run
+
+      - name: Save cache
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            vendor
+            target/debug/deps
+            target/debug/build
+            target/debug/.fingerprint
+            target/debug/.cargo-lock
+            target/debug/incremental
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
 
   test2:
     needs:
@@ -187,7 +187,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             vendor
