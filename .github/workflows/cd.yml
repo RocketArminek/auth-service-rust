@@ -93,54 +93,109 @@ jobs:
 #          terraform validate
 #          terraform plan -var="app_docker_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" -var="aws_access_key=${{secrets.AWS_ACCESS_KEY_4E}}" -var="aws_secret_access_key=${{secrets.AWS_SECRET_ACCESS_KEY_4E}}" -lock=false
 
-  test2:
+  prepare:
     runs-on: ubuntu-22.04
-    name: "Running tests"
-    timeout-minutes: 3
-    strategy:
-      matrix:
-        rabbitmq:
-          - version: "4"
-          - version: "3"
-        db:
-          - engine: "sqlite"
-            url: "sqlite://test.db"
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.0"
-    services:
-      rabbit:
-        image: rabbitmq:${{matrix.rabbitmq.version}}-management
-      mysql:
-        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-    env:
-      DATABASE_ENGINE: ${{ matrix.db.engine }}
-      DATABASE_URL: ${{ matrix.db.url }}
-      RABBITMQ_URL: amqp://rabbit:5672
-      RABBITMQ_EXCHANGE_AUTO_DELETE: true
-      RABBITMQ_EXCHANGE_DURABLE: false
-      RABBITMQ_EXCHANGE_NAME: nebula.auth.test
-      SECRET: secret
-      PASSWORD_HASHING_SCHEME: bcrypt_low
+    name: "Download vendors & Build tests"
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Cache dependencies
+
+      - name: Cache vendor dependencies
+        id: cache-vendor
         uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-      - name: Run tests
-        run: cargo test
+            vendor
+          key: ${{ runner.os }}-vendor-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Vendor dependencies
+        if: steps.cache-vendor.outputs.cache-hit != 'true'
+        run: |
+          cargo vendor
+
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            target/debug/deps
+            target/debug/build
+            target/debug/.fingerprint
+          key: ${{ runner.os }}-test-build-${{ hashFiles('**/Cargo.lock', 'src/**', 'tests/**') }}
+
+      - name: Build tests
+        run: cargo test --no-run
+
+      - name: Upload vendored dependencies
+        uses: actions/upload-artifact@v3
+        with:
+          name: vendored-deps
+          path: |
+            vendor
+            .cargo/config.toml
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            target/debug/deps
+            target/debug/build
+            target/debug/.fingerprint
+
+#  test2:
+#    needs:
+#      - prepare
+#    runs-on: ubuntu-22.04
+#    name: "Running tests"
+#    timeout-minutes: 3
+#    strategy:
+#      matrix:
+#        rabbitmq:
+#          - version: "4"
+##          - version: "3"
+#        db:
+#          - engine: "sqlite"
+#            url: "sqlite://test.db"
+##          - engine: "mysql"
+##            url: "mysql://root:toor@mysql:3306/auth_service_test"
+##            service: "mysql:8.4"
+##          - engine: "mysql"
+##            url: "mysql://root:toor@mysql:3306/auth_service_test"
+##            service: "mysql:8.0"
+#    services:
+#      rabbit:
+#        image: rabbitmq:${{matrix.rabbitmq.version}}-management
+#      mysql:
+#        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
+#        env:
+#          MYSQL_ROOT_PASSWORD: toor
+#    env:
+#      DATABASE_ENGINE: ${{ matrix.db.engine }}
+#      DATABASE_URL: ${{ matrix.db.url }}
+#      RABBITMQ_URL: amqp://rabbit:5672
+#      RABBITMQ_EXCHANGE_AUTO_DELETE: true
+#      RABBITMQ_EXCHANGE_DURABLE: false
+#      RABBITMQ_EXCHANGE_NAME: nebula.auth.test
+#      SECRET: secret
+#      PASSWORD_HASHING_SCHEME: bcrypt_low
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Install Rust
+#        uses: dtolnay/rust-toolchain@stable
+#      - name: Cache dependencies
+#        uses: actions/cache@v3
+#        with:
+#          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+#          path: |
+#            ~/.cargo/registry
+#            ~/.cargo/git
+#            target
+#            vendor
+#      - name: Run tests
+#        run: cargo test
 
   tests:
     strategy:
