@@ -158,7 +158,7 @@ jobs:
     timeout-minutes: 10
     services:
       app:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+        image: ghcr.io/rocketarminek/auth-api-rust:cache
         ports:
           - 8080:8080
         env:
