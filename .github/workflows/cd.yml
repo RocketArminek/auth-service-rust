@@ -175,26 +175,23 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: toor
           MYSQL_DATABASE: auth_service_test
-        healthcheck:
-          test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptoor" ]
-          interval: 5s
-          timeout: 5s
-          retries: 10
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
       rabbit:
         image: rabbitmq:4-management
         ports:
           - 5672:5672
-        healthcheck:
-          test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
-          interval: 5s
-          timeout: 5s
-          retries: 10
+        options: >-
+          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
       app:
-        depends_on:
-          mysql:
-            condition: service_healthy
-          rabbit:
-            condition: service_healthy
         image: ghcr.io/rocketarminek/auth-api-rust:test-latest
         credentials:
           username: ${{ github.actor }}
@@ -208,6 +205,12 @@ jobs:
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
           EVENT_DRIVEN: true
+        options: >-
+          --health-cmd="curl -f http://localhost:8080/v1/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=20s
     steps:
       - uses: actions/checkout@v4
       - name: Install k6
