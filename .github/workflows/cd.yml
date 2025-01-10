@@ -176,10 +176,24 @@ jobs:
       - dist-cache
     runs-on: ubuntu-22.04
     name: "Running k6 performance tests"
-    timeout-minutes: 20
+    timeout-minutes: 6
+    strategy:
+      matrix:
+        scenario:
+          - "tests/performance/scenarios/auth_flow.js"
+          - "tests/performance/scenarios/admin.js"
+          - "tests/performance/scenarios/spike.js"
+        db:
+          - engine: "sqlite"
+            url: "sqlite://test.db"
+          - engine: "mysql"
+            url: "mysql://root:toor@mysql:3306/auth_service_test"
+            service: "mysql:8.4"
+        rabbitmq:
+          - version: "4"
     services:
       mysql:
-        image: mysql:8.4
+        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
         ports:
           - 3306:3306
         env:
@@ -192,7 +206,7 @@ jobs:
           --health-retries=5
           --health-start-period=30s
       rabbit:
-        image: rabbitmq:4-management
+        image: rabbitmq:${{matrix.rabbitmq.version}}-management
         ports:
           - 5672:5672
         options: >-
@@ -209,7 +223,8 @@ jobs:
         ports:
           - 8080:8080
         env:
-          DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_test
+          DATABASE_ENGINE: ${{ matrix.db.engine }}
+          DATABASE_URL: ${{ matrix.db.url }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -227,12 +242,8 @@ jobs:
         run: |
           curl https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
           sudo cp k6 /usr/local/bin
-      - name: Run k6 auth flow test
-        run: k6 run tests/performance/scenarios/auth_flow.js --throw
-      - name: Run k6 admin test
-        run: k6 run tests/performance/scenarios/admin.js --throw
-      - name: Run k6 spike test
-        run: k6 run tests/performance/scenarios/spike.js --throw
+      - name: Run k6 test scenario
+        run: k6 run ${{ matrix.scenario }} --throw --quiet
 
   publish-server-image:
     runs-on: ubuntu-20.04
