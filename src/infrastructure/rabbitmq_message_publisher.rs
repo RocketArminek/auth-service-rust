@@ -71,9 +71,29 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublishe
 }
 
 pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Connection {
-    Connection::connect(config.rabbitmq_url(), ConnectionProperties::default())
-        .await
-        .expect("Failed to connect to rabbitmq")
+    let mut retry_count = 0;
+    let max_retries = 5;
+    let retry_delay = std::time::Duration::from_secs(5);
+
+    loop {
+        match Connection::connect(config.rabbitmq_url(), ConnectionProperties::default()).await {
+            Ok(connection) => {
+                if retry_count > 0 {
+                    tracing::info!("Successfully connected to RabbitMQ after {} retries", retry_count);
+                }
+                return connection;
+            }
+            Err(err) => {
+                retry_count += 1;
+                if retry_count >= max_retries {
+                    tracing::error!("Failed to connect to RabbitMQ after {} attempts: {}", max_retries, err);
+                    panic!("Failed to connect to RabbitMQ after {} attempts", max_retries);
+                }
+                tracing::warn!("Failed to connect to RabbitMQ (attempt {}/{}): {}", retry_count, max_retries, err);
+                tokio::time::sleep(retry_delay).await;
+            }
+        }
+    }
 }
 
 pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(

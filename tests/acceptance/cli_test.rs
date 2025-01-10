@@ -243,7 +243,7 @@ async fn it_checks_external_deps() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
 
-        cmd.arg("check-dependencies").assert().success();
+        cmd.arg("health-check").assert().success();
     })
     .await;
 }

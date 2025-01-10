@@ -76,7 +76,7 @@ enum Commands {
         name: String,
     },
     InitRestrictedRole,
-    CheckDependencies,
+    HealthCheck,
     ConsumeRabbitmqMessages {
         #[arg(short, long)]
         exchange_name: String,
@@ -322,8 +322,8 @@ async fn main() {
 
             println!("Role deleted for {}", name);
         }
-        Some(Commands::CheckDependencies) => {
-            println!("{:?}", config)
+        Some(Commands::HealthCheck) => {
+
         },
         Some(Commands::ConsumeRabbitmqMessages {
             exchange_name,
