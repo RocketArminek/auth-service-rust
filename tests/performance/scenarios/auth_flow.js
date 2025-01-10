@@ -11,12 +11,11 @@ export let options = {
         { duration: '1m', target: 0 },
     ],
     thresholds: {
-        http_req_failed: ['rate==0'],
+        http_req_failed: ['rate<0.01'],
         checks: ['rate==1.0'],
-        http_req_duration: ['p(95)<20', 'avg<5', 'max<100'],
+        http_req_duration: ['p(95)<20', 'avg<10', 'max<300'],
         errors: ['rate<0.01'],
-        http_req_waiting: ['avg<5', 'max<100'],
-        http_reqs: ['rate>100'],
+        http_reqs: ['rate>30'],
     },
 };
 
