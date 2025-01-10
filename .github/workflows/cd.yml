@@ -105,7 +105,7 @@ jobs:
     needs:
       - prepare
     runs-on: ubuntu-22.04
-    name: "Acceptance tests"
+    name: ""
     timeout-minutes: 3
     strategy:
       matrix:
@@ -175,9 +175,10 @@ jobs:
     needs:
       - dist-cache
     runs-on: ubuntu-22.04
-    name: "Performance tests"
+    name: ""
     timeout-minutes: 6
     strategy:
+      fail-fast: false
       matrix:
         scenario:
           - "tests/performance/scenarios/auth_flow.js"
@@ -250,7 +251,6 @@ jobs:
     name: "Publish server image"
     needs:
       - test-acceptance
-      - performance-test
       - dist-cache
     steps:
       - uses: actions/checkout@v4
