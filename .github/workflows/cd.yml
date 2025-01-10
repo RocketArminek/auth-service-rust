@@ -236,10 +236,7 @@ jobs:
           --health-start-period=30s
     steps:
       - uses: actions/checkout@v4
-      - name: Install k6
-        run: |
-          curl https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
-          sudo cp k6 /usr/local/bin
+      - uses: grafana/setup-k6-action@v1
       - name: Login to cloud
         run: k6 login cloud -t ${{ secrets.K6_CLOUD }}
       - name: Run k6 test scenario
