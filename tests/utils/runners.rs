@@ -15,8 +15,8 @@ use auth_service::application::message_publisher_configuration::MessagePublisher
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::repository::{create_role_repository, create_user_repository};
-use dotenv::{dotenv, from_filename};
 use std::future::Future;
+use dotenvy::{dotenv, from_filename};
 use uuid::Uuid;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};

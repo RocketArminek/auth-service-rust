@@ -5,9 +5,9 @@ use crate::application::database_configuration::{
 use crate::application::message_publisher_configuration::{
     EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
 };
-use dotenv::{dotenv, from_filename};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use dotenvy::{dotenv, from_filename};
 
 pub struct ConfigurationBuilder {
     pub app: AppConfigurationBuilder,

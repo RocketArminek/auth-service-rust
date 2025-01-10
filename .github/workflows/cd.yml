@@ -183,6 +183,8 @@ jobs:
           - "tests/performance/scenarios/auth_flow.js"
           - "tests/performance/scenarios/admin.js"
           - "tests/performance/scenarios/spike.js"
+        hashing_algo:
+          - ""
         db:
           - engine: "sqlite"
             url: "sqlite://test.db"
