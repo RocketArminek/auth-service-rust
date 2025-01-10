@@ -12,6 +12,26 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Restore cached dependencies
+        id: restore-build
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            vendor
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+      - name: Setup vendored dependencies
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: |
+          echo "CACHE HIT"
+          echo ${{steps.restore-build.outputs.cache-hit}}
+          cargo vendor
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Save cache
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            vendor
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
