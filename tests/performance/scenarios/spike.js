@@ -9,8 +9,9 @@ export let options = {
     stages: [
         { duration: '1m', target: 10 },    // Baseline load
         { duration: '30s', target: 100 },  // Spike to 100 users
-        { duration: '1m', target: 100 },   // Stay at 100 users
         { duration: '30s', target: 10 },   // Scale down to baseline
+        { duration: '1m', target: 100 },   // Stay at 100 users
+        { duration: '1m', target: 100 },   // Stay at 100 users
         { duration: '1m', target: 10 },    // Verify baseline performance
     ],
     thresholds: {

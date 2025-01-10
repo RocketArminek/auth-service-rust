@@ -176,7 +176,7 @@ jobs:
       - dist-cache
     runs-on: ubuntu-22.04
     name: ""
-    timeout-minutes: 6
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
