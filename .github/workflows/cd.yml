@@ -229,7 +229,7 @@ jobs:
           VERIFICATION_REQUIRED: false
           EVENT_DRIVEN: true
         options: >-
-          --health-cmd="app check-dependencies"
+          --health-cmd="app health-check"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
