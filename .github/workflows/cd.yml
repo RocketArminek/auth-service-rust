@@ -240,7 +240,7 @@ jobs:
       - name: Login to cloud
         run: k6 login cloud -t ${{ secrets.K6_CLOUD }}
       - name: Run k6 test scenario
-        run: k6 cloud run ${{ matrix.scenario }} --throw --quiet --local-execution
+        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }} --out cloud
 
   publish-server-image:
     runs-on: ubuntu-20.04
