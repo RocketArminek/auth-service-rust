@@ -56,8 +56,6 @@ jobs:
     runs-on: ubuntu-22.04
     name: "Download vendors & Build tests"
     timeout-minutes: 10
-    outputs:
-      cache-hit: ${{ steps.restore-build.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v4
 
@@ -101,7 +99,7 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
-  test-acceptance:
+  acceptance-test:
     needs:
       - prepare
     runs-on: ubuntu-22.04
@@ -250,7 +248,8 @@ jobs:
     runs-on: ubuntu-20.04
     name: "Publish server image"
     needs:
-      - test-acceptance
+      - acceptance-test
+      - performance-test
       - dist-cache
     steps:
       - uses: actions/checkout@v4
