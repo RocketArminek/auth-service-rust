@@ -31,12 +31,14 @@ RUN adduser \
 COPY --from=base-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 FROM base-runner AS server
-COPY --from=base-builder /app/migrations /migrations
-RUN chown -R appuser /migrations
+RUN mkdir app
+COPY --from=base-builder /app/migrations /app/migrations
+RUN chown -R appuser /app
 COPY --from=dist /app/target/release/app /usr/local/bin
 RUN chown appuser /usr/local/bin/app
 
 USER appuser
+WORKDIR app
 
 ENTRYPOINT ["app"]
 EXPOSE 8080/tcp
