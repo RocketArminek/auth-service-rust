@@ -14,8 +14,12 @@ export let options = {
         { duration: '1m', target: 10 },    // Verify baseline performance
     ],
     thresholds: {
-        http_req_duration: ['p(95)<50'], // 95% of requests should be below 1s during spike
-        errors: ['rate<0.15'],             // Allow slightly higher error rate during spike
+        http_req_failed: ['rate==0'],
+        checks: ['rate==1.0'],
+        http_req_duration: ['p(95)<20', 'avg<5', 'max<100'],
+        errors: ['rate<0.01'],
+        http_req_waiting: ['avg<5', 'max<100'],
+        http_reqs: ['rate>70'],
     },
 };
 
