@@ -6,6 +6,9 @@ import { Rate } from 'k6/metrics';
 const errorRate = new Rate('errors');
 
 export let options = {
+    cloud: {
+        projectID: 3737499,
+    },
     stages: [
         { duration: '1m', target: 10 },    // Baseline load
         { duration: '30s', target: 100 },  // Spike to 100 users
@@ -15,7 +18,7 @@ export let options = {
         { duration: '1m', target: 10 },    // Verify baseline performance
     ],
     thresholds: {
-        http_req_failed: ['rate=0.0'],
+        http_req_failed: ['rate==0.0'],
         checks: ['rate==1.0'],
         http_req_duration: ['p(95)<20', 'avg<10', 'max<300'],
         errors: ['rate<0.01'],

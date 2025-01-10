@@ -240,8 +240,10 @@ jobs:
         run: |
           curl https://github.com/grafana/k6/releases/download/v0.49.0/k6-v0.49.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
           sudo cp k6 /usr/local/bin
+      - name: Login to cloud
+        run: k6 login cloud -t ${{ secrets.K6_CLOUD }}
       - name: Run k6 test scenario
-        run: k6 run ${{ matrix.scenario }} --throw --quiet
+        run: k6 cloud run ${{ matrix.scenario }} --throw --quiet --local-execution
 
   publish-server-image:
     runs-on: ubuntu-20.04

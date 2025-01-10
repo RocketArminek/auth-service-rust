@@ -6,13 +6,16 @@ import { Rate } from 'k6/metrics';
 const errorRate = new Rate('errors');
 
 export let options = {
+    cloud: {
+        projectID: 3737499,
+    },
     stages: [
         { duration: '30s', target: 10 },  // Ramp up to 10 admin users
         { duration: '1m', target: 10 },   // Stay at 10 admin users
         { duration: '30s', target: 0 },   // Ramp down
     ],
     thresholds: {
-        http_req_failed: ['rate=0.0'],
+        http_req_failed: ['rate==0.0'],
         checks: ['rate==1.0'],
         http_req_duration: ['p(95)<20', 'avg<10', 'max<300'],
         errors: ['rate<0.01'],
