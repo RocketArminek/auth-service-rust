@@ -120,16 +120,6 @@ jobs:
           - version: "4"
           - version: "3"
     services:
-      rabbit:
-        image: rabbitmq:${{matrix.rabbitmq.version}}-management
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=30s
       mysql:
         image: ${{ (matrix.db.service) && matrix.db.service || '' }}
         ports:
@@ -141,7 +131,17 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-          --health-start-period=30s
+          --health-start-period=40s
+      rabbit:
+        image: rabbitmq:${{matrix.rabbitmq.version}}-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd="/bin/bash -c '/opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping && /opt/rabbitmq/sbin/rabbitmq-diagnostics -q check_port_connectivity'"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
+          --health-start-period=90s
     env:
       DATABASE_ENGINE: ${{ matrix.db.engine }}
       DATABASE_URL: ${{ matrix.db.url }}
@@ -197,23 +197,22 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: toor
-          MYSQL_DATABASE: auth_service_test
         options: >-
           --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-          --health-start-period=30s
+          --health-start-period=40s
       rabbit:
         image: rabbitmq:${{matrix.rabbitmq.version}}-management
         ports:
           - 5672:5672
         options: >-
-          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
+          --health-cmd="/bin/bash -c '/opt/rabbitmq/sbin/rabbitmq-diagnostics -q ping && /opt/rabbitmq/sbin/rabbitmq-diagnostics -q check_port_connectivity'"
           --health-interval=10s
-          --health-timeout=5s
+          --health-timeout=10s
           --health-retries=5
-          --health-start-period=30s
+          --health-start-period=90s
       app:
         image: ghcr.io/rocketarminek/auth-api-rust:test-latest
         credentials:

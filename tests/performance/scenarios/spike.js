@@ -66,6 +66,5 @@ export default function () {
         errorRate.add(1);
     }
 
-    // Random sleep between 0.1 and 1 second
-    sleep(Math.random() * 0.9 + 0.1);
+    sleep(0.3);
 }
