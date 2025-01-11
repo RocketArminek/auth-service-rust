@@ -306,6 +306,7 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: false
+          artifact_name: zap-scan-${{ matrix.db.engine }}
 
   publish-server-image:
     runs-on: ubuntu-22.04
