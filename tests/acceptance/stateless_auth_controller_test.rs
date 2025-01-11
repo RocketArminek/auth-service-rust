@@ -81,17 +81,17 @@ async fn it_issues_access_token() {
             }))
             .await;
 
-        assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-        let body = response.json::<MessageResponse>();
+        let body = response.json::<LoginResponse>();
 
-        assert_eq!(body.message, "User is not verified!")
+        assert_eq!(body.user.is_verified, false);
     })
     .await;
 }
 
 #[tokio::test]
-async fn it_does_not_issues_access_token_if_user_is_not_verified() {
+async fn it_issues_access_token_for_not_verified_user() {
     let at_duration = 60;
     run_integration_test(
         |c| {
@@ -104,7 +104,7 @@ async fn it_does_not_issues_access_token_if_user_is_not_verified() {
                 String::from("Iknow#othing1"),
                 Some(String::from("Jon")),
                 Some(String::from("Snow")),
-                Some(true),
+                Some(false),
             )
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
@@ -231,7 +231,7 @@ async fn it_auto_updates_password_scheme() {
 
             assert_eq!(response.status_code(), StatusCode::OK);
 
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
             let found_user = c
                 .user_repository
                 .lock()
@@ -306,7 +306,69 @@ async fn it_verifies_token() {
 }
 
 #[tokio::test]
-async fn it_verifies_token_if_user_is_also_verified() {
+async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required() {
+    run_integration_test(
+        |c| {
+            c.app.verification_required(false);
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(false),
+            )
+                .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            let role = Role::now("user".to_string()).unwrap();
+            c.role_repository.lock().await.save(&role).await.unwrap();
+            user.add_role(role);
+            c.user_repository.lock().await.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/stateless/login")
+                .json(&json!({
+                "email": &email,
+                "password": "Iknow#othing1",
+            }))
+                .await;
+            let body = response.json::<LoginResponse>();
+
+            let response = c
+                .server
+                .get("/v1/stateless/authenticate")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            let user_id_from_header = response
+                .headers()
+                .get("X-User-Id")
+                .unwrap()
+                .to_str()
+                .unwrap();
+            let roles_from_header = response
+                .headers()
+                .get("X-User-Roles")
+                .unwrap()
+                .to_str()
+                .unwrap();
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+            assert_eq!(user_id_from_header, user.id.to_string());
+            assert!(roles_from_header.contains("user"));
+        }
+    )
+        .await;
+}
+
+#[tokio::test]
+async fn it_does_not_verify_token_if_user_is_not_verified() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let mut user = User::now_with_email_and_password(
@@ -314,7 +376,7 @@ async fn it_verifies_token_if_user_is_also_verified() {
             String::from("Iknow#othing1"),
             Some(String::from("Jon")),
             Some(String::from("Snow")),
-            Some(true),
+            Some(false),
         )
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
@@ -342,22 +404,7 @@ async fn it_verifies_token_if_user_is_also_verified() {
             )
             .await;
 
-        let user_id_from_header = response
-            .headers()
-            .get("X-User-Id")
-            .unwrap()
-            .to_str()
-            .unwrap();
-        let roles_from_header = response
-            .headers()
-            .get("X-User-Roles")
-            .unwrap()
-            .to_str()
-            .unwrap();
-
-        assert_eq!(response.status_code(), StatusCode::OK);
-        assert_eq!(user_id_from_header, user.id.to_string());
-        assert!(roles_from_header.contains("user"));
+        assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
     })
     .await;
 }

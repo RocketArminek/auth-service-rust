@@ -1,6 +1,6 @@
 use crate::api::axum_extractor::StatelessLoggedInUser;
 use crate::api::dto::MessageResponse;
-use crate::api::server_state::ServerState;
+use crate::api::server_state::{ServerState, VerificationRequired};
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
@@ -13,7 +13,7 @@ pub async fn restricted_acl(
     request: Request,
     next: Next,
 ) -> impl IntoResponse {
-    tracing::debug!("User: {:?}", user);
+    tracing::debug!("Restricted acl mw: User: {:?}", user);
 
     let is_allowed = user.roles.iter().any(|role| {
         state
@@ -32,7 +32,28 @@ pub async fn restricted_acl(
             .into_response();
     }
 
-    let response = next.run(request).await;
+    next.run(request).await
+}
 
-    response
+pub async fn verified_acl(
+    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    State(state): State<ServerState>,
+    request: Request,
+    next: Next,
+) -> impl IntoResponse {
+    tracing::debug!("Verified acl mw user: {:?}", user);
+    tracing::debug!("Verified acl mw config: {:?}", state.config);
+
+    if state.get_verification_required() {
+        if !user.is_verified {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(MessageResponse {
+                    message: String::from("User is not verified!"),
+                }),
+            ).into_response();
+        }
+    }
+
+    next.run(request).await
 }

@@ -1,4 +1,4 @@
-use crate::api::acl_mw::restricted_acl;
+use crate::api::acl_mw::{restricted_acl, verified_acl};
 use axum::routing::{patch, post, put};
 use axum::{middleware, routing::get, Router};
 use axum::extract::Request;
@@ -23,11 +23,23 @@ pub fn routes(state: ServerState) -> Router {
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
         .route("/v1/users", post(create_user))
-        .route("/v1/me", put(update_profile))
-        .route("/v1/me/verify", patch(verify))
+        .route("/v1/me/verification", patch(verify))
+        .route("/v1/me/verification/resend", post(resend_verification))
         .route("/v1/stateless/login", post(login))
-        .route("/v1/stateless/authenticate", get(authenticate))
         .route("/v1/stateless/refresh", post(refresh))
+        .merge(
+            Router::new()
+                .route("/v1/me", put(update_profile))
+                .route("/v1/stateless/authenticate", get(authenticate))
+                .layer(
+                    ServiceBuilder::new()
+                        .layer(middleware::from_fn_with_state(
+                            state.clone(),
+                            verified_acl,
+                        ))
+                        .layer(TraceLayer::new_for_http()),
+                )
+        )
         .merge(
             Router::new()
                 .route(

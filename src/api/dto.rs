@@ -20,6 +20,11 @@ pub struct UpdateUserRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct VerifyUserRequest {
+    pub token: String
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,

@@ -111,16 +111,30 @@ async fn it_verifies_user() {
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.lock().await.save(&role).await.unwrap();
         let email = String::from("jon@snow.test");
+        let password = String::from("Iknow#othing1");
 
         let _ = c
             .server
             .post("/v1/users")
             .json(&json!({
                 "email": &email,
-                "password": "Iknow#othing1",
+                "password": &password,
                 "role": "user",
             }))
             .await;
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        let response = c
+            .server
+            .post("/v1/stateless/login")
+            .json(&json!({
+                "email": &email,
+                "password": &password,
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+        let body = response.json::<LoginResponse>();
 
         let event = c
             .wait_for_event(5, |event| {
@@ -134,10 +148,13 @@ async fn it_verifies_user() {
 
         let response = c
             .server
-            .patch("/v1/me/verify")
+            .patch("/v1/me/verification")
+            .json(&json!({
+                "token": &token,
+            }))
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
-                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
             )
             .await;
 
@@ -156,6 +173,86 @@ async fn it_verifies_user() {
         assert!(event.is_some(), "Should have received some event");
     })
     .await
+}
+
+#[tokio::test]
+async fn it_can_request_for_resend_verification_message() {
+    run_integration_test_with_default(|c| async move {
+        let role = Role::now("NIGHT_WATCH".to_string()).unwrap();
+        c.role_repository.lock().await.save(&role).await.unwrap();
+
+        let email = String::from("jon@snow.test");
+        let password = String::from("Iknow#othing1");
+        let mut user = User::now_with_email_and_password(
+            email.clone(),
+            password.clone(),
+            Some(String::from("Jon")),
+            Some(String::from("Snow")),
+            Some(false),
+        )
+            .unwrap();
+        user.hash_password(&SchemeAwareHasher::default()).unwrap();
+        user.add_role(role);
+        c.user_repository.lock().await.save(&user).await.unwrap();
+
+        let response = c
+            .server
+            .post("/v1/stateless/login")
+            .json(&json!({
+                "email": &email,
+                "password": &password,
+            }))
+            .await;
+        let login_body = response.json::<LoginResponse>();
+
+        let response = c
+            .server
+            .post("/v1/me/verification/resend")
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", login_body.access_token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let event = c
+            .wait_for_event(5, |event| {
+                matches!(event, UserEvents::VerificationRequested { .. })
+            })
+            .await;
+
+        let Some(UserEvents::VerificationRequested { token, .. }) = event else {
+            panic!("Should have received verification requested event")
+        };
+
+        let response = c
+            .server
+            .patch("/v1/me/verification")
+            .json(&json!({
+                "token": token,
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", login_body.access_token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let body = response.json::<UserDTO>();
+
+        assert_eq!(body.is_verified, true);
+        assert_eq!(body.email, email);
+        assert_eq!(body.roles, vec!["NIGHT_WATCH".to_string()]);
+
+        let event = c
+            .wait_for_event(5, |event| matches!(event, UserEvents::Verified { .. }))
+            .await;
+
+        assert!(event.is_some(), "Should have received some event");
+    })
+        .await
 }
 
 #[tokio::test]

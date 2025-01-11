@@ -37,7 +37,6 @@ pub async fn login(
     match user {
         Ok(user) => {
             let hasher = SchemeAwareHasher::with_scheme(state.config.password_hashing_scheme());
-            let verification_required = state.config.verification_required();
             let at_duration_in_seconds = state.config.at_duration_in_seconds().to_signed();
             let rt_duration_in_seconds = state.config.rt_duration_in_seconds().to_signed();
             let secret = state.config.secret().to_string();
@@ -80,15 +79,6 @@ pub async fn login(
                         Err(e) => tracing::error!("Could not update password hash {:?}", e),
                     }
                 });
-            }
-            if verification_required && !user.is_verified {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(MessageResponse {
-                        message: String::from("User is not verified!"),
-                    }),
-                )
-                    .into_response();
             }
 
             let user_response = UserDTO::from(user);
