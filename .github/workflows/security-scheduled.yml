@@ -2,7 +2,7 @@ name: Security Scan Schedule
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 1 * *'
 
 jobs:
 #  security-audit:
@@ -100,5 +100,5 @@ jobs:
           target: 'http://localhost:8080'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
-          allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ github.sha }}
+          allow_issue_writing: true
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ github.run_id }}-monthly
