@@ -37,6 +37,7 @@ jobs:
 
   zap-scan:
     runs-on: ubuntu-22.04
+    name: "Security"
     strategy:
       matrix:
         db:

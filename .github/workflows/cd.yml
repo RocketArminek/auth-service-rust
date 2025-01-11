@@ -103,7 +103,7 @@ jobs:
     needs:
       - prepare
     runs-on: ubuntu-22.04
-    name: ""
+    name: "Acceptance"
     timeout-minutes: 3
     strategy:
       matrix:
@@ -173,7 +173,7 @@ jobs:
     needs:
       - dist-cache
     runs-on: ubuntu-22.04
-    name: "p"
+    name: "Performance"
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -239,6 +239,7 @@ jobs:
         run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }}
 
   security-test:
+    name: "Security"
     needs:
       - dist-cache
     runs-on: ubuntu-22.04
