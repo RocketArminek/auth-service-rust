@@ -51,7 +51,6 @@ pub fn routes(state: ServerState) -> Router {
 #[openapi(
     servers(
         (description="dev", url="http://localhost:8080"),
-        (description="4e-production", url="https://auth-4ecommerce.arminek.xyz"),
     ),
     paths(
         open_api_docs,
