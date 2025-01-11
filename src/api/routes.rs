@@ -1,10 +1,6 @@
 use crate::api::acl_mw::{restricted_acl, verified_acl};
 use axum::routing::{patch, post, put};
 use axum::{middleware, routing::get, Router};
-use axum::extract::Request;
-use axum::http::{Method, StatusCode};
-use axum::middleware::Next;
-use axum::response::Response;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
@@ -42,14 +38,8 @@ pub fn routes(state: ServerState) -> Router {
         )
         .merge(
             Router::new()
-                .route(
-                    "/v1/restricted/users",
-                    post(create_restricted_user).get(get_all_users),
-                )
-                .route(
-                    "/v1/restricted/users/{id}",
-                    get(get_user).delete(delete_user).put(update_user),
-                )
+                .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
+                .route("/v1/restricted/users/{id}", get(get_user).delete(delete_user).put(update_user))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
@@ -59,7 +49,6 @@ pub fn routes(state: ServerState) -> Router {
                         .layer(TraceLayer::new_for_http()),
                 ),
         )
-        .layer(middleware::from_fn(method_validation))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -111,24 +100,4 @@ pub struct ApiDoc;
 )]
 pub async fn open_api_docs() {
     panic!("This is only for documentation")
-}
-
-pub async fn method_validation(req: Request, next: Next) -> Result<Response, StatusCode> {
-    let method = req.method();
-
-    let allowed_methods = [
-        Method::GET,
-        Method::POST,
-        Method::PUT,
-        Method::DELETE,
-        Method::PATCH,
-        Method::HEAD,
-        Method::OPTIONS,
-    ];
-
-    if allowed_methods.contains(method) {
-        Ok(next.run(req).await)
-    } else {
-        Err(StatusCode::METHOD_NOT_ALLOWED)
-    }
 }
