@@ -83,6 +83,7 @@ pub fn routes(state: ServerState) -> Router {
         update_profile,
         update_user,
         verify,
+        resend_verification,
     ),
     components(
         schemas(
@@ -96,6 +97,7 @@ pub fn routes(state: ServerState) -> Router {
             LoginRequest,
             CreatedResponse,
             UserListResponse,
+            VerifyUserRequest,
         ),
     )
 )]

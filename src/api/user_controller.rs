@@ -354,7 +354,7 @@ pub async fn verify(
     }
 }
 
-#[utoipa::path(patch, path = "/v1/me/verification/resend",
+#[utoipa::path(post, path = "/v1/me/verification/resend",
     tag="user",
     responses(
         (status = 200, description = "Ack", content_type = "application/json"),
