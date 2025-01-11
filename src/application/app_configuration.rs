@@ -1,10 +1,10 @@
 use crate::application::configuration_types::{DurationInSeconds, HiddenString};
 use crate::domain::crypto::HashingScheme;
-use regex::Regex;
 use std::collections::HashMap;
 use std::env;
 use std::env::VarError;
 use std::str::FromStr;
+use lazy_regex::Regex;
 use tracing::Level;
 
 pub struct AppConfigurationBuilder {

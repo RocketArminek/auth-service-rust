@@ -418,7 +418,6 @@ dependencies = [
  "lapin",
  "lazy-regex",
  "predicates",
- "regex",
  "serde",
  "serde_json",
  "sqlx",
