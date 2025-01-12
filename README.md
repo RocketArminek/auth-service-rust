@@ -71,6 +71,7 @@ docker-compose up -d
 
 Or build and run locally:
 ```bash
+cargo vendor
 cargo build --release
 ./target/release/app start
 ```
