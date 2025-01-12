@@ -200,31 +200,6 @@ app health-check
 app start
 ```
 
-## Project Structure
-
-The project follows a domain-driven design approach with clear separation of concerns:
-
-```
-src/
-├── api/                  # HTTP API layer
-├── application/         # Application layer
-│   ├── config/         # Configuration management
-├── domain/             # Domain layer
-│   ├── models/         # Domain entities
-│   ├── repositories/   # Repository interfaces
-│   └── events/         # Domain events
-├── infrastructure/      # Infrastructure layer
-    ├── database/       # Database implementations
-    ├── messaging/      # RabbitMQ implementation
-    └── repositories/   # Repository implementations
-
-tests/
-├── unit/              # Unit tests
-├── integration/       # Integration tests
-├── acceptance/       # Acceptance tests
-└── performance/      # K6 performance tests
-```
-
 ### Testing Strategy
 
 The project employs a comprehensive testing approach:
