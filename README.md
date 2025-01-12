@@ -1,6 +1,6 @@
 # Auth Service
 
-A high-performance, event-driven authentication and authorization service written in Rust. Built for integration with Traefik forward auth, this service provides robust user management, role-based access control, and secure authentication flows.
+A high-performance, event-driven authentication and authorization service written in Rust. This service provides robust user management and secure authentication flows.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 ![Rust Version](https://img.shields.io/badge/rust-1.84.0%2B-orange.svg)
