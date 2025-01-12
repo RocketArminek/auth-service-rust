@@ -1,5 +1,6 @@
 use crate::application::message_publisher_configuration::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
+use crate::infrastructure::utils::retry_with_backoff;
 use async_trait::async_trait;
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::FieldTable;
@@ -8,7 +9,6 @@ use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::infrastructure::utils::retry_with_backoff;
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -79,8 +79,10 @@ pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Conne
         "Rabbitmq",
         5,
         std::time::Duration::from_millis(500),
-        true
-    ).await.unwrap()
+        true,
+    )
+    .await
+    .unwrap()
 }
 
 pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(

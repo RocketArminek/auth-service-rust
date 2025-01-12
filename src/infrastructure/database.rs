@@ -1,11 +1,11 @@
-use std::time::Duration;
 use crate::application::database_configuration::DatabaseConfiguration;
+use crate::infrastructure::utils::retry_with_backoff;
 use sqlx::migrate::{MigrateDatabase, MigrateError};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
-use crate::infrastructure::utils::retry_with_backoff;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub enum DatabaseEngine {
@@ -144,8 +144,9 @@ pub async fn create_sqlite_pool(
         "Sqlite",
         5,
         Duration::from_millis(500),
-        true
-    ).await
+        true,
+    )
+    .await
 }
 
 pub async fn create_mysql_pool(
@@ -172,6 +173,7 @@ pub async fn create_mysql_pool(
         "MySql",
         5,
         Duration::from_millis(500),
-        true
-    ).await
+        true,
+    )
+    .await
 }

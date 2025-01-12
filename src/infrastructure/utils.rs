@@ -6,11 +6,12 @@ pub async fn retry_with_backoff<T, E, F, Fut>(
     description: &str,
     max_retries: u32,
     initial_delay: Duration,
-    exponential: bool
-) -> Result<T, E> where
+    exponential: bool,
+) -> Result<T, E>
+where
     F: Fn() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
-    E: Display
+    E: Display,
 {
     let mut retries = 0;
     let mut delay = initial_delay;
