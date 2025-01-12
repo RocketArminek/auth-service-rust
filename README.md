@@ -55,7 +55,7 @@ The service demonstrates excellent performance characteristics:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/auth-service
+git clone git@github.com:RocketArminek/auth-service-rust.git
 cd auth-service
 ```
 
