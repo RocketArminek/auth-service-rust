@@ -310,7 +310,7 @@ jobs:
 
   publish-server-image:
     runs-on: ubuntu-22.04
-    name: "Publish server image"
+    name: "Publish server production image"
     needs:
       - acceptance-test
       - performance-test
