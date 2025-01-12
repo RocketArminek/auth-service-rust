@@ -1,9 +1,13 @@
-use crate::api::axum_extractor::{StatelessLoggedInUser};
-use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, UpdateUserRequest, VerifyUserRequest};
+use crate::api::axum_extractor::{PasswordToken, StatelessLoggedInUser};
+use crate::api::dto::{
+    ChangePasswordRequest, CreateUserRequest, CreatedResponse, MessageResponse,
+    ResetPasswordRequest, UpdateUserRequest, VerifyUserRequest,
+};
 use crate::api::server_state::{SecretAware, ServerState};
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
+use crate::domain::event::UserEvents::{PasswordReset, PasswordResetRequested};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::State;
@@ -294,7 +298,6 @@ pub async fn verify(
                     .into_response();
             }
 
-
             let decoded = jsonwebtoken::decode::<Claims>(
                 &request.token,
                 &DecodingKey::from_secret(state.get_secret().as_ref()),
@@ -302,48 +305,57 @@ pub async fn verify(
             );
 
             match decoded {
-                Ok(t) => {
-                    match t.claims.token_type {
-                        TokenType::Verification => {
-                            user.verify();
-                            match state.user_repository.lock().await.save(&user).await {
-                                Ok(_) => {
-                                    let user_dto = UserDTO::from(user);
+                Ok(t) => match t.claims.token_type {
+                    TokenType::Verification => {
+                        user.verify();
+                        match state.user_repository.lock().await.save(&user).await {
+                            Ok(_) => {
+                                let user_dto = UserDTO::from(user);
 
-                                    let result = state
-                                        .message_publisher
-                                        .lock()
-                                        .await
-                                        .publish(&UserEvents::Verified {
-                                            user: user_dto.clone(),
-                                        })
-                                        .await;
+                                let result = state
+                                    .message_publisher
+                                    .lock()
+                                    .await
+                                    .publish(&UserEvents::Verified {
+                                        user: user_dto.clone(),
+                                    })
+                                    .await;
 
-                                    if result.is_err() {
-                                        tracing::error!("Error publishing user verified event: {:?}", result);
-                                    }
-
-                                    (StatusCode::OK, Json(user_dto)).into_response()
+                                if result.is_err() {
+                                    tracing::error!(
+                                        "Error publishing user verified event: {:?}",
+                                        result
+                                    );
                                 }
-                                Err(e) => {
-                                    tracing::error!("Failed to verify user: {:?}", e);
-                                    e.into_response()
-                                }
+
+                                (StatusCode::OK, Json(user_dto)).into_response()
                             }
-                        },
-                        _ => {
-                            tracing::debug!("Invalid token type!");
-                            (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                                message: "Invalid token type!".to_string(),
-                            })).into_response()
-                        },
+                            Err(e) => {
+                                tracing::error!("Failed to verify user: {:?}", e);
+                                e.into_response()
+                            }
+                        }
                     }
-                }
+                    _ => {
+                        tracing::debug!("Invalid token type!");
+                        (
+                            StatusCode::BAD_REQUEST,
+                            Json(MessageResponse {
+                                message: "Invalid token type!".to_string(),
+                            }),
+                        )
+                            .into_response()
+                    }
+                },
                 Err(_) => {
                     tracing::debug!("Verification token is invalid!");
-                    (StatusCode::BAD_REQUEST, Json(MessageResponse {
-                        message: "Invalid token!".to_string(),
-                    })).into_response()
+                    (
+                        StatusCode::BAD_REQUEST,
+                        Json(MessageResponse {
+                            message: "Invalid token!".to_string(),
+                        }),
+                    )
+                        .into_response()
                 }
             }
         }
@@ -393,9 +405,8 @@ pub async fn resend_verification(
 
             let user_dto = UserDTO::from(user);
             let now = Utc::now();
-            let vr_duration =
-                Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
-                    .unwrap_or_default();
+            let vr_duration = Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
+                .unwrap_or_default();
             let vr_exp = now.add(vr_duration);
 
             let vr_body = Claims::new(
@@ -425,9 +436,7 @@ pub async fn resend_verification(
                         .await;
 
                     match result {
-                        Ok(_) => {
-                            StatusCode::OK.into_response()
-                        }
+                        Ok(_) => StatusCode::OK.into_response(),
                         Err(e) => {
                             tracing::error!("Error publishing user events: {:?}", e);
                             StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -442,6 +451,172 @@ pub async fn resend_verification(
         }
         Err(e) => {
             tracing::debug!("Failed to resend user: {:?}", e);
+            e.into_response()
+        }
+    }
+}
+
+#[utoipa::path(post, path = "/v1/password/reset",
+    request_body = ResetPasswordRequest,
+    tag="user",
+    responses(
+        (status = 200, description = "Ack", content_type = "application/json"),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 422, description = "Unprocessable entity"),
+    )
+)]
+pub async fn request_password_reset(
+    State(state): State<ServerState>,
+    request: Json<ResetPasswordRequest>,
+) -> impl IntoResponse {
+    let user = state
+        .user_repository
+        .lock()
+        .await
+        .get_by_email(&request.email)
+        .await;
+
+    match user {
+        Ok(user) => {
+            let user_dto = UserDTO::from(user);
+            let now = Utc::now();
+            let rp_duration = Duration::new(state.config.rp_duration_in_seconds().to_signed(), 0)
+                .unwrap_or_default();
+            let rp_exp = now.add(rp_duration);
+
+            let rp_body = Claims::new(
+                rp_exp.timestamp() as usize,
+                user_dto.clone(),
+                TokenType::Password,
+            );
+
+            let token = encode(
+                &Header::default(),
+                &rp_body,
+                &EncodingKey::from_secret(state.get_secret().as_ref()),
+            );
+
+            match token {
+                Ok(token) => {
+                    let password_reset_requested = PasswordResetRequested {
+                        user: user_dto,
+                        token,
+                    };
+
+                    let result = state
+                        .message_publisher
+                        .lock()
+                        .await
+                        .publish(&password_reset_requested)
+                        .await;
+
+                    match result {
+                        Ok(_) => StatusCode::OK.into_response(),
+                        Err(e) => {
+                            tracing::error!("Error publishing reset password requested: {:?}", e);
+                            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to encode reset password token {:?}", e);
+
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                }
+            }
+        }
+        Err(e) => {
+            tracing::debug!("Failed to get user during password request: {:?}", e);
+            e.into_response()
+        }
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/me/password/reset",
+    request_body = ChangePasswordRequest,
+    tag="user",
+    responses(
+        (status = 200, description = "Ack", content_type = "application/json"),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 422, description = "Unprocessable entity"),
+    )
+)]
+pub async fn reset_password(
+    State(state): State<ServerState>,
+    PasswordToken(user): PasswordToken,
+    request: Json<ChangePasswordRequest>,
+) -> impl IntoResponse {
+    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
+
+    match user {
+        Ok(mut user) => {
+            let result = user.change_password(
+                &request.password,
+                &SchemeAwareHasher::with_scheme(state.config.password_hashing_scheme()),
+            );
+
+            match result {
+                Ok(_) => {
+                    let result = state.user_repository.lock().await.save(&user).await;
+
+                    match result {
+                        Ok(_) => {
+                            let user_dto = UserDTO::from(user);
+                            let password_reset = PasswordReset { user: user_dto };
+
+                            let result = state
+                                .message_publisher
+                                .lock()
+                                .await
+                                .publish(&password_reset)
+                                .await;
+
+                            match result {
+                                Ok(_) => StatusCode::OK.into_response(),
+                                Err(e) => {
+                                    tracing::error!(
+                                        "Error publishing reset password requested: {:?}",
+                                        e
+                                    );
+                                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::debug!("Failed to save user during password change: {:?}", e);
+                            e.into_response()
+                        }
+                    }
+                }
+                Err(error) => match error {
+                    UserError::InvalidPassword { reason } => (
+                        StatusCode::BAD_REQUEST,
+                        Json(MessageResponse {
+                            message: format!(
+                                "Invalid password: {}",
+                                reason.unwrap_or("unknown".to_string())
+                            ),
+                        }),
+                    )
+                        .into_response(),
+                    _ => (
+                        StatusCode::BAD_REQUEST,
+                        Json(MessageResponse {
+                            message: "Something went wrong".to_string(),
+                        }),
+                    )
+                        .into_response(),
+                },
+            }
+        }
+        Err(e) => {
+            tracing::debug!("Failed to get user during change password request: {:?}", e);
             e.into_response()
         }
     }

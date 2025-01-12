@@ -5,9 +5,9 @@ use crate::application::database_configuration::{
 use crate::application::message_publisher_configuration::{
     EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
 };
+use dotenvy::{dotenv, from_filename};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use dotenvy::{dotenv, from_filename};
 
 pub struct ConfigurationBuilder {
     pub app: AppConfigurationBuilder,
@@ -57,11 +57,7 @@ impl Configuration {
             MessagePublisherConfiguration,
         ),
     {
-        let (
-            app,
-            db,
-            publisher
-        ) = loader(
+        let (app, db, publisher) = loader(
             AppConfigurationBuilder::new(),
             DatabaseConfigurationBuilder::new(),
             MessagePublisherConfigurationBuilder::new(),
@@ -102,16 +98,14 @@ impl Configuration {
 
 impl Default for Configuration {
     fn default() -> Self {
-        Configuration::load(
-            |mut app, mut db, mut publisher| {
-                from_filename(".env.local").or(dotenv()).ok();
+        Configuration::load(|mut app, mut db, mut publisher| {
+            from_filename(".env.local").or(dotenv()).ok();
 
-                (
-                    app.load_env().build(),
-                    db.load_env().build(),
-                    publisher.load_env().build(),
-                )
-            }
-        )
+            (
+                app.load_env().build(),
+                db.load_env().build(),
+                publisher.load_env().build(),
+            )
+        })
     }
 }

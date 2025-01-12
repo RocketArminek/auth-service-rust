@@ -21,25 +21,30 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/users", post(create_user))
         .route("/v1/me/verification", patch(verify))
         .route("/v1/me/verification/resend", post(resend_verification))
+        .route("/v1/me/password/reset", patch(reset_password))
         .route("/v1/stateless/login", post(login))
         .route("/v1/stateless/refresh", post(refresh))
+        .route("/v1/password/reset", post(request_password_reset))
         .merge(
             Router::new()
                 .route("/v1/me", put(update_profile))
                 .route("/v1/stateless/authenticate", get(authenticate))
                 .layer(
                     ServiceBuilder::new()
-                        .layer(middleware::from_fn_with_state(
-                            state.clone(),
-                            verified_acl,
-                        ))
+                        .layer(middleware::from_fn_with_state(state.clone(), verified_acl))
                         .layer(TraceLayer::new_for_http()),
-                )
+                ),
         )
         .merge(
             Router::new()
-                .route("/v1/restricted/users", post(create_restricted_user).get(get_all_users))
-                .route("/v1/restricted/users/{id}", get(get_user).delete(delete_user).put(update_user))
+                .route(
+                    "/v1/restricted/users",
+                    post(create_restricted_user).get(get_all_users),
+                )
+                .route(
+                    "/v1/restricted/users/{id}",
+                    get(get_user).delete(delete_user).put(update_user),
+                )
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
@@ -73,6 +78,8 @@ pub fn routes(state: ServerState) -> Router {
         update_user,
         verify,
         resend_verification,
+        request_password_reset,
+        reset_password,
     ),
     components(
         schemas(
@@ -87,6 +94,8 @@ pub fn routes(state: ServerState) -> Router {
             CreatedResponse,
             UserListResponse,
             VerifyUserRequest,
+            ResetPasswordRequest,
+            ChangePasswordRequest,
         ),
     )
 )]

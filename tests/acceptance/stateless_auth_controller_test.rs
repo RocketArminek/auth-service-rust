@@ -320,7 +320,7 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
                 Some(String::from("Snow")),
                 Some(false),
             )
-                .unwrap();
+            .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             let role = Role::now("user".to_string()).unwrap();
             c.role_repository.lock().await.save(&role).await.unwrap();
@@ -331,9 +331,9 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
                 .server
                 .post("/v1/stateless/login")
                 .json(&json!({
-                "email": &email,
-                "password": "Iknow#othing1",
-            }))
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                }))
                 .await;
             let body = response.json::<LoginResponse>();
 
@@ -362,9 +362,9 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
             assert_eq!(response.status_code(), StatusCode::OK);
             assert_eq!(user_id_from_header, user.id.to_string());
             assert!(roles_from_header.contains("user"));
-        }
+        },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]

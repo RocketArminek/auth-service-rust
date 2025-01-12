@@ -1,12 +1,12 @@
 use crate::application::message_publisher_configuration::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
+use async_trait::async_trait;
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
@@ -79,17 +79,32 @@ pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Conne
         match Connection::connect(config.rabbitmq_url(), ConnectionProperties::default()).await {
             Ok(connection) => {
                 if retry_count > 0 {
-                    tracing::info!("Successfully connected to RabbitMQ after {} retries", retry_count);
+                    tracing::info!(
+                        "Successfully connected to RabbitMQ after {} retries",
+                        retry_count
+                    );
                 }
                 return connection;
             }
             Err(err) => {
                 retry_count += 1;
                 if retry_count >= max_retries {
-                    tracing::error!("Failed to connect to RabbitMQ after {} attempts: {}", max_retries, err);
-                    panic!("Failed to connect to RabbitMQ after {} attempts", max_retries);
+                    tracing::error!(
+                        "Failed to connect to RabbitMQ after {} attempts: {}",
+                        max_retries,
+                        err
+                    );
+                    panic!(
+                        "Failed to connect to RabbitMQ after {} attempts",
+                        max_retries
+                    );
                 }
-                tracing::warn!("Failed to connect to RabbitMQ (attempt {}/{}): {}", retry_count, max_retries, err);
+                tracing::warn!(
+                    "Failed to connect to RabbitMQ (attempt {}/{}): {}",
+                    retry_count,
+                    max_retries,
+                    err
+                );
                 tokio::time::sleep(retry_delay).await;
             }
         }

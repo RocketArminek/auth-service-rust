@@ -1,10 +1,10 @@
 use crate::application::configuration_types::{DurationInSeconds, HiddenString};
 use crate::domain::crypto::HashingScheme;
+use lazy_regex::Regex;
 use std::collections::HashMap;
 use std::env;
 use std::env::VarError;
 use std::str::FromStr;
-use lazy_regex::Regex;
 use tracing::Level;
 
 pub struct AppConfigurationBuilder {
@@ -19,6 +19,7 @@ pub struct AppConfigurationBuilder {
     pub rt_duration_in_seconds: Option<DurationInSeconds>,
     pub verification_required: Option<bool>,
     pub vr_duration_in_seconds: Option<DurationInSeconds>,
+    pub rp_duration_in_seconds: Option<DurationInSeconds>,
     pub port: Option<String>,
     pub host: Option<String>,
     pub log_level: Option<Level>,
@@ -38,6 +39,7 @@ impl AppConfigurationBuilder {
             rt_duration_in_seconds: None,
             verification_required: None,
             vr_duration_in_seconds: None,
+            rp_duration_in_seconds: None,
             port: None,
             host: None,
             log_level: None,
@@ -91,6 +93,11 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn rp_duration_in_seconds(&mut self, value: DurationInSeconds) -> &mut Self {
+        self.rp_duration_in_seconds = Some(value);
+        self
+    }
+
     pub fn secret(&mut self, value: HiddenString) -> &mut Self {
         self.secret = Some(value);
         self
@@ -138,13 +145,16 @@ impl AppConfigurationBuilder {
         self.vr_duration_in_seconds = env::var(EnvNames::VR_DURATION_IN_SECONDS)
             .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
             .ok();
+        self.rp_duration_in_seconds = env::var(EnvNames::RP_DURATION_IN_SECONDS)
+            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .ok();
         self.secret = env::var(EnvNames::SECRET)
             .and_then(|v| Ok(HiddenString(v)))
             .ok();
         self.port = env::var(EnvNames::PORT).ok();
         self.host = env::var(EnvNames::HOST).ok();
         self.log_level = env::var(EnvNames::LOG_LEVEL)
-            .and_then(|v| Level::from_str(v.as_str()).map_err(|_| VarError::NotPresent ))
+            .and_then(|v| Level::from_str(v.as_str()).map_err(|_| VarError::NotPresent))
             .ok();
 
         self
@@ -178,6 +188,9 @@ impl AppConfigurationBuilder {
             self.vr_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
+            self.rp_duration_in_seconds
+                .clone()
+                .unwrap_or(DurationInSeconds(2592000)),
             self.secret.clone().unwrap_or("secret".to_string().into()),
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
@@ -198,10 +211,11 @@ pub struct AppConfiguration {
     rt_duration_in_seconds: DurationInSeconds,
     verification_required: bool,
     vr_duration_in_seconds: DurationInSeconds,
+    rp_duration_in_seconds: DurationInSeconds,
     secret: HiddenString,
     port: String,
     host: String,
-    log_level: Level
+    log_level: Level,
 }
 
 impl AppConfiguration {
@@ -216,10 +230,11 @@ impl AppConfiguration {
         rt_duration_in_seconds: DurationInSeconds,
         verification_required: bool,
         vr_duration_in_seconds: DurationInSeconds,
+        rp_duration_in_seconds: DurationInSeconds,
         secret: HiddenString,
         port: String,
         host: String,
-        log_level: Level
+        log_level: Level,
     ) -> Self {
         AppConfiguration {
             super_admin_email,
@@ -232,10 +247,11 @@ impl AppConfiguration {
             rt_duration_in_seconds,
             verification_required,
             vr_duration_in_seconds,
+            rp_duration_in_seconds,
             secret,
             port,
             host,
-            log_level
+            log_level,
         }
     }
 
@@ -283,11 +299,21 @@ impl AppConfiguration {
         self.restricted_role_pattern.clone()
     }
 
-    pub fn port(&self) -> &str { &self.port }
+    pub fn port(&self) -> &str {
+        &self.port
+    }
 
-    pub fn host(&self) -> &str { &self.host }
+    pub fn host(&self) -> &str {
+        &self.host
+    }
 
-    pub fn log_level(&self) -> Level { self.log_level }
+    pub fn log_level(&self) -> Level {
+        self.log_level
+    }
+
+    pub fn rp_duration_in_seconds(&self) -> DurationInSeconds {
+        self.rp_duration_in_seconds.clone()
+    }
 
     pub fn envs(&self) -> HashMap<String, String> {
         let mut envs = HashMap::new();
@@ -328,6 +354,10 @@ impl AppConfiguration {
             EnvNames::VR_DURATION_IN_SECONDS.to_owned(),
             self.vr_duration_in_seconds.0.to_string(),
         );
+        envs.insert(
+            EnvNames::RP_DURATION_IN_SECONDS.to_owned(),
+            self.rp_duration_in_seconds.0.to_string(),
+        );
         envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
@@ -349,6 +379,7 @@ impl EnvNames {
     pub const RT_DURATION_IN_SECONDS: &'static str = "RT_DURATION_IN_SECONDS";
     pub const VERIFICATION_REQUIRED: &'static str = "VERIFICATION_REQUIRED";
     pub const VR_DURATION_IN_SECONDS: &'static str = "VR_DURATION_IN_SECONDS";
+    pub const RP_DURATION_IN_SECONDS: &'static str = "RP_DURATION_IN_SECONDS";
     pub const SECRET: &'static str = "SECRET";
     pub const PORT: &'static str = "PORT";
     pub const HOST: &'static str = "HOST";

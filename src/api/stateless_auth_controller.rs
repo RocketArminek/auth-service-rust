@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{RefreshRequest, StatelessLoggedInUser};
+use crate::api::axum_extractor::{RefreshToken, StatelessLoggedInUser};
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::{Hasher, SchemeAwareHasher};
@@ -175,7 +175,7 @@ pub async fn authenticate(StatelessLoggedInUser(user): StatelessLoggedInUser) ->
 )]
 pub async fn refresh(
     State(state): State<ServerState>,
-    RefreshRequest(request): RefreshRequest,
+    RefreshToken(request): RefreshToken,
 ) -> impl IntoResponse {
     let locked_user_repository = state.user_repository.lock().await;
     let user = locked_user_repository.get_by_email(&request.email).await;

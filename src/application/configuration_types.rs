@@ -1,6 +1,6 @@
+use serde::Serialize;
 use std::fmt::{Debug, Display, Formatter};
 use std::num::ParseIntError;
-use serde::Serialize;
 
 #[derive(Clone, Serialize)]
 pub struct DurationInSeconds(pub u64);

@@ -8,12 +8,12 @@ use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::jwt::UserDTO;
 use crate::domain::user::{PasswordHandler, User};
+use crate::infrastructure::repository::RepositoryError;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use uuid::Uuid;
-use crate::infrastructure::repository::RepositoryError;
 
 #[utoipa::path(post, path = "/v1/restricted/users",
     tag="admin",

@@ -1,10 +1,7 @@
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::{SecretAware, VerificationRequired};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use axum::{
-    extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode,
-    Json,
-};
+use axum::{extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
 use jsonwebtoken::{DecodingKey, Validation};
 
 #[derive(Debug, Clone)]
@@ -14,7 +11,10 @@ pub struct BearerToken(pub String);
 pub struct StatelessLoggedInUser(pub UserDTO);
 
 #[derive(Debug, Clone)]
-pub struct RefreshRequest(pub UserDTO);
+pub struct RefreshToken(pub UserDTO);
+
+#[derive(Debug, Clone)]
+pub struct PasswordToken(pub UserDTO);
 
 impl<S> FromRequestParts<S> for BearerToken
 where
@@ -68,9 +68,7 @@ where
             Ok(decoded_token) => {
                 tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
-                    TokenType::Access => {
-                        Ok(StatelessLoggedInUser(decoded_token.claims.user))
-                    }
+                    TokenType::Access => Ok(StatelessLoggedInUser(decoded_token.claims.user)),
                     _ => Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {
@@ -121,7 +119,7 @@ where
     }
 }
 
-impl<S> FromRequestParts<S> for RefreshRequest
+impl<S> FromRequestParts<S> for RefreshToken
 where
     S: SecretAware + Send + Sync,
 {
@@ -139,7 +137,76 @@ where
             Ok(decoded_token) => {
                 tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
-                    TokenType::Refresh => Ok(RefreshRequest(decoded_token.claims.user)),
+                    TokenType::Refresh => Ok(RefreshToken(decoded_token.claims.user)),
+                    _ => Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token type"),
+                        }),
+                    )),
+                }
+            }
+            Err(error) => match error.kind() {
+                jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                    tracing::debug!("Invalid token: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    ))
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                    tracing::debug!("Invalid signature: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid signature"),
+                        }),
+                    ))
+                }
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                    tracing::debug!("Expired token: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Expired token"),
+                        }),
+                    ))
+                }
+                _ => {
+                    tracing::warn!("Unknown error: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Unknown error"),
+                        }),
+                    ))
+                }
+            },
+        }
+    }
+}
+
+impl<S> FromRequestParts<S> for PasswordToken
+where
+    S: SecretAware + Send + Sync,
+{
+    type Rejection = (StatusCode, Json<MessageResponse>);
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let BearerToken(token) = BearerToken::from_request_parts(parts, state).await?;
+        let decoded = jsonwebtoken::decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(state.get_secret().as_ref()),
+            &Validation::default(),
+        );
+
+        match decoded {
+            Ok(decoded_token) => {
+                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
+                match decoded_token.claims.token_type {
+                    TokenType::Password => Ok(PasswordToken(decoded_token.claims.user)),
                     _ => Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {

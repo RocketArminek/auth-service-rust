@@ -1,9 +1,9 @@
-name: Security Scan Schedule
+name: Security Scan Scheduled
 
 on:
   workflow_dispatch: ~
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 10 1 * *'
 
 jobs:
 #  security-audit:

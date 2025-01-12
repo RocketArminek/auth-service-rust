@@ -1,9 +1,9 @@
 use auth_service::domain::crypto::SchemeAwareHasher;
+use auth_service::domain::error::UserError;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use chrono::Utc;
 use uuid::Uuid;
-use auth_service::domain::error::UserError;
 
 #[test]
 fn it_can_be_created() {
@@ -115,11 +115,12 @@ fn test_invalid_email_formats() {
             "Password1#".to_string(),
             None,
             None,
-            Some(true)
+            Some(true),
         );
         assert!(
             matches!(result, Err(UserError::InvalidEmail { email: e }) if e == email),
-            "Email '{}' should be invalid", email
+            "Email '{}' should be invalid",
+            email
         );
     }
 }
@@ -145,7 +146,7 @@ fn test_valid_email_formats() {
             "Password1#".to_string(),
             None,
             None,
-            Some(true)
+            Some(true),
         );
         assert!(result.is_ok(), "Email '{}' should be valid", email);
     }
@@ -168,8 +169,34 @@ fn test_password_all_requirements() {
             password.to_string(),
             None,
             None,
-            Some(true)
+            Some(true),
         );
+        assert!(result.is_ok(), "Password {} should be valid", password);
+    }
+}
+
+#[test]
+fn test_password_all_requirements_during_password_change() {
+    let valid_passwords = vec![
+        "Password1#",
+        "Complex1@Password",
+        "Abcd123!@#",
+        "Test@1234",
+        "Pa$$w0rd",
+        "Secure&123",
+    ];
+
+    for password in valid_passwords {
+        let mut user = User::now_with_email_and_password(
+            "test@example.com".to_string(),
+            "P#assword*123".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+        let result = user.change_password(password, &SchemeAwareHasher::default());
+
         assert!(result.is_ok(), "Password {} should be valid", password);
     }
 }
@@ -183,6 +210,26 @@ fn it_cannot_be_created_without_special_character() {
         Some(String::from("Snow")),
         Some(true),
     ) {
+        Ok(_) => panic!("User creation should fail"),
+        Err(e) => e,
+    };
+}
+
+#[test]
+fn it_cannot_change_to_password_without_special_character() {
+    let user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Password1#*123"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        Some(true),
+    );
+
+    let result = user
+        .unwrap()
+        .change_password("Password1", &SchemeAwareHasher::default());
+
+    match result {
         Ok(_) => panic!("User creation should fail"),
         Err(e) => e,
     };

@@ -3,9 +3,9 @@ use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::UserWithRoleRow;
 use crate::infrastructure::repository::RepositoryError;
+use async_trait::async_trait;
 use sqlx::{query, Error, Pool, Sqlite};
 use std::collections::HashMap;
-use async_trait::async_trait;
 use uuid::Uuid;
 
 #[derive(Clone)]

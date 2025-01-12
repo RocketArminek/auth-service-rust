@@ -322,9 +322,7 @@ async fn main() {
 
             println!("Role deleted for {}", name);
         }
-        Some(Commands::HealthCheck) => {
-
-        },
+        Some(Commands::HealthCheck) => {}
         Some(Commands::ConsumeRabbitmqMessages {
             exchange_name,
             dry_run,
@@ -545,10 +543,7 @@ fn setup_logging(config: &Configuration) {
         .json()
         .init();
 
-    tracing::info!(
-        version = env!("CARGO_PKG_VERSION"),
-        "Starting auth service"
-    );
+    tracing::info!(version = env!("CARGO_PKG_VERSION"), "Starting auth service");
 }
 
 fn debug_config(config: &Configuration) {

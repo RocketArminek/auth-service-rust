@@ -51,7 +51,8 @@ pub async fn verified_acl(
                 Json(MessageResponse {
                     message: String::from("User is not verified!"),
                 }),
-            ).into_response();
+            )
+                .into_response();
         }
     }
 

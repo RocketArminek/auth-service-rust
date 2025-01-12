@@ -8,6 +8,7 @@ pub enum TokenType {
     Access,
     Refresh,
     Verification,
+    Password,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -29,39 +29,13 @@ impl User {
         created_at: DateTime<Utc>,
         is_verified: Option<bool>,
     ) -> Result<Self, UserError> {
-        let email_regex = regex!(
-            r#"(?i)^[a-z0-9.+_-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z0-9-]+$"#
-        );
-        let password_digit_check = regex!(r#"\d"#);
-        let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
-        let password_uppercase_check = regex!(r#"[A-Z]"#);
-        let password_lowercase_check = regex!(r#"[a-z]"#);
+        let email_regex = regex!(r#"(?i)^[a-z0-9.+_-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z0-9-]+$"#);
         let is_verified = is_verified.unwrap_or(false);
+
+        Self::validate_password(&not_hashed_password)?;
 
         if email.is_empty() {
             Err(UserError::InvalidEmail { email })
-        } else if not_hashed_password.is_empty() {
-            Err(UserError::EmptyPassword)
-        } else if not_hashed_password.len() < 8 {
-            Err(UserError::InvalidPassword {
-                reason: Some("Password must be at least 8 characters long".to_string()),
-            })
-        } else if !password_digit_check.is_match(&not_hashed_password) {
-            Err(UserError::InvalidPassword {
-                reason: Some("Password must contain at least one digit".to_string()),
-            })
-        } else if !password_special_character_check.is_match(&not_hashed_password) {
-            Err(UserError::InvalidPassword {
-                reason: Some("Password must contain at least one special character".to_string()),
-            })
-        } else if !password_uppercase_check.is_match(&not_hashed_password) {
-            Err(UserError::InvalidPassword {
-                reason: Some("Password must contain at least one uppercase letter".to_string()),
-            })
-        } else if !password_lowercase_check.is_match(&not_hashed_password) {
-            Err(UserError::InvalidPassword {
-                reason: Some("Password must contain at least one lowercase letter".to_string()),
-            })
         } else if !email_regex.is_match(&email) {
             Err(UserError::InvalidEmail { email })
         } else {
@@ -130,6 +104,50 @@ impl User {
 
     pub fn has_role(&self, role_name: String) -> bool {
         self.roles.iter().any(|role| role.name == role_name)
+    }
+
+    pub fn change_password(
+        &mut self,
+        new_password: &str,
+        hasher: &impl Hasher,
+    ) -> Result<(), UserError> {
+        Self::validate_password(&new_password)?;
+        self.password = hasher.hash_password(new_password)?;
+
+        Ok(())
+    }
+
+    fn validate_password(password: &str) -> Result<(), UserError> {
+        let password_digit_check = regex!(r#"\d"#);
+        let password_special_character_check = regex!(r#"[@$!%*#?&]"#);
+        let password_uppercase_check = regex!(r#"[A-Z]"#);
+        let password_lowercase_check = regex!(r#"[a-z]"#);
+
+        if !password_digit_check.is_match(password) {
+            return Err(UserError::InvalidPassword {
+                reason: Some("Password must contain at least one digit".to_string()),
+            });
+        } else if !password_special_character_check.is_match(password) {
+            return Err(UserError::InvalidPassword {
+                reason: Some("Password must contain at least one special character".to_string()),
+            });
+        } else if !password_uppercase_check.is_match(password) {
+            return Err(UserError::InvalidPassword {
+                reason: Some("Password must contain at least one uppercase letter".to_string()),
+            });
+        } else if !password_lowercase_check.is_match(password) {
+            return Err(UserError::InvalidPassword {
+                reason: Some("Password must contain at least one lowercase letter".to_string()),
+            });
+        } else if password.is_empty() {
+            return Err(UserError::EmptyPassword);
+        } else if password.len() < 8 {
+            return Err(UserError::InvalidPassword {
+                reason: Some("Password must be at least 8 characters long".to_string()),
+            });
+        }
+
+        Ok(())
     }
 }
 
