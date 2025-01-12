@@ -412,6 +412,7 @@ async fn main() {
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c().await.unwrap();
+        println!("Received Ctrl+C, starting graceful shutdown");
     };
 
     #[cfg(unix)]
@@ -420,7 +421,11 @@ async fn shutdown_signal() {
             .unwrap()
             .recv()
             .await;
+        println!("Received terminate signal, starting graceful shutdown");
     };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},
