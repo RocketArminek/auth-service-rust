@@ -250,6 +250,9 @@ The project employs a comprehensive testing approach:
    - Measure response times and throughput
    - Verify system behavior under stress
 
+5. **OWASP ZAP Security Scanning**
+   - Performing zap full scan (check github action artifacts to read reports)
+
 ## Running Tests
 
 ```bash
