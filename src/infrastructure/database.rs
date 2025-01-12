@@ -1,9 +1,11 @@
+use std::time::Duration;
 use crate::application::database_configuration::DatabaseConfiguration;
 use sqlx::migrate::{MigrateDatabase, MigrateError};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
+use crate::infrastructure::utils::retry_with_backoff;
 
 #[derive(Debug, Clone)]
 pub enum DatabaseEngine {
@@ -123,19 +125,27 @@ pub async fn create_sqlite_pool(
     max_connections: u32,
     timeout_ms: u64,
 ) -> Result<Pool<Sqlite>, Error> {
-    if !Sqlite::database_exists(database_url).await? {
-        Sqlite::create_database(database_url).await?;
-        tracing::info!(
-            "Database does not exists. Database created for {}",
-            database_url
-        );
-    }
+    retry_with_backoff(
+        || async {
+            if !Sqlite::database_exists(database_url).await? {
+                Sqlite::create_database(database_url).await?;
+                tracing::info!(
+                    "Database does not exists. Database created for {}",
+                    database_url
+                );
+            }
 
-    SqlitePoolOptions::new()
-        .max_connections(max_connections)
-        .acquire_timeout(std::time::Duration::from_millis(timeout_ms))
-        .connect(&database_url)
-        .await
+            SqlitePoolOptions::new()
+                .max_connections(max_connections)
+                .acquire_timeout(Duration::from_millis(timeout_ms))
+                .connect(&database_url)
+                .await
+        },
+        "Sqlite",
+        5,
+        Duration::from_millis(500),
+        true
+    ).await
 }
 
 pub async fn create_mysql_pool(
@@ -143,17 +153,25 @@ pub async fn create_mysql_pool(
     max_connections: u32,
     timeout_ms: u64,
 ) -> Result<Pool<MySql>, Error> {
-    if !MySql::database_exists(database_url).await? {
-        MySql::create_database(database_url).await?;
-        tracing::info!(
-            "Database does not exists. Database created {}",
-            database_url.split("/").last().unwrap_or("")
-        );
-    }
+    retry_with_backoff(
+        || async {
+            if !MySql::database_exists(database_url).await? {
+                MySql::create_database(database_url).await?;
+                tracing::info!(
+                    "Database does not exists. Database created {}",
+                    database_url.split("/").last().unwrap_or("")
+                );
+            }
 
-    MySqlPoolOptions::new()
-        .max_connections(max_connections)
-        .acquire_timeout(std::time::Duration::from_millis(timeout_ms))
-        .connect(&database_url)
-        .await
+            MySqlPoolOptions::new()
+                .max_connections(max_connections)
+                .acquire_timeout(Duration::from_millis(timeout_ms))
+                .connect(&database_url)
+                .await
+        },
+        "MySql",
+        5,
+        Duration::from_millis(500),
+        true
+    ).await
 }
