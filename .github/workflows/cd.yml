@@ -1,4 +1,4 @@
-name: Rust auth api deployment
+name: CI/CD
 
 on:
   workflow_dispatch: ~
