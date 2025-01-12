@@ -8,6 +8,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::api::dto::*;
 use crate::api::restricted_controller::*;
+use crate::api::security_mw::security_headers;
 use crate::api::server_state::ServerState;
 use crate::api::stateless_auth_controller::*;
 use crate::api::user_controller::*;
@@ -54,6 +55,7 @@ pub fn routes(state: ServerState) -> Router {
                         .layer(TraceLayer::new_for_http()),
                 ),
         )
+        .layer(middleware::from_fn(security_headers))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
