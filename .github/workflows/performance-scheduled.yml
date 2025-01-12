@@ -1,4 +1,4 @@
-name: Performance Tests Scheduled
+name: Performance Tests Weekly
 
 on:
   workflow_dispatch: ~

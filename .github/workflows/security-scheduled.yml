@@ -1,4 +1,4 @@
-name: Security Scan Scheduled
+name: Security Scan Monthly
 
 on:
   workflow_dispatch: ~
