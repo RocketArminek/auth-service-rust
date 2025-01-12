@@ -1,10 +1,10 @@
-// File: src/api/security_mw.rs
-
 use axum::{
     extract::Request,
     middleware::Next,
     response::Response,
 };
+use axum::http::{Method, StatusCode};
+use axum::response::IntoResponse;
 
 pub async fn security_headers(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
@@ -30,4 +30,24 @@ pub async fn security_headers(request: Request, next: Next) -> Response {
     );
 
     response
+}
+
+pub async fn restrict_methods(
+    req: Request,
+    next: Next,
+) -> Response {
+    match *req.method() {
+        Method::GET | Method::POST | Method::PUT | Method::PATCH | Method::DELETE =>
+            next.run(req).await,
+        Method::OPTIONS => {
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Allow", "GET, POST, PUT, PATCH")
+                .body(axum::body::Body::empty())
+                .unwrap();
+
+            response
+        }
+        _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
+    }
 }
