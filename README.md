@@ -4,6 +4,9 @@ A high-performance, event-driven authentication and authorization service writte
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 ![Rust Version](https://img.shields.io/badge/rust-1.84.0%2B-orange.svg)
+[![CI/CD](https://github.com/RocketArminek/auth-service-rust/actions/workflows/cd.yml/badge.svg)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/cd.yml)
+[![Performance Tests](https://github.com/RocketArminek/auth-service-rust/actions/workflows/performance-scheduled.yml/badge.svg)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/performance-scheduled.yml)
+[![Security Scan](https://github.com/RocketArminek/auth-service-rust/actions/workflows/security-scheduled.yml/badge.svg?branch=main)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/security-scheduled.yml)
 
 ## Important Disclaimers
 
