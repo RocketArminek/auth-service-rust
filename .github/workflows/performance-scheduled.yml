@@ -7,7 +7,7 @@ on:
 
 jobs:
   performance-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     name: "Performance"
     timeout-minutes: 10
     strategy:
