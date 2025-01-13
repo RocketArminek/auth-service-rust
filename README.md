@@ -234,24 +234,11 @@ The project employs a comprehensive testing approach:
 ## Running Tests
 
 ```bash
-# Run unit tests
+# Run tests
 cargo test
-
-# Run integration tests
-cargo test --test integration
 
 # Run performance tests
 k6 run tests/performance/auth_flow.js
-```
-
-### Database Migrations
-
-```bash
-# Create new migration
-sqlx migrate add <name>
-
-# Run migrations
-sqlx migrate run
 ```
 
 ## Production Deployment
