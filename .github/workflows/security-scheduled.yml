@@ -37,7 +37,7 @@ jobs:
 #          cargo clippy -- -W clippy::all -W clippy::correctness -W clippy::suspicious -W clippy::complexity -W clippy::perf -D warnings
 
   zap-scan:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Security"
     strategy:
       matrix:

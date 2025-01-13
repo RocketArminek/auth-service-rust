@@ -19,7 +19,7 @@ env:
 
 jobs:
   dist-cache:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Prepare production docker image"
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
 
   prepare:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Download vendors & Build tests"
     timeout-minutes: 10
     steps:
@@ -102,7 +102,7 @@ jobs:
   acceptance-test:
     needs:
       - prepare
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Acceptance"
     timeout-minutes: 3
     strategy:
@@ -172,7 +172,7 @@ jobs:
   performance-test:
     needs:
       - dist-cache
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Performance"
     timeout-minutes: 10
     strategy:
@@ -242,7 +242,7 @@ jobs:
     name: "Security"
     needs:
       - dist-cache
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     strategy:
       matrix:
         db:
@@ -309,7 +309,7 @@ jobs:
           artifact_name: zap-scan-${{ matrix.db.engine }}-${{ github.sha }}
 
   publish-server-image:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     name: "Publish server production image"
     needs:
       - acceptance-test
