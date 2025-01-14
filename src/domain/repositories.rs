@@ -4,6 +4,7 @@ use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::Error;
 use uuid::Uuid;
+use crate::domain::session::Session;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
@@ -22,4 +23,13 @@ pub trait RoleRepository: Send + Sync {
     async fn get_all(&self) -> Result<Vec<Role>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
+}
+
+#[async_trait]
+pub trait SessionRepository: Send + Sync {
+    async fn save(&self, session: &Session) -> Result<(), RepositoryError>;
+    async fn get_by_id(&self, id: &Uuid) -> Result<Session, RepositoryError>;
+    async fn get_by_user_id(&self, user_id: &Uuid) -> Result<Vec<Session>, RepositoryError>;
+    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
+    async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
 }
