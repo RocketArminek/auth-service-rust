@@ -1,6 +1,6 @@
 use chrono::{DateTime, Timelike, Utc};
-use uuid::{NoContext, Timestamp, Uuid};
 use serde::{Deserialize, Serialize};
+use uuid::{NoContext, Timestamp, Uuid};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
