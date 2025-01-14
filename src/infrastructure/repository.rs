@@ -1,10 +1,12 @@
 use crate::api::dto::MessageResponse;
-use crate::domain::repositories::{RoleRepository, UserRepository};
+use crate::domain::repositories::{RoleRepository, UserRepository, SessionRepository};
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use crate::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
+use crate::infrastructure::mysql_session_repository::MysqlSessionRepository;
+use crate::infrastructure::sqlite_session_repository::SqliteSessionRepository;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
@@ -92,5 +94,12 @@ pub fn create_role_repository(pool: DatabasePool) -> Arc<Mutex<dyn RoleRepositor
     match pool {
         DatabasePool::MySql(pool) => Arc::new(Mutex::new(MysqlRoleRepository::new(pool))),
         DatabasePool::Sqlite(pool) => Arc::new(Mutex::new(SqliteRoleRepository::new(pool))),
+    }
+}
+
+pub fn create_session_repository(pool: DatabasePool) -> Arc<Mutex<dyn SessionRepository>> {
+    match pool {
+        DatabasePool::MySql(pool) => Arc::new(Mutex::new(MysqlSessionRepository::new(pool))),
+        DatabasePool::Sqlite(pool) => Arc::new(Mutex::new(SqliteSessionRepository::new(pool))),
     }
 }

@@ -1,7 +1,7 @@
 use crate::utils::cli::CommandFactory;
 use crate::utils::events::wait_for_event;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
+use auth_service::domain::repositories::{RoleRepository, SessionRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use lapin::Consumer;
@@ -35,16 +35,19 @@ impl PublisherTestContext {
 pub struct DatabaseTestContext {
     pub user_repository: Arc<Mutex<dyn UserRepository>>,
     pub role_repository: Arc<Mutex<dyn RoleRepository>>,
+    pub session_repository: Arc<Mutex<dyn SessionRepository>>,
 }
 
 impl DatabaseTestContext {
     pub fn new(
         user_repository: Arc<Mutex<dyn UserRepository>>,
         role_repository: Arc<Mutex<dyn RoleRepository>>,
+        session_repository: Arc<Mutex<dyn SessionRepository>>,
     ) -> DatabaseTestContext {
         DatabaseTestContext {
             user_repository,
             role_repository,
+            session_repository,
         }
     }
 }

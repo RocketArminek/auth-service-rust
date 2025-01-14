@@ -1,8 +1,9 @@
 use chrono::{DateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
