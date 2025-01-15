@@ -1,19 +1,21 @@
+use std::ops::Add;
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::{Hasher, SchemeAwareHasher};
-use crate::domain::jwt::{StatelessClaims, TokenType, UserDTO};
-use crate::domain::user::PasswordHandler;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
+use crate::api::axum_stateful_extractor::LoggedInUser;
+use crate::domain::jwt::{StatelessClaims, UserDTO};
+use crate::domain::user::PasswordHandler;
+use crate::domain::jwt::{StatefulClaims, TokenType};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use std::ops::Add;
-use crate::api::axum_stateless_extractor::{RefreshToken, LoggedInUser};
+use crate::domain::session::Session;
 
-#[utoipa::path(post, path = "/v1/stateless/login",
-    tag="stateless",
+#[utoipa::path(post, path = "/v1/stateful/login",
+    tag="stateful",
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login response", content_type = "application/json", body = LoginResponse),
@@ -50,6 +52,7 @@ pub async fn login(
                 )
                     .into_response();
             }
+
             if hasher.is_password_outdated(&user.password) {
                 let mut outdated_user = user.clone();
                 let scheme = state.config.password_hashing_scheme();
@@ -81,25 +84,31 @@ pub async fn login(
                 });
             }
 
-            let user_response = UserDTO::from(user);
+            let user_response = UserDTO::from(user.clone());
 
             let now = Utc::now();
+
             let at_duration = Duration::new(at_duration_in_seconds, 0).unwrap_or_default();
             let at_exp = now.add(at_duration);
 
-            let at_body = StatelessClaims::new(
+            let rt_duration = Duration::new(rt_duration_in_seconds, 0).unwrap_or_default();
+            let rt_exp = now.add(rt_duration);
+
+            let session = Session::now(user.id, rt_exp.clone());
+
+            let at_body = StatefulClaims::new(
                 at_exp.timestamp() as usize,
                 user_response.clone(),
                 TokenType::Access,
+                session.id.clone()
             );
+
             let access_token = encode(
                 &Header::default(),
                 &at_body,
                 &EncodingKey::from_secret(secret.as_ref()),
             );
 
-            let rt_duration = Duration::new(rt_duration_in_seconds, 0).unwrap_or_default();
-            let rt_exp = now.add(rt_duration);
             let rt_body = StatelessClaims::new(
                 rt_exp.timestamp() as usize,
                 user_response.clone(),
@@ -113,21 +122,35 @@ pub async fn login(
             );
 
             match (access_token, refresh_token) {
-                (Ok(access_token), Ok(refresh_token)) => (
-                    StatusCode::OK,
-                    Json(LoginResponse {
-                        user: user_response.clone(),
-                        refresh_token: TokenResponse {
-                            value: refresh_token,
-                            expires_at: rt_exp.timestamp() as usize,
-                        },
-                        access_token: TokenResponse {
-                            value: access_token,
-                            expires_at: at_exp.timestamp() as usize,
-                        },
-                    }),
-                )
-                    .into_response(),
+                (Ok(access_token), Ok(refresh_token)) => {
+                    match state.session_repository.lock().await.save(&session).await {
+                        Ok(_) => (
+                            StatusCode::OK,
+                            Json(LoginResponse {
+                                user: user_response,
+                                access_token: TokenResponse {
+                                    value: access_token,
+                                    expires_at: at_exp.timestamp() as usize,
+                                },
+                                refresh_token: TokenResponse {
+                                    value: refresh_token,
+                                    expires_at: rt_exp.timestamp() as usize,
+                                },
+                            }),
+                        )
+                            .into_response(),
+                        Err(e) => {
+                            tracing::error!("Could not create session: {:?}", e);
+                            (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                Json(MessageResponse {
+                                    message: String::from("Could not create session"),
+                                }),
+                            )
+                                .into_response()
+                        }
+                    }
+                }
                 _ => (
                     StatusCode::FORBIDDEN,
                     Json(MessageResponse {
@@ -141,15 +164,37 @@ pub async fn login(
     }
 }
 
-#[utoipa::path(get, path = "/v1/stateless/authenticate",
-    tag="stateless",
+#[utoipa::path(post, path = "/v1/stateful/logout",
+    tag="stateful",
     responses(
-        (status = 200, description = "Token verified", content_type = "application/json", body = UserDTO),
+        (status = 200, description = "Delete current session", content_type = "application/json",),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn logout(
+    State(state): State<ServerState>,
+    LoggedInUser{ session, .. }: LoggedInUser
+) -> impl IntoResponse {
+    let result = state.session_repository
+        .lock().await.delete(&session.id).await;
+
+    match result {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(e) => e.into_response(),
+    }
+}
+
+#[utoipa::path(get, path = "/v1/stateful/authenticate",
+    tag="stateful",
+    responses(
+        (status = 200, description = "Session verified", content_type = "application/json", body = UserDTO),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
-pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse {
+pub async fn authenticate(
+    LoggedInUser { user, .. }: LoggedInUser
+) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id;
     let user_roles = user.roles.join(",");
@@ -163,83 +208,4 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
     );
 
     (StatusCode::OK, headers, Json(UserDTO::from(user))).into_response()
-}
-
-#[utoipa::path(post, path = "/v1/stateless/refresh",
-    tag="stateless",
-    responses(
-        (status = 200, description = "Token refresh", content_type = "application/json", body = LoginResponse),
-        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
-    )
-)]
-pub async fn refresh(
-    State(state): State<ServerState>,
-    RefreshToken(request): RefreshToken,
-) -> impl IntoResponse {
-    let locked_user_repository = state.user_repository.lock().await;
-    let user = locked_user_repository.get_by_email(&request.email).await;
-
-    match user {
-        Ok(user) => {
-            let user_response = UserDTO::from(user);
-
-            let now = Utc::now();
-            let at_duration = Duration::new(state.config.at_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let at_exp = now.add(at_duration);
-
-            let at_body = StatelessClaims::new(
-                at_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Access,
-            );
-            let access_token = encode(
-                &Header::default(),
-                &at_body,
-                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
-            );
-
-            let rt_duration = Duration::new(state.config.rt_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let rt_exp = now.add(rt_duration);
-            let rt_body = StatelessClaims::new(
-                rt_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Refresh,
-            );
-
-            let refresh_token = encode(
-                &Header::default(),
-                &rt_body,
-                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
-            );
-
-            match (access_token, refresh_token) {
-                (Ok(access_token), Ok(refresh_token)) => (
-                    StatusCode::OK,
-                    Json(LoginResponse {
-                        user: user_response.clone(),
-                        refresh_token: TokenResponse {
-                            value: refresh_token,
-                            expires_at: rt_exp.timestamp() as usize,
-                        },
-                        access_token: TokenResponse {
-                            value: access_token,
-                            expires_at: at_exp.timestamp() as usize,
-                        },
-                    }),
-                )
-                    .into_response(),
-                _ => (
-                    StatusCode::FORBIDDEN,
-                    Json(MessageResponse {
-                        message: String::from("Could not encode token"),
-                    }),
-                )
-                    .into_response(),
-            }
-        }
-        Err(e) => e.into_response(),
-    }
 }

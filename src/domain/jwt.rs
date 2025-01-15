@@ -11,15 +11,43 @@ pub enum TokenType {
     Password,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct StatefulClaims {
+    pub exp: usize,
+    pub user: UserDTO,
+    pub token_type: TokenType,
+    pub session_id: Uuid
+}
+
+impl StatefulClaims {
+    pub fn new(
+        exp: usize,
+        user: UserDTO,
+        token_type: TokenType,
+        session_id: Uuid
+    ) -> StatefulClaims {
+        StatefulClaims {
+            exp,
+            user,
+            token_type,
+            session_id,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
+pub struct StatelessClaims {
     pub exp: usize,
     pub user: UserDTO,
     pub token_type: TokenType,
 }
 
-impl Claims {
-    pub fn new(exp: usize, user: UserDTO, token_type: TokenType) -> Self {
+impl StatelessClaims {
+    pub fn new(
+        exp: usize,
+        user: UserDTO,
+        token_type: TokenType
+    ) -> Self {
         Self {
             exp,
             user,

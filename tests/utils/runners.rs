@@ -104,6 +104,7 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
+    let session_repository = create_session_repository(pool.clone());
 
     let message_publisher = create_message_publisher(config.publisher()).await;
     let (_, consumer, _) = setup_test_consumer(config.publisher()).await;
@@ -112,6 +113,7 @@ where
         &config,
         user_repository.clone(),
         role_repository.clone(),
+        session_repository.clone(),
         message_publisher,
     )
     .await;
@@ -119,6 +121,7 @@ where
     test(AcceptanceTestContext::new(
         user_repository,
         role_repository,
+        session_repository,
         server,
         consumer,
     ))

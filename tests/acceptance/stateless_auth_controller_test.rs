@@ -3,7 +3,7 @@ use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse};
 use auth_service::application::configuration_types::{DurationInSeconds, HiddenString};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
-use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
+use auth_service::domain::jwt::{StatelessClaims, TokenType, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
@@ -129,7 +129,7 @@ async fn it_issues_access_token_for_not_verified_user() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(body.access_token.value.len() > 0);
 
-            let token = decode::<Claims>(
+            let token = decode::<StatelessClaims>(
                 &body.access_token.value,
                 &DecodingKey::from_secret("secret".as_ref()),
                 &Validation::default(),
@@ -185,7 +185,7 @@ async fn it_issues_refresh_token() {
             assert_eq!(body.refresh_token.expires_at, exp.timestamp() as usize);
             assert!(body.refresh_token.value.len() > 0);
 
-            let token = decode::<Claims>(
+            let token = decode::<StatelessClaims>(
                 &body.refresh_token.value,
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::default(),
@@ -505,7 +505,7 @@ async fn it_refreshes_token() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(body.access_token.value.len() > 0);
 
-            let token = decode::<Claims>(
+            let token = decode::<StatelessClaims>(
                 &body.access_token.value,
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::default(),
@@ -658,7 +658,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
             let now = Utc::now();
             let exp = now.sub(Duration::days(2));
 
-            let claims = Claims::new(
+            let claims = StatelessClaims::new(
                 exp.timestamp() as usize,
                 UserDTO::from(user),
                 TokenType::Access,

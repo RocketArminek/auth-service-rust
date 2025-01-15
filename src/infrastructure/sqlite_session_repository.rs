@@ -4,6 +4,9 @@ use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
+use crate::domain::user::User;
+use crate::infrastructure::dto::UserRow;
+use crate::infrastructure::dto::SessionWithUserRow;
 
 #[derive(Clone)]
 pub struct SqliteSessionRepository {
@@ -99,4 +102,35 @@ impl SessionRepository for SqliteSessionRepository {
 
         Ok(())
     }
-} 
+
+    async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError> {
+        let row = sqlx::query_as::<_, SessionWithUserRow>(
+            r#"
+            SELECT 
+                s.*,
+                u.id as "user.id",
+                u.email as "user.email",
+                u.password as "user.password",
+                u.created_at as "user.created_at",
+                u.first_name as "user.first_name",
+                u.last_name as "user.last_name",
+                u.avatar_path as "user.avatar_path",
+                u.is_verified as "user.is_verified"
+            FROM sessions s
+            INNER JOIN users u ON s.user_id = u.id
+            WHERE s.id = ?
+            "#,
+        )
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => {
+                RepositoryError::NotFound(format!("Session not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
+
+        Ok(row.into())
+    }
+}

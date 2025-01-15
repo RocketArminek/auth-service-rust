@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{PasswordToken, StatelessLoggedInUser};
+use crate::api::axum_extractor::{PasswordToken};
 use crate::api::dto::{
     ChangePasswordRequest, CreateUserRequest, CreatedResponse, MessageResponse,
     ResetPasswordRequest, UpdateUserRequest, VerifyUserRequest,
@@ -8,7 +8,7 @@ use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::event::UserEvents::{PasswordReset, PasswordResetRequested};
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::domain::jwt::{StatelessClaims, TokenType, UserDTO};
 use crate::domain::user::{PasswordHandler, User};
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -18,6 +18,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
 use std::ops::Add;
 use std::string::ToString;
+use crate::api::axum_stateless_extractor::LoggedInUser;
 
 #[utoipa::path(post, path = "/v1/users",
     request_body = CreateUserRequest,
@@ -111,7 +112,7 @@ pub async fn create_user(
                                     .unwrap_or_default();
                             let vr_exp = now.add(vr_duration);
 
-                            let vr_body = Claims::new(
+                            let vr_body = StatelessClaims::new(
                                 vr_exp.timestamp() as usize,
                                 user_dto.clone(),
                                 TokenType::Verification,
@@ -211,7 +212,7 @@ pub async fn create_user(
 )]
 pub async fn update_profile(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     request: Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
     let first_name = request.first_name.clone();
@@ -273,7 +274,7 @@ pub async fn update_profile(
 )]
 pub async fn verify(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     request: Json<VerifyUserRequest>,
 ) -> impl IntoResponse {
     let user = state.user_repository.lock().await.get_by_id(&user.id).await;
@@ -298,7 +299,7 @@ pub async fn verify(
                     .into_response();
             }
 
-            let decoded = jsonwebtoken::decode::<Claims>(
+            let decoded = jsonwebtoken::decode::<StatelessClaims>(
                 &request.token,
                 &DecodingKey::from_secret(state.get_secret().as_ref()),
                 &Validation::default(),
@@ -379,7 +380,7 @@ pub async fn verify(
 )]
 pub async fn resend_verification(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
 ) -> impl IntoResponse {
     let user = state.user_repository.lock().await.get_by_id(&user.id).await;
     match user {
@@ -409,7 +410,7 @@ pub async fn resend_verification(
                 .unwrap_or_default();
             let vr_exp = now.add(vr_duration);
 
-            let vr_body = Claims::new(
+            let vr_body = StatelessClaims::new(
                 vr_exp.timestamp() as usize,
                 user_dto.clone(),
                 TokenType::Verification,
@@ -487,7 +488,7 @@ pub async fn request_password_reset(
                 .unwrap_or_default();
             let rp_exp = now.add(rp_duration);
 
-            let rp_body = Claims::new(
+            let rp_body = StatelessClaims::new(
                 rp_exp.timestamp() as usize,
                 user_dto.clone(),
                 TokenType::Password,

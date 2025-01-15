@@ -32,4 +32,5 @@ pub trait SessionRepository: Send + Sync {
     async fn get_by_user_id(&self, user_id: &Uuid) -> Result<Vec<Session>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
+    async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError>;
 }

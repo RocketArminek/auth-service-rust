@@ -1,50 +1,20 @@
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+use axum::http::StatusCode;
+use axum::Json;
+use jsonwebtoken::{DecodingKey, Validation};
+use crate::api::axum_extractor::BearerToken;
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::{SecretAware};
 use crate::domain::jwt::{StatelessClaims, TokenType, UserDTO};
-use axum::{extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
-use jsonwebtoken::{DecodingKey, Validation};
 
 #[derive(Debug, Clone)]
-pub struct BearerToken(pub String);
+pub struct LoggedInUser(pub UserDTO);
 
 #[derive(Debug, Clone)]
-pub struct PasswordToken(pub UserDTO);
+pub struct RefreshToken(pub UserDTO);
 
-impl<S> FromRequestParts<S> for BearerToken
-where
-    S: Send + Sync,
-{
-    type Rejection = (StatusCode, Json<MessageResponse>);
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let headers = parts.headers.clone();
-        match headers.get(header::AUTHORIZATION) {
-            Some(value) => {
-                let value = value.to_str().unwrap_or("");
-                if value.starts_with("Bearer ") {
-                    Ok(BearerToken(value[7..].to_string()))
-                } else {
-                    tracing::warn!("Invalid Authorization header: {}", value);
-
-                    Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Missing bearer token"),
-                        }),
-                    ))
-                }
-            }
-            None => Err((
-                StatusCode::UNAUTHORIZED,
-                Json(MessageResponse {
-                    message: String::from("Authorization header is missing"),
-                }),
-            )),
-        }
-    }
-}
-
-impl<S> FromRequestParts<S> for PasswordToken
+impl<S> FromRequestParts<S> for LoggedInUser
 where
     S: SecretAware + Send + Sync,
 {
@@ -62,7 +32,76 @@ where
             Ok(decoded_token) => {
                 tracing::debug!("Decoded token: {:?}", decoded_token.claims);
                 match decoded_token.claims.token_type {
-                    TokenType::Password => Ok(PasswordToken(decoded_token.claims.user)),
+                    TokenType::Access => Ok(LoggedInUser(decoded_token.claims.user)),
+                    _ => Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token type"),
+                        }),
+                    )),
+                }
+            }
+            Err(error) => match error.kind() {
+                jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                    tracing::debug!("Invalid token: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid token"),
+                        }),
+                    ))
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                    tracing::debug!("Invalid signature: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Invalid signature"),
+                        }),
+                    ))
+                }
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                    tracing::debug!("Expired token: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Expired token"),
+                        }),
+                    ))
+                }
+                _ => {
+                    tracing::warn!("Unknown error: {:?}", error);
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(MessageResponse {
+                            message: String::from("Unknown error"),
+                        }),
+                    ))
+                }
+            },
+        }
+    }
+}
+
+impl<S> FromRequestParts<S> for RefreshToken
+where
+    S: SecretAware + Send + Sync,
+{
+    type Rejection = (StatusCode, Json<MessageResponse>);
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let BearerToken(token) = BearerToken::from_request_parts(parts, state).await?;
+        let decoded = jsonwebtoken::decode::<StatelessClaims>(
+            &token,
+            &DecodingKey::from_secret(state.get_secret().as_ref()),
+            &Validation::default(),
+        );
+
+        match decoded {
+            Ok(decoded_token) => {
+                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
+                match decoded_token.claims.token_type {
+                    TokenType::Refresh => Ok(RefreshToken(decoded_token.claims.user)),
                     _ => Err((
                         StatusCode::UNAUTHORIZED,
                         Json(MessageResponse {

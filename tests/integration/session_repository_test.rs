@@ -183,3 +183,35 @@ async fn it_fails_to_create_session_for_nonexistent_user() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_get_session_with_user() {
+    run_database_test_with_default(|c| async move {
+        let user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Password123!".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+        c.user_repository.lock().await.save(&user).await.unwrap();
+
+        let session = Session::now(user.id, Utc::now() + Duration::hours(1));
+        c.session_repository.lock().await.save(&session).await.unwrap();
+
+        let (saved_session, saved_user) = c
+            .session_repository
+            .lock()
+            .await
+            .get_session_with_user(&session.id)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_session.id, session.id);
+        assert_eq!(saved_session.user_id, user.id);
+        assert_eq!(saved_user.id, user.id);
+        assert_eq!(saved_user.email, user.email);
+    })
+    .await;
+}
