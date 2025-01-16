@@ -35,10 +35,7 @@ pub async fn create_restricted_user(
     let password = request.password.clone();
     let role = request.role.clone();
 
-    let existing = state
-        .user_repository
-        .get_by_email(&email)
-        .await;
+    let existing = state.user_repository.get_by_email(&email).await;
     if let Ok(_) = existing {
         return (
             StatusCode::CONFLICT,
@@ -153,11 +150,7 @@ pub async fn get_all_users(
     let page = pagination.page.unwrap_or(1);
     let limit = pagination.limit.unwrap_or(10);
 
-    match state
-        .user_repository
-        .find_all(page, limit)
-        .await
-    {
+    match state.user_repository.find_all(page, limit).await {
         Ok((users, total)) => {
             let user_responses: Vec<UserDTO> = users.into_iter().map(UserDTO::from).collect();
             (

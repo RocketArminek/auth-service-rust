@@ -144,10 +144,7 @@ async fn main() {
             match user {
                 Ok(mut user) => {
                     let role = role.to_owned().unwrap_or("USER".to_string());
-                    let existing_role = role_repository
-                        .get_by_name(&role)
-                        .await
-                        .unwrap();
+                    let existing_role = role_repository.get_by_name(&role).await.unwrap();
                     if let Err(e) =
                         user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme))
                     {
@@ -205,10 +202,7 @@ async fn main() {
             }
         }
         Some(Commands::DeleteUserByEmail { email }) => {
-            user_repository
-                .delete_by_email(email)
-                .await
-                .unwrap();
+            user_repository.delete_by_email(email).await.unwrap();
 
             println!("User deleted for {}", email);
         }
@@ -262,9 +256,7 @@ async fn main() {
         Some(Commands::InitRestrictedRole) => {
             let restricted_role_prefix =
                 env::var("RESTRICTED_ROLE_PREFIX").unwrap_or("ADMIN".to_string());
-            let role = role_repository
-                .get_by_name(&restricted_role_prefix)
-                .await;
+            let role = role_repository.get_by_name(&restricted_role_prefix).await;
 
             match role {
                 Err(_) => {
@@ -306,10 +298,7 @@ async fn main() {
             }
         }
         Some(Commands::DeleteRole { name }) => {
-            role_repository
-                .delete_by_name(name)
-                .await
-                .unwrap();
+            role_repository.delete_by_name(name).await.unwrap();
 
             println!("Role deleted for {}", name);
         }

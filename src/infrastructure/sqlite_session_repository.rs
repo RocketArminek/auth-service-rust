@@ -1,12 +1,12 @@
 use crate::domain::repositories::SessionRepository;
+use crate::domain::role::Role;
 use crate::domain::session::Session;
+use crate::domain::user::User;
+use crate::infrastructure::dto::SessionWithUserRow;
 use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
-use crate::domain::role::Role;
-use crate::domain::user::User;
-use crate::infrastructure::dto::SessionWithUserRow;
 
 #[derive(Clone)]
 pub struct SqliteSessionRepository {
@@ -126,15 +126,15 @@ impl SessionRepository for SqliteSessionRepository {
             WHERE s.id = ?
             "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                sqlx::Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("Session not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => {
+                RepositoryError::NotFound(format!("Session not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(

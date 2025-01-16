@@ -1,9 +1,9 @@
 use crate::utils::runners::run_database_test_with_default;
+use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::User;
 use chrono::{Duration, Utc};
 use uuid::Uuid;
-use auth_service::domain::role::Role;
 
 #[tokio::test]
 async fn it_can_add_session() {
@@ -21,11 +21,7 @@ async fn it_can_add_session() {
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
         c.session_repository.save(&session).await.unwrap();
 
-        let saved_session = c
-            .session_repository
-            .get_by_id(&session.id)
-            .await
-            .unwrap();
+        let saved_session = c.session_repository.get_by_id(&session.id).await.unwrap();
 
         assert_eq!(saved_session.user_id, user.id);
         assert_eq!(saved_session.id, session.id);
@@ -49,11 +45,7 @@ async fn it_can_get_session_by_id() {
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
         c.session_repository.save(&session).await.unwrap();
 
-        let saved_session = c
-            .session_repository
-            .get_by_id(&session.id)
-            .await
-            .unwrap();
+        let saved_session = c.session_repository.get_by_id(&session.id).await.unwrap();
 
         assert_eq!(saved_session.user_id, user.id);
     })
@@ -79,11 +71,7 @@ async fn it_can_get_sessions_by_user_id() {
         c.session_repository.save(&session1).await.unwrap();
         c.session_repository.save(&session2).await.unwrap();
 
-        let sessions = c
-            .session_repository
-            .get_by_user_id(&user.id)
-            .await
-            .unwrap();
+        let sessions = c.session_repository.get_by_user_id(&user.id).await.unwrap();
 
         assert_eq!(sessions.len(), 2);
         assert!(sessions.iter().any(|s| s.id == session1.id));
@@ -108,15 +96,9 @@ async fn it_can_delete_session() {
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
         c.session_repository.save(&session).await.unwrap();
 
-        c.session_repository
-            .delete(&session.id)
-            .await
-            .unwrap();
+        c.session_repository.delete(&session.id).await.unwrap();
 
-        let result = c
-            .session_repository
-            .get_by_id(&session.id)
-            .await;
+        let result = c.session_repository.get_by_id(&session.id).await;
 
         assert!(result.is_err());
     })
@@ -147,11 +129,7 @@ async fn it_can_delete_all_sessions_by_user_id() {
             .await
             .unwrap();
 
-        let sessions = c
-            .session_repository
-            .get_by_user_id(&user.id)
-            .await
-            .unwrap();
+        let sessions = c.session_repository.get_by_user_id(&user.id).await.unwrap();
 
         assert_eq!(sessions.len(), 0);
     })
@@ -163,9 +141,9 @@ async fn it_fails_to_create_session_for_nonexistent_user() {
     run_database_test_with_default(|c| async move {
         let non_existent_user_id = Uuid::new_v4();
         let session = Session::now(non_existent_user_id, Utc::now() + Duration::hours(1));
-        
+
         let result = c.session_repository.save(&session).await;
-        
+
         assert!(result.is_err());
     })
     .await;
@@ -181,7 +159,7 @@ async fn it_can_get_session_with_user() {
             None,
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         let role = Role::now("AWESOME".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
 
@@ -190,10 +168,7 @@ async fn it_can_get_session_with_user() {
         c.user_repository.save(&user).await.unwrap();
 
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
-        c.session_repository
-            .save(&session)
-            .await
-            .unwrap();
+        c.session_repository.save(&session).await.unwrap();
 
         let (saved_session, saved_user) = c
             .session_repository
@@ -207,5 +182,5 @@ async fn it_can_get_session_with_user() {
         assert_eq!(saved_user.email, user.email);
         assert_eq!(saved_user.roles.len(), 1);
     })
-        .await;
+    .await;
 }

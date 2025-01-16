@@ -27,10 +27,7 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let user = state
-        .user_repository
-        .get_by_email(&email)
-        .await;
+    let user = state.user_repository.get_by_email(&email).await;
 
     match user {
         Ok(user) => {
@@ -62,11 +59,7 @@ pub async fn login(
                         .unwrap_or(outdated_user.password.clone());
                     outdated_user.set_password(new_password);
                     let outdated_user = outdated_user.into();
-                    match state
-                        .user_repository
-                        .save(&outdated_user)
-                        .await
-                    {
+                    match state.user_repository.save(&outdated_user).await {
                         Ok(_) => tracing::debug!(
                             "Password updated for {}({})",
                             &outdated_user.email,

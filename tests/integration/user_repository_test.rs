@@ -15,11 +15,7 @@ async fn it_can_add_user() {
         )
         .unwrap();
         c.user_repository.save(&user).await.unwrap();
-        let row = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let row = c.user_repository.get_by_id(&user.id).await.unwrap();
 
         assert_eq!(row.email, user.email);
     })
@@ -38,11 +34,7 @@ async fn it_can_get_user_by_email() {
         )
         .unwrap();
         c.user_repository.save(&user).await.unwrap();
-        let row = c
-            .user_repository
-            .get_by_email(&user.email)
-            .await
-            .unwrap();
+        let row = c.user_repository.get_by_email(&user.email).await.unwrap();
 
         assert_eq!(row.email, user.email);
     })
@@ -65,10 +57,7 @@ async fn it_deletes_user_by_email() {
             .delete_by_email(&user.email)
             .await
             .unwrap();
-        let row = c
-            .user_repository
-            .get_by_email(&user.email)
-            .await;
+        let row = c.user_repository.get_by_email(&user.email).await;
 
         match row {
             Err(_) => {}
@@ -96,11 +85,7 @@ async fn it_can_assign_role_to_user() {
         user.add_role(role.clone());
         c.user_repository.save(&user).await.unwrap();
 
-        let row = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let row = c.user_repository.get_by_id(&user.id).await.unwrap();
 
         assert_eq!(row.roles[0].id, role.id);
         assert_eq!(row.roles[0].name, role.name);
@@ -131,11 +116,7 @@ async fn it_can_update_user_roles() {
         user.add_role(role2.clone());
         c.user_repository.save(&user).await.unwrap();
 
-        let updated_user = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let updated_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(updated_user.roles.len(), 1);
         assert_eq!(updated_user.roles[0].id, role2.id);
         assert_eq!(updated_user.roles[0].name, role2.name);
@@ -193,11 +174,7 @@ async fn it_can_handle_multiple_roles() {
         user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
         c.user_repository.save(&user).await.unwrap();
 
-        let saved_user = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(saved_user.roles.len(), 3);
 
         let mut saved_roles: Vec<String> =
@@ -234,11 +211,7 @@ async fn it_rolls_back_transaction_on_invalid_email() {
         let result = c.user_repository.save(&user2).await;
         assert!(result.is_err());
 
-        let saved_user = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(saved_user.first_name.unwrap(), "Test");
 
         let result = c.user_repository.get_by_id(&user2.id).await;
@@ -271,11 +244,7 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data() {
         let result = c.user_repository.save(&user).await;
         assert!(result.is_err());
 
-        let saved_user = c
-            .user_repository
-            .get_by_id(&user.id)
-            .await
-            .unwrap();
+        let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(saved_user.roles.len(), 1);
         assert_eq!(saved_user.roles[0].name, "valid_role");
     })

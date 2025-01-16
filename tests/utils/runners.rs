@@ -14,7 +14,9 @@ use auth_service::application::database_configuration::DatabaseConfigurationBuil
 use auth_service::application::message_publisher_configuration::MessagePublisherConfigurationBuilder;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
-use auth_service::infrastructure::repository::{create_role_repository, create_session_repository, create_user_repository};
+use auth_service::infrastructure::repository::{
+    create_role_repository, create_session_repository, create_user_repository,
+};
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
@@ -49,7 +51,12 @@ where
     let role_repository = create_role_repository(pool.clone());
     let session_repository = create_session_repository(pool.clone());
 
-    test(DatabaseTestContext::new(user_repository, role_repository, session_repository)).await;
+    test(DatabaseTestContext::new(
+        user_repository,
+        role_repository,
+        session_repository,
+    ))
+    .await;
 
     drop_database(&pool, config.database_url()).await;
 }

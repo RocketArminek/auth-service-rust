@@ -7,11 +7,7 @@ async fn it_can_add_role() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        let row = c
-            .role_repository
-            .get_by_id(&role.id)
-            .await
-            .unwrap();
+        let row = c.role_repository.get_by_id(&role.id).await.unwrap();
 
         assert_eq!(row.name, role.name);
     })
@@ -23,11 +19,7 @@ async fn it_can_get_role_by_id() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        let row = c
-            .role_repository
-            .get_by_id(&role.id)
-            .await
-            .unwrap();
+        let row = c.role_repository.get_by_id(&role.id).await.unwrap();
 
         assert_eq!(row.name, role.name);
     })
@@ -39,11 +31,7 @@ async fn it_can_get_role_by_name() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        let row = c
-            .role_repository
-            .get_by_name(&role.name)
-            .await
-            .unwrap();
+        let row = c.role_repository.get_by_name(&role.name).await.unwrap();
 
         assert_eq!(row.name, role.name);
     })
@@ -67,10 +55,7 @@ async fn it_can_delete_role() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        c.role_repository
-            .delete(&role.id)
-            .await
-            .unwrap();
+        c.role_repository.delete(&role.id).await.unwrap();
 
         let row = c.role_repository.get_by_id(&role.id).await;
 
@@ -108,11 +93,7 @@ async fn it_can_update_role() {
         role.name = "ROLE2".to_string();
         c.role_repository.save(&role).await.unwrap();
 
-        let row = c
-            .role_repository
-            .get_by_id(&role.id)
-            .await
-            .unwrap();
+        let row = c.role_repository.get_by_id(&role.id).await.unwrap();
 
         assert_eq!(row.name, role.name);
     })

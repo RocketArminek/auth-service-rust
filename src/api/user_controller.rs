@@ -50,10 +50,7 @@ pub async fn create_user(
             .into_response();
     }
 
-    let existing = state
-        .user_repository
-        .get_by_email(&email)
-        .await;
+    let existing = state.user_repository.get_by_email(&email).await;
     if let Ok(_) = existing {
         return (
             StatusCode::CONFLICT,
@@ -131,10 +128,7 @@ pub async fn create_user(
 
                                 events.push(&verification_requested);
 
-                                let result = state
-                                    .message_publisher
-                                    .publish_all(events)
-                                    .await;
+                                let result = state.message_publisher.publish_all(events).await;
 
                                 if result.is_err() {
                                     tracing::error!("Error publishing user events: {:?}", result);
@@ -144,10 +138,7 @@ pub async fn create_user(
                             }
                         }
 
-                        let result = state
-                            .message_publisher
-                            .publish_all(events)
-                            .await;
+                        let result = state.message_publisher.publish_all(events).await;
 
                         if result.is_err() {
                             tracing::error!("Error publishing user events: {:?}", result);
@@ -464,10 +455,7 @@ pub async fn request_password_reset(
     State(state): State<ServerState>,
     request: Json<ResetPasswordRequest>,
 ) -> impl IntoResponse {
-    let user = state
-        .user_repository
-        .get_by_email(&request.email)
-        .await;
+    let user = state.user_repository.get_by_email(&request.email).await;
 
     match user {
         Ok(user) => {
@@ -560,10 +548,7 @@ pub async fn reset_password(
                             let user_dto = UserDTO::from(user);
                             let password_reset = PasswordReset { user: user_dto };
 
-                            let result = state
-                                .message_publisher
-                                .publish(&password_reset)
-                                .await;
+                            let result = state.message_publisher.publish(&password_reset).await;
 
                             match result {
                                 Ok(_) => StatusCode::OK.into_response(),
