@@ -297,7 +297,7 @@ impl UserRepository for MysqlUserRepository {
         Ok(user)
     }
 
-    async fn delete_by_email(&self, email: &str) -> Result<(), Error> {
+    async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError> {
         query("DELETE FROM users WHERE email = ?")
             .bind(email)
             .execute(&self.pool)

@@ -3,7 +3,6 @@ use crate::domain::session::Session;
 use crate::domain::user::User;
 use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
-use sqlx::Error;
 use uuid::Uuid;
 
 #[async_trait]
@@ -11,7 +10,7 @@ pub trait UserRepository: Send + Sync {
     async fn save(&self, user: &User) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: &Uuid) -> Result<User, RepositoryError>;
     async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError>;
-    async fn delete_by_email(&self, email: &str) -> Result<(), Error>;
+    async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError>;
     async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError>;
 }
 
