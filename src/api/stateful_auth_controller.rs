@@ -29,6 +29,12 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
+
+    let hashing_scheme = state.config.password_hashing_scheme();
+    let at_duration_in_seconds = state.config.at_duration_in_seconds().to_signed();
+    let rt_duration_in_seconds = state.config.rt_duration_in_seconds().to_signed();
+    let secret = state.config.secret().to_string();
+
     let user = state
         .user_repository
         .lock()
@@ -38,12 +44,7 @@ pub async fn login(
 
     match user {
         Ok(user) => {
-            let hasher = SchemeAwareHasher::with_scheme(state.config.password_hashing_scheme());
-            let at_duration_in_seconds = state.config.at_duration_in_seconds().to_signed();
-            let rt_duration_in_seconds = state.config.rt_duration_in_seconds().to_signed();
-            let secret = state.config.secret().to_string();
-
-            if !user.verify_password(&hasher, &password) {
+            if !user.verify_password(&SchemeAwareHasher::with_scheme(hashing_scheme), &password) {
                 return (
                     StatusCode::UNAUTHORIZED,
                     Json(MessageResponse {
@@ -53,7 +54,7 @@ pub async fn login(
                     .into_response();
             }
 
-            if hasher.is_password_outdated(&user.password) {
+            if SchemeAwareHasher::with_scheme(hashing_scheme).is_password_outdated(&user.password) {
                 let mut outdated_user = user.clone();
                 let scheme = state.config.password_hashing_scheme();
                 tokio::task::spawn(async move {
@@ -85,7 +86,6 @@ pub async fn login(
             }
 
             let user_response = UserDTO::from(user.clone());
-
             let now = Utc::now();
 
             let at_duration = Duration::new(at_duration_in_seconds, 0).unwrap_or_default();
@@ -142,7 +142,7 @@ pub async fn login(
                         Err(e) => {
                             tracing::error!("Could not create session: {:?}", e);
                             (
-                                StatusCode::INTERNAL_SERVER_ERROR,
+                                StatusCode::FORBIDDEN,
                                 Json(MessageResponse {
                                     message: String::from("Could not create session"),
                                 }),
@@ -154,7 +154,7 @@ pub async fn login(
                 _ => (
                     StatusCode::FORBIDDEN,
                     Json(MessageResponse {
-                        message: String::from("Could not encode token"),
+                        message: String::from("Could not encode tokens"),
                     }),
                 )
                     .into_response(),
@@ -193,10 +193,11 @@ pub async fn logout(
     )
 )]
 pub async fn authenticate(
-    LoggedInUser { user, .. }: LoggedInUser
+    LoggedInUser { user, session }: LoggedInUser
 ) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id;
+    let session_id = session.id;
     let user_roles = user.roles.join(",");
     headers.insert(
         "X-User-Id",
@@ -205,6 +206,10 @@ pub async fn authenticate(
     headers.insert(
         "X-User-Roles",
         HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
+    );
+    headers.insert(
+        "X-Session-Id",
+        HeaderValue::from_str(&session_id.to_string()).unwrap_or(HeaderValue::from_static("")),
     );
 
     (StatusCode::OK, headers, Json(UserDTO::from(user))).into_response()

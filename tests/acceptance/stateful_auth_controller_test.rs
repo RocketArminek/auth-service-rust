@@ -1,14 +1,13 @@
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use ::serde_json::json;
-use auth_service::api::dto::{LoginResponse, MessageResponse};
-use auth_service::application::configuration_types::{DurationInSeconds, HiddenString};
+use auth_service::api::dto::{LoginResponse};
+use auth_service::application::configuration_types::{DurationInSeconds};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
-use auth_service::domain::jwt::{StatefulClaims, TokenType, UserDTO};
 use auth_service::domain::user::{PasswordHandler, User};
-use axum::http::{header, HeaderName, HeaderValue, StatusCode};
+use axum::http::{HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use std::ops::{Add, Sub};
+use std::ops::{Add};
+use auth_service::domain::role::Role;
 
 #[tokio::test]
 async fn it_returns_not_found_if_user_does_not_exist() {
@@ -96,7 +95,6 @@ async fn it_issues_access_token_and_creates_session() {
             assert!(body.access_token.value.len() > 0);
             assert!(body.refresh_token.value.len() > 0);
 
-            // Verify session exists
             let session = c
                 .session_repository
                 .lock()
@@ -172,6 +170,10 @@ async fn it_verifies_token() {
             Some(true),
         )
         .unwrap();
+        let role = Role::now("AWESOME".to_string()).unwrap();
+        c.role_repository.lock().await.save(&role).await.unwrap();
+
+        user.add_role(role);
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         c.user_repository.lock().await.save(&user).await.unwrap();
 
@@ -194,6 +196,9 @@ async fn it_verifies_token() {
             )
             .await;
 
+        let session = c.session_repository.lock().await.get_by_user_id(&user.id)
+            .await.unwrap().first().unwrap().clone();
+
         let user_id_from_header = response
             .headers()
             .get("X-User-Id")
@@ -201,8 +206,24 @@ async fn it_verifies_token() {
             .to_str()
             .unwrap();
 
+        let session_id_from_header = response
+            .headers()
+            .get("X-Session-Id")
+            .unwrap()
+            .to_str()
+            .unwrap();
+
+        let roles_from_header = response
+            .headers()
+            .get("X-User-Roles")
+            .unwrap()
+            .to_str()
+            .unwrap();
+
         assert_eq!(response.status_code(), StatusCode::OK);
         assert_eq!(user_id_from_header, user.id.to_string());
+        assert_eq!(session_id_from_header, session.id.to_string());
+        assert!(roles_from_header.contains("AWESOME"));
     })
     .await;
 }
@@ -243,17 +264,16 @@ async fn it_logs_out_successfully() {
 
         assert_eq!(response.status_code(), StatusCode::OK);
 
-        // Verify session is deleted
-        let session = c
+        let sessions = c
             .session_repository
             .lock()
             .await
             .get_by_user_id(&user.id)
-            .await;
+            .await
+            .unwrap();
 
-        assert!(session.is_err());
+        assert!(sessions.is_empty());
 
-        // Verify token no longer works
         let response = c
             .server
             .get("/v1/stateful/authenticate")

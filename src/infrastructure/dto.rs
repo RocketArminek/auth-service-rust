@@ -2,7 +2,6 @@ use crate::domain::user::User;
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
-use crate::domain::session::Session;
 
 #[derive(FromRow, Debug, Clone)]
 pub struct UserRow {
@@ -53,6 +52,12 @@ pub struct SessionWithUserRow {
     pub user_avatar_path: Option<String>,
     #[sqlx(rename = "user.is_verified")]
     pub user_is_verified: bool,
+    #[sqlx(rename = "role.id")]
+    pub role_id: Option<Uuid>,
+    #[sqlx(rename = "role.name")]
+    pub role_name: Option<String>,
+    #[sqlx(rename = "role.created_at")]
+    pub role_created_at: Option<DateTime<Utc>>,
 }
 
 impl From<UserRow> for User {
@@ -69,31 +74,5 @@ impl From<UserRow> for User {
             avatar_path: row.avatar_path,
             is_verified: row.is_verified,
         }
-    }
-}
-
-impl From<SessionWithUserRow> for (Session, User) {
-    fn from(row: SessionWithUserRow) -> Self {
-        let session = Session {
-            id: row.id,
-            user_id: row.user_id,
-            created_at: row.created_at,
-            expires_at: row.expires_at,
-        };
-
-        let user = User {
-            id: row.user_id_alias,
-            email: row.user_email,
-            password: row.user_password,
-            not_hashed_password: String::new(),
-            created_at: row.user_created_at,
-            first_name: row.user_first_name,
-            last_name: row.user_last_name,
-            avatar_path: row.user_avatar_path,
-            is_verified: row.user_is_verified,
-            roles: Vec::new(),
-        };
-
-        (session, user)
     }
 }

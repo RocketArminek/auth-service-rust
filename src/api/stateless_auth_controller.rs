@@ -84,6 +84,7 @@ pub async fn login(
             let user_response = UserDTO::from(user);
 
             let now = Utc::now();
+
             let at_duration = Duration::new(at_duration_in_seconds, 0).unwrap_or_default();
             let at_exp = now.add(at_duration);
 
@@ -92,6 +93,7 @@ pub async fn login(
                 user_response.clone(),
                 TokenType::Access,
             );
+
             let access_token = encode(
                 &Header::default(),
                 &at_body,
@@ -100,6 +102,7 @@ pub async fn login(
 
             let rt_duration = Duration::new(rt_duration_in_seconds, 0).unwrap_or_default();
             let rt_exp = now.add(rt_duration);
+
             let rt_body = StatelessClaims::new(
                 rt_exp.timestamp() as usize,
                 user_response.clone(),
@@ -129,7 +132,7 @@ pub async fn login(
                 )
                     .into_response(),
                 _ => (
-                    StatusCode::FORBIDDEN,
+                    StatusCode::INTERNAL_SERVER_ERROR,
                     Json(MessageResponse {
                         message: String::from("Could not encode token"),
                     }),

@@ -10,7 +10,7 @@ use crate::api::dto::*;
 use crate::api::restricted_controller::*;
 use crate::api::security_mw::{restrict_methods, security_headers};
 use crate::api::server_state::ServerState;
-use crate::api::stateless_auth_controller::*;
+use crate::api::{stateful_auth_controller, stateless_auth_controller};
 use crate::api::user_controller::*;
 use crate::api::utils_controller::*;
 use crate::domain::jwt::UserDTO;
@@ -23,13 +23,16 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/me/verification", patch(verify))
         .route("/v1/me/verification/resend", post(resend_verification))
         .route("/v1/me/password/reset", patch(reset_password))
-        .route("/v1/stateless/login", post(login))
-        .route("/v1/stateless/refresh", post(refresh))
+        .route("/v1/stateless/login", post(stateless_auth_controller::login))
+        .route("/v1/stateless/refresh", post(stateless_auth_controller::refresh))
+        .route("/v1/stateful/login", post(stateful_auth_controller::login))
+        .route("/v1/stateful/logout", post(stateful_auth_controller::logout))
+        .route("/v1/stateful/authenticate", get(stateful_auth_controller::authenticate))
         .route("/v1/password/reset", post(request_password_reset))
         .merge(
             Router::new()
                 .route("/v1/me", put(update_profile))
-                .route("/v1/stateless/authenticate", get(authenticate))
+                .route("/v1/stateless/authenticate", get(stateless_auth_controller::authenticate))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(state.clone(), verified_acl))
@@ -74,9 +77,12 @@ pub fn routes(state: ServerState) -> Router {
         get_all_users,
         get_user,
         delete_user,
-        login,
-        authenticate,
-        refresh,
+        stateless_auth_controller::login,
+        stateless_auth_controller::authenticate,
+        stateless_auth_controller::refresh,
+        stateful_auth_controller::login,
+        stateful_auth_controller::authenticate,
+        stateful_auth_controller::logout,
         update_profile,
         update_user,
         verify,
