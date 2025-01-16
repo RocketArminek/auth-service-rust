@@ -3,6 +3,7 @@ use auth_service::domain::session::Session;
 use auth_service::domain::user::User;
 use chrono::{Duration, Utc};
 use uuid::Uuid;
+use auth_service::domain::role::Role;
 
 #[tokio::test]
 async fn it_can_add_session() {
@@ -182,4 +183,47 @@ async fn it_fails_to_create_session_for_nonexistent_user() {
         assert!(result.is_err());
     })
     .await;
+}
+
+#[tokio::test]
+async fn it_can_get_session_with_user() {
+    run_database_test_with_default(|c| async move {
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Password123!".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+            .unwrap();
+        let role = Role::now("AWESOME".to_string()).unwrap();
+        c.role_repository.lock().await.save(&role).await.unwrap();
+
+        user.add_role(role);
+
+        c.user_repository.lock().await.save(&user).await.unwrap();
+
+        let session = Session::now(user.id, Utc::now() + Duration::hours(1));
+        c.session_repository
+            .lock()
+            .await
+            .save(&session)
+            .await
+            .unwrap();
+
+        let (saved_session, saved_user) = c
+            .session_repository
+            .lock()
+            .await
+            .get_session_with_user(&session.id)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_session.id, session.id);
+        assert_eq!(saved_session.user_id, user.id);
+        assert_eq!(saved_user.id, user.id);
+        assert_eq!(saved_user.email, user.email);
+        assert_eq!(saved_user.roles.len(), 1);
+    })
+        .await;
 }

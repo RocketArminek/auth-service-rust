@@ -4,6 +4,9 @@ use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
+use crate::domain::role::Role;
+use crate::domain::user::User;
+use crate::infrastructure::dto::SessionWithUserRow;
 
 #[derive(Clone)]
 pub struct MysqlSessionRepository {
@@ -99,4 +102,81 @@ impl SessionRepository for MysqlSessionRepository {
 
         Ok(())
     }
-} 
+
+    async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError> {
+        let rows = sqlx::query_as::<_, SessionWithUserRow>(
+            r#"
+            SELECT
+                s.*,
+                u.id as "user.id",
+                u.email as "user.email",
+                u.password as "user.password",
+                u.created_at as "user.created_at",
+                u.first_name as "user.first_name",
+                u.last_name as "user.last_name",
+                u.avatar_path as "user.avatar_path",
+                u.is_verified as "user.is_verified",
+                r.id as "role.id",
+                r.name as "role.name",
+                r.created_at as "role.created_at"
+            FROM sessions s
+            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE s.id = ?
+            "#,
+        )
+            .bind(id)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => {
+                    RepositoryError::NotFound(format!("Session not found with id: {}", id))
+                }
+                _ => RepositoryError::Database(e),
+            })?;
+
+        if rows.is_empty() {
+            return Err(RepositoryError::NotFound(format!(
+                "Session not found with id: {}",
+                id
+            )));
+        }
+
+        let first_row = &rows[0];
+        let session = Session {
+            id: first_row.id,
+            user_id: first_row.user_id,
+            created_at: first_row.created_at,
+            expires_at: first_row.expires_at,
+        };
+
+        let mut user = User {
+            id: first_row.user_id_alias,
+            email: first_row.user_email.clone(),
+            password: first_row.user_password.clone(),
+            not_hashed_password: String::new(),
+            created_at: first_row.user_created_at,
+            first_name: first_row.user_first_name.clone(),
+            last_name: first_row.user_last_name.clone(),
+            avatar_path: first_row.user_avatar_path.clone(),
+            is_verified: first_row.user_is_verified,
+            roles: Vec::new(),
+        };
+
+        let roles = rows
+            .iter()
+            .filter_map(|row| {
+                row.role_id.map(|role_id| Role {
+                    id: role_id,
+                    name: row.role_name.clone().unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                })
+            })
+            .collect();
+
+        user.roles = roles;
+
+        Ok((session, user))
+    }
+}
