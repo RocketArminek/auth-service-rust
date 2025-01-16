@@ -126,8 +126,10 @@ pub async fn create_user(
                             if let Ok(token) = token {
                                 let verification_requested = UserEvents::VerificationRequested {
                                     user: user_dto,
-                                    token,
+                                    token: token.clone(),
                                 };
+
+                                tracing::debug!("User verification requested. Token {}", token);
 
                                 events.push(&verification_requested);
 
@@ -425,8 +427,10 @@ pub async fn resend_verification(
                 Ok(token) => {
                     let verification_requested = UserEvents::VerificationRequested {
                         user: user_dto,
-                        token,
+                        token: token.clone(),
                     };
+
+                    tracing::debug!("Resend verification requested. Token: {}", token);
 
                     let result = state
                         .message_publisher
@@ -503,8 +507,10 @@ pub async fn request_password_reset(
                 Ok(token) => {
                     let password_reset_requested = PasswordResetRequested {
                         user: user_dto,
-                        token,
+                        token: token.clone(),
                     };
+
+                    tracing::debug!("Reset password reset requested. Token: {}", token);
 
                     let result = state
                         .message_publisher
