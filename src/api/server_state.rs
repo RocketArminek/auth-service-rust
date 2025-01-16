@@ -3,22 +3,21 @@ use crate::domain::event::UserEvents;
 use crate::domain::repositories::{RoleRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct ServerState {
     pub config: AppConfiguration,
-    pub user_repository: Arc<Mutex<dyn UserRepository>>,
-    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
-    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+    pub user_repository: Arc<dyn UserRepository>,
+    pub role_repository: Arc<dyn RoleRepository>,
+    pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
 }
 
 impl ServerState {
     pub fn new(
         config: AppConfiguration,
-        user_repository: Arc<Mutex<dyn UserRepository>>,
-        role_repository: Arc<Mutex<dyn RoleRepository>>,
-        message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+        user_repository: Arc<dyn UserRepository>,
+        role_repository: Arc<dyn RoleRepository>,
+        message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
     ) -> Self {
         ServerState {
             config,

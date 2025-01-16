@@ -6,16 +6,15 @@ use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use lapin::Consumer;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub struct PublisherTestContext {
-    pub message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+    pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
     pub consumer: Consumer,
 }
 
 impl PublisherTestContext {
     pub fn new(
-        message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+        message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
         consumer: Consumer,
     ) -> PublisherTestContext {
         PublisherTestContext {
@@ -33,16 +32,16 @@ impl PublisherTestContext {
 }
 
 pub struct DatabaseTestContext {
-    pub user_repository: Arc<Mutex<dyn UserRepository>>,
-    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
-    pub session_repository: Arc<Mutex<dyn SessionRepository>>,
+    pub user_repository: Arc<dyn UserRepository>,
+    pub role_repository: Arc<dyn RoleRepository>,
+    pub session_repository: Arc<dyn SessionRepository>,
 }
 
 impl DatabaseTestContext {
     pub fn new(
-        user_repository: Arc<Mutex<dyn UserRepository>>,
-        role_repository: Arc<Mutex<dyn RoleRepository>>,
-        session_repository: Arc<Mutex<dyn SessionRepository>>,
+        user_repository: Arc<dyn UserRepository>,
+        role_repository: Arc<dyn RoleRepository>,
+        session_repository: Arc<dyn SessionRepository>,
     ) -> DatabaseTestContext {
         DatabaseTestContext {
             user_repository,
@@ -53,16 +52,16 @@ impl DatabaseTestContext {
 }
 
 pub struct AcceptanceTestContext {
-    pub user_repository: Arc<Mutex<dyn UserRepository>>,
-    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
+    pub user_repository: Arc<dyn UserRepository>,
+    pub role_repository: Arc<dyn RoleRepository>,
     pub server: TestServer,
     pub consumer: Consumer,
 }
 
 impl AcceptanceTestContext {
     pub fn new(
-        user_repository: Arc<Mutex<dyn UserRepository>>,
-        role_repository: Arc<Mutex<dyn RoleRepository>>,
+        user_repository: Arc<dyn UserRepository>,
+        role_repository: Arc<dyn RoleRepository>,
         server: TestServer,
         consumer: Consumer,
     ) -> Self {
@@ -83,15 +82,15 @@ impl AcceptanceTestContext {
 }
 
 pub struct CliTestContext {
-    pub user_repository: Arc<Mutex<dyn UserRepository>>,
-    pub role_repository: Arc<Mutex<dyn RoleRepository>>,
+    pub user_repository: Arc<dyn UserRepository>,
+    pub role_repository: Arc<dyn RoleRepository>,
     pub cf: CommandFactory,
 }
 
 impl CliTestContext {
     pub fn new(
-        user_repository: Arc<Mutex<dyn UserRepository>>,
-        role_repository: Arc<Mutex<dyn RoleRepository>>,
+        user_repository: Arc<dyn UserRepository>,
+        role_repository: Arc<dyn RoleRepository>,
         cf: CommandFactory,
     ) -> Self {
         CliTestContext {

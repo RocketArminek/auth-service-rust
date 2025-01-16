@@ -22,7 +22,6 @@ use lapin::types::FieldTable;
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
-use tokio::sync::Mutex;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -146,8 +145,6 @@ async fn main() {
                 Ok(mut user) => {
                     let role = role.to_owned().unwrap_or("USER".to_string());
                     let existing_role = role_repository
-                        .lock()
-                        .await
                         .get_by_name(&role)
                         .await
                         .unwrap();
@@ -159,7 +156,7 @@ async fn main() {
                         return;
                     }
                     user.add_role(existing_role.clone());
-                    user_repository.lock().await.save(&user).await.unwrap();
+                    user_repository.save(&user).await.unwrap();
 
                     println!(
                         "User created: {} {} at {} with roles ({})",
@@ -196,7 +193,7 @@ async fn main() {
             }
         }
         Some(Commands::GetUserByEmail { email }) => {
-            let user = user_repository.lock().await.get_by_email(email).await;
+            let user = user_repository.get_by_email(email).await;
 
             match user {
                 Err(e) => {
@@ -209,8 +206,6 @@ async fn main() {
         }
         Some(Commands::DeleteUserByEmail { email }) => {
             user_repository
-                .lock()
-                .await
                 .delete_by_email(email)
                 .await
                 .unwrap();
@@ -218,7 +213,7 @@ async fn main() {
             println!("User deleted for {}", email);
         }
         Some(Commands::CheckPassword { email, password }) => {
-            let user = user_repository.lock().await.get_by_email(email).await;
+            let user = user_repository.get_by_email(email).await;
 
             match user {
                 Err(e) => {
@@ -241,14 +236,14 @@ async fn main() {
             }
         }
         Some(Commands::AssignRole { email, role }) => {
-            let user = user_repository.lock().await.get_by_email(email).await;
+            let user = user_repository.get_by_email(email).await;
 
             match user {
                 Err(e) => {
                     println!("Error {:?}", e);
                 }
                 Ok(mut user) => {
-                    let r = role_repository.lock().await.get_by_name(role).await;
+                    let r = role_repository.get_by_name(role).await;
 
                     match r {
                         Err(e) => {
@@ -256,7 +251,7 @@ async fn main() {
                         }
                         Ok(role) => {
                             user.add_role(role.clone());
-                            user_repository.lock().await.save(&user).await.unwrap();
+                            user_repository.save(&user).await.unwrap();
 
                             println!("Role assigned: {} to {}", role.name, user.email);
                         }
@@ -268,15 +263,13 @@ async fn main() {
             let restricted_role_prefix =
                 env::var("RESTRICTED_ROLE_PREFIX").unwrap_or("ADMIN".to_string());
             let role = role_repository
-                .lock()
-                .await
                 .get_by_name(&restricted_role_prefix)
                 .await;
 
             match role {
                 Err(_) => {
                     let role = Role::now(restricted_role_prefix).unwrap();
-                    role_repository.lock().await.save(&role).await.unwrap();
+                    role_repository.save(&role).await.unwrap();
 
                     println!(
                         "Created initial restricted role base on pattern: {}, {}, {}",
@@ -292,7 +285,7 @@ async fn main() {
         }
         Some(Commands::CreateRole { name }) => {
             let role = Role::now(name.to_owned()).unwrap();
-            role_repository.lock().await.save(&role).await.unwrap();
+            role_repository.save(&role).await.unwrap();
 
             println!(
                 "Created role: {}, {}, {}",
@@ -302,7 +295,7 @@ async fn main() {
             );
         }
         Some(Commands::GetRole { name }) => {
-            let role = role_repository.lock().await.get_by_name(name).await;
+            let role = role_repository.get_by_name(name).await;
             match role {
                 Err(e) => {
                     panic!("Error {:?}", e);
@@ -314,8 +307,6 @@ async fn main() {
         }
         Some(Commands::DeleteRole { name }) => {
             role_repository
-                .lock()
-                .await
                 .delete_by_name(name)
                 .await
                 .unwrap();
@@ -435,8 +426,8 @@ async fn shutdown_signal() {
 
 async fn load_fixtures(
     config: &AppConfiguration,
-    user_repository: &Arc<Mutex<dyn UserRepository>>,
-    role_repository: &Arc<Mutex<dyn RoleRepository>>,
+    user_repository: &Arc<dyn UserRepository>,
+    role_repository: &Arc<dyn RoleRepository>,
 ) {
     init_role(config.regular_role_name(), &role_repository)
         .await
@@ -451,12 +442,12 @@ async fn load_fixtures(
 
 async fn init_user(
     config: &AppConfiguration,
-    user_repository: &Arc<Mutex<dyn UserRepository>>,
+    user_repository: &Arc<dyn UserRepository>,
     role: Role,
 ) -> Result<User, RepositoryError> {
     let email = config.super_admin_email().to_string();
 
-    let existing_user = user_repository.lock().await.get_by_email(&email).await;
+    let existing_user = user_repository.get_by_email(&email).await;
 
     if let Ok(existing_user) = existing_user {
         tracing::info!(
@@ -479,7 +470,7 @@ async fn init_user(
     ))
     .unwrap();
 
-    let r = user_repository.lock().await.save(&user).await;
+    let r = user_repository.save(&user).await;
     if let Err(e) = r {
         tracing::error!("Error saving user: {}", e);
 
@@ -498,9 +489,9 @@ async fn init_user(
 
 async fn init_role(
     role_name: &str,
-    role_repository: &Arc<Mutex<dyn RoleRepository>>,
+    role_repository: &Arc<dyn RoleRepository>,
 ) -> Result<Role, RepositoryError> {
-    let existing_role = role_repository.lock().await.get_by_name(role_name).await;
+    let existing_role = role_repository.get_by_name(role_name).await;
 
     if let Ok(existing_role) = existing_role {
         tracing::info!(
@@ -515,7 +506,7 @@ async fn init_role(
 
     let role = Role::now(role_name.to_string()).unwrap();
 
-    let r = role_repository.lock().await.save(&role).await;
+    let r = role_repository.save(&role).await;
 
     if let Err(e) = r {
         tracing::error!(

@@ -17,7 +17,7 @@ async fn it_creates_new_user() {
         },
         |c| async move {
             let role = Role::now("user".to_string()).unwrap();
-            c.role_repository.lock().await.save(&role).await.unwrap();
+            c.role_repository.save(&role).await.unwrap();
             let email = String::from("jon@snow.test");
             let response = c
                 .server
@@ -54,7 +54,7 @@ async fn it_creates_new_user() {
 async fn it_creates_not_verified_user() {
     run_integration_test_with_default(|c| async move {
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let email = String::from("jon@snow.test");
 
         let response = c
@@ -109,7 +109,7 @@ async fn it_creates_not_verified_user() {
 async fn it_verifies_user() {
     run_integration_test_with_default(|c| async move {
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let email = String::from("jon@snow.test");
         let password = String::from("Iknow#othing1");
 
@@ -179,7 +179,7 @@ async fn it_verifies_user() {
 async fn it_can_request_for_resend_verification_message() {
     run_integration_test_with_default(|c| async move {
         let role = Role::now("NIGHT_WATCH".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let email = String::from("jon@snow.test");
         let password = String::from("Iknow#othing1");
@@ -193,7 +193,7 @@ async fn it_can_request_for_resend_verification_message() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         user.add_role(role);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -260,7 +260,7 @@ async fn it_does_not_create_user_with_invalid_password() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let response = c
             .server
@@ -292,9 +292,9 @@ async fn it_returns_conflict_if_user_already_exists() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let response = c
             .server
@@ -315,7 +315,7 @@ async fn it_returns_conflict_if_user_already_exists() {
 async fn it_returns_bad_request_if_roles_does_not_exists() {
     run_integration_test_with_default(|c| async move {
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let email = String::from("jon@snow.test");
 
         let response = c
@@ -384,7 +384,7 @@ async fn it_returns_bad_request_if_role_restricted_another() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let response = c
             .server
@@ -417,9 +417,9 @@ async fn it_creates_restricted_user() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let email = String::from("jon@snow.test");
 
@@ -478,7 +478,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted() {
         .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let email = String::from("jon@snow.test");
 
@@ -528,9 +528,9 @@ async fn it_can_list_all_user_as_an_privileged_role() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let response = c
             .server
@@ -578,9 +578,9 @@ async fn it_can_list_all_user_with_roles() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let response = c
             .server
@@ -629,9 +629,9 @@ async fn it_can_get_single_user() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let user = User::now_with_email_and_password(
             String::from("user@test.com"),
@@ -641,7 +641,7 @@ async fn it_can_get_single_user() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -683,9 +683,9 @@ async fn it_can_delete_user() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let user = User::now_with_email_and_password(
             String::from("user@test.com"),
@@ -695,7 +695,7 @@ async fn it_can_delete_user() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -718,7 +718,7 @@ async fn it_can_delete_user() {
 
         assert_eq!(response.status_code(), StatusCode::OK);
 
-        let deleted_user = c.user_repository.lock().await.get_by_id(&user.id).await;
+        let deleted_user = c.user_repository.get_by_id(&user.id).await;
         assert!(deleted_user.is_err());
 
         let event = c
@@ -752,9 +752,9 @@ async fn it_returns_not_found_for_nonexistent_user() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let response = c
             .server
@@ -795,9 +795,9 @@ async fn it_updates_user_information() {
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -870,9 +870,9 @@ async fn it_updates_other_user_information() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let user = User::now_with_email_and_password(
             String::from("user@test.com"),
@@ -882,7 +882,7 @@ async fn it_updates_other_user_information() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -954,9 +954,9 @@ async fn it_cannot_update_none_existing_user() {
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         admin.add_role(role.clone());
-        c.user_repository.lock().await.save(&admin).await.unwrap();
+        c.user_repository.save(&admin).await.unwrap();
 
         let response = c
             .server
@@ -1019,9 +1019,9 @@ async fn it_can_reset_password() {
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("USER".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server

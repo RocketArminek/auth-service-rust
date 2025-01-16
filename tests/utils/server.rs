@@ -6,13 +6,12 @@ use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub async fn create_test_server(
     config: &Configuration,
-    user_repository: Arc<Mutex<dyn UserRepository>>,
-    role_repository: Arc<Mutex<dyn RoleRepository>>,
-    message_publisher: Arc<Mutex<dyn MessagePublisher<UserEvents>>>,
+    user_repository: Arc<dyn UserRepository>,
+    role_repository: Arc<dyn RoleRepository>,
+    message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
 ) -> TestServer {
     let config = config.app().clone();
 

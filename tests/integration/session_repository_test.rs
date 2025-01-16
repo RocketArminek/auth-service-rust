@@ -16,15 +16,13 @@ async fn it_can_add_session() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
-        c.session_repository.lock().await.save(&session).await.unwrap();
+        c.session_repository.save(&session).await.unwrap();
 
         let saved_session = c
             .session_repository
-            .lock()
-            .await
             .get_by_id(&session.id)
             .await
             .unwrap();
@@ -46,15 +44,13 @@ async fn it_can_get_session_by_id() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
-        c.session_repository.lock().await.save(&session).await.unwrap();
+        c.session_repository.save(&session).await.unwrap();
 
         let saved_session = c
             .session_repository
-            .lock()
-            .await
             .get_by_id(&session.id)
             .await
             .unwrap();
@@ -75,18 +71,16 @@ async fn it_can_get_sessions_by_user_id() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
         let session2 = Session::now(user.id, Utc::now() + Duration::hours(2));
 
-        c.session_repository.lock().await.save(&session1).await.unwrap();
-        c.session_repository.lock().await.save(&session2).await.unwrap();
+        c.session_repository.save(&session1).await.unwrap();
+        c.session_repository.save(&session2).await.unwrap();
 
         let sessions = c
             .session_repository
-            .lock()
-            .await
             .get_by_user_id(&user.id)
             .await
             .unwrap();
@@ -109,22 +103,18 @@ async fn it_can_delete_session() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
-        c.session_repository.lock().await.save(&session).await.unwrap();
+        c.session_repository.save(&session).await.unwrap();
 
         c.session_repository
-            .lock()
-            .await
             .delete(&session.id)
             .await
             .unwrap();
 
         let result = c
             .session_repository
-            .lock()
-            .await
             .get_by_id(&session.id)
             .await;
 
@@ -144,25 +134,21 @@ async fn it_can_delete_all_sessions_by_user_id() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
         let session2 = Session::now(user.id, Utc::now() + Duration::hours(2));
 
-        c.session_repository.lock().await.save(&session1).await.unwrap();
-        c.session_repository.lock().await.save(&session2).await.unwrap();
+        c.session_repository.save(&session1).await.unwrap();
+        c.session_repository.save(&session2).await.unwrap();
 
         c.session_repository
-            .lock()
-            .await
             .delete_all_by_user_id(&user.id)
             .await
             .unwrap();
 
         let sessions = c
             .session_repository
-            .lock()
-            .await
             .get_by_user_id(&user.id)
             .await
             .unwrap();
@@ -178,7 +164,7 @@ async fn it_fails_to_create_session_for_nonexistent_user() {
         let non_existent_user_id = Uuid::new_v4();
         let session = Session::now(non_existent_user_id, Utc::now() + Duration::hours(1));
         
-        let result = c.session_repository.lock().await.save(&session).await;
+        let result = c.session_repository.save(&session).await;
         
         assert!(result.is_err());
     })
@@ -197,24 +183,20 @@ async fn it_can_get_session_with_user() {
         )
             .unwrap();
         let role = Role::now("AWESOME".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         user.add_role(role);
 
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let session = Session::now(user.id, Utc::now() + Duration::hours(1));
         c.session_repository
-            .lock()
-            .await
             .save(&session)
             .await
             .unwrap();
 
         let (saved_session, saved_user) = c
             .session_repository
-            .lock()
-            .await
             .get_session_with_user(&session.id)
             .await
             .unwrap();

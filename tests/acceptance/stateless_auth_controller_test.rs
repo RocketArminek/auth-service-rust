@@ -41,7 +41,7 @@ async fn it_returns_unauthorized_for_invalid_password() {
         )
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -70,7 +70,7 @@ async fn it_issues_access_token() {
         )
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -108,7 +108,7 @@ async fn it_issues_access_token_for_not_verified_user() {
             )
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let response = c
                 .server
@@ -164,7 +164,7 @@ async fn it_issues_refresh_token() {
             )
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let response = c
                 .server
@@ -218,7 +218,7 @@ async fn it_auto_updates_password_scheme() {
 
             user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt))
                 .unwrap();
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let response = c
                 .server
@@ -234,8 +234,6 @@ async fn it_auto_updates_password_scheme() {
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
             let found_user = c
                 .user_repository
-                .lock()
-                .await
                 .get_by_id(&user.id)
                 .await
                 .unwrap();
@@ -262,9 +260,9 @@ async fn it_verifies_token() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -323,9 +321,9 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             let role = Role::now("user".to_string()).unwrap();
-            c.role_repository.lock().await.save(&role).await.unwrap();
+            c.role_repository.save(&role).await.unwrap();
             user.add_role(role);
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let response = c
                 .server
@@ -381,9 +379,9 @@ async fn it_does_not_verify_token_if_user_is_not_verified() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -423,9 +421,9 @@ async fn it_does_not_verify_token_by_using_refresh_token() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -472,9 +470,9 @@ async fn it_refreshes_token() {
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             let role = Role::now("user".to_string()).unwrap();
-            c.role_repository.lock().await.save(&role).await.unwrap();
+            c.role_repository.save(&role).await.unwrap();
             user.add_role(role.clone());
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let response = c
                 .server
@@ -534,9 +532,9 @@ async fn it_does_not_refresh_token_if_token_is_not_valid() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -566,9 +564,9 @@ async fn it_does_not_refresh_if_you_use_access_token() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -607,7 +605,7 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
         )
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let response = c
             .server
@@ -653,7 +651,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
             )
             .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
-            c.user_repository.lock().await.save(&user).await.unwrap();
+            c.user_repository.save(&user).await.unwrap();
 
             let now = Utc::now();
             let exp = now.sub(Duration::days(2));

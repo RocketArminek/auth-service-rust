@@ -6,8 +6,6 @@ use auth_service::domain::jwt::UserDTO;
 async fn it_dispatches_message_into_queue() {
     run_message_publisher_test_with_default(|c| async move {
         c.message_publisher
-            .lock()
-            .await
             .publish(&UserEvents::Created {
                 user: UserDTO {
                     id: uuid::Uuid::new_v4(),
@@ -37,8 +35,6 @@ async fn it_dispatches_message_into_queue() {
 async fn it_dispatches_all_messages_into_queue() {
     run_message_publisher_test_with_default(|c| async move {
         c.message_publisher
-            .lock()
-            .await
             .publish_all(vec![
                 &UserEvents::Created {
                     user: UserDTO {

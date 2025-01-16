@@ -37,8 +37,6 @@ pub async fn create_restricted_user(
 
     let existing = state
         .user_repository
-        .lock()
-        .await
         .get_by_email(&email)
         .await;
     if let Ok(_) = existing {
@@ -51,7 +49,7 @@ pub async fn create_restricted_user(
             .into_response();
     }
 
-    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
+    let existing_role = state.role_repository.get_by_name(&role).await;
 
     if let Err(_) = existing_role {
         return (
@@ -80,13 +78,11 @@ pub async fn create_restricted_user(
                 }
 
                 user.add_roles(vec![existing_role.clone()]);
-                match state.user_repository.lock().await.save(&user).await {
+                match state.user_repository.save(&user).await {
                     Ok(_) => {
                         tracing::debug!("User created: {}", user.email);
                         let result = state
                             .message_publisher
-                            .lock()
-                            .await
                             .publish(&UserEvents::Created {
                                 user: UserDTO::from(user),
                             })
@@ -159,8 +155,6 @@ pub async fn get_all_users(
 
     match state
         .user_repository
-        .lock()
-        .await
         .find_all(page, limit)
         .await
     {
@@ -198,7 +192,7 @@ pub async fn get_all_users(
     )
 )]
 pub async fn get_user(State(state): State<ServerState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    match state.user_repository.lock().await.get_by_id(&id).await {
+    match state.user_repository.get_by_id(&id).await {
         Ok(user) => (StatusCode::OK, Json(UserDTO::from(user))).into_response(),
         Err(e) => {
             match &e {
@@ -231,15 +225,13 @@ pub async fn delete_user(
     State(state): State<ServerState>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    let locked_user_repository = state.user_repository.lock().await;
+    let locked_user_repository = state.user_repository;
 
     match locked_user_repository.get_by_id(&id).await {
         Ok(user) => match locked_user_repository.delete_by_email(&user.email).await {
             Ok(_) => {
                 let result = state
                     .message_publisher
-                    .lock()
-                    .await
                     .publish(&UserEvents::Deleted {
                         user: UserDTO::from(user),
                     })
@@ -295,7 +287,7 @@ pub async fn update_user(
     let first_name = request.first_name.clone();
     let last_name = request.last_name.clone();
     let avatar_path = request.avatar_path.clone();
-    let user_locked_repository = state.user_repository.lock().await;
+    let user_locked_repository = state.user_repository;
 
     let user = user_locked_repository.get_by_id(&id).await;
     match user {
@@ -311,8 +303,6 @@ pub async fn update_user(
 
                     let result = state
                         .message_publisher
-                        .lock()
-                        .await
                         .publish(&UserEvents::Updated {
                             old_user: UserDTO::from(old_user),
                             new_user: user_dto.clone(),

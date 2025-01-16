@@ -14,11 +14,9 @@ async fn it_can_add_user() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
         let row = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();
@@ -39,11 +37,9 @@ async fn it_can_get_user_by_email() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
         let row = c
             .user_repository
-            .lock()
-            .await
             .get_by_email(&user.email)
             .await
             .unwrap();
@@ -64,17 +60,13 @@ async fn it_deletes_user_by_email() {
             Some(true),
         )
         .unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
         c.user_repository
-            .lock()
-            .await
             .delete_by_email(&user.email)
             .await
             .unwrap();
         let row = c
             .user_repository
-            .lock()
-            .await
             .get_by_email(&user.email)
             .await;
 
@@ -99,15 +91,13 @@ async fn it_can_assign_role_to_user() {
         .unwrap();
 
         let role = Role::now("admin".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         user.add_role(role.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let row = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();
@@ -132,19 +122,17 @@ async fn it_can_update_user_roles() {
         )
         .unwrap();
 
-        c.role_repository.lock().await.save(&role1).await.unwrap();
+        c.role_repository.save(&role1).await.unwrap();
         user.add_role(role1.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
-        c.role_repository.lock().await.save(&role2).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
         user.roles.clear();
         user.add_role(role2.clone());
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let updated_user = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();
@@ -170,7 +158,7 @@ async fn it_prevents_save_with_nonexistent_role() {
         let non_existent_role = Role::now("nonexistent".to_string()).unwrap();
         user.add_role(non_existent_role);
 
-        let result = c.user_repository.lock().await.save(&user).await;
+        let result = c.user_repository.save(&user).await;
 
         assert!(result.is_err());
         match result {
@@ -198,17 +186,15 @@ async fn it_can_handle_multiple_roles() {
         )
         .unwrap();
 
-        c.role_repository.lock().await.save(&role1).await.unwrap();
-        c.role_repository.lock().await.save(&role2).await.unwrap();
-        c.role_repository.lock().await.save(&role3).await.unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+        c.role_repository.save(&role3).await.unwrap();
 
         user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let saved_user = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();
@@ -234,7 +220,7 @@ async fn it_rolls_back_transaction_on_invalid_email() {
         )
         .unwrap();
 
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let user2 = User::now_with_email_and_password(
             "test@test.com".to_string(),
@@ -245,19 +231,17 @@ async fn it_rolls_back_transaction_on_invalid_email() {
         )
         .unwrap();
 
-        let result = c.user_repository.lock().await.save(&user2).await;
+        let result = c.user_repository.save(&user2).await;
         assert!(result.is_err());
 
         let saved_user = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();
         assert_eq!(saved_user.first_name.unwrap(), "Test");
 
-        let result = c.user_repository.lock().await.get_by_id(&user2.id).await;
+        let result = c.user_repository.get_by_id(&user2.id).await;
         assert!(result.is_err());
     })
     .await;
@@ -267,7 +251,7 @@ async fn it_rolls_back_transaction_on_invalid_email() {
 async fn it_rolls_back_on_invalid_role_without_affecting_user_data() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("valid_role".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let mut user = User::now_with_email_and_password(
             "test@test.com".to_string(),
@@ -279,18 +263,16 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data() {
         .unwrap();
         user.add_role(role.clone());
 
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         let invalid_role = Role::now("invalid_role".to_string()).unwrap();
         user.roles = vec![invalid_role];
 
-        let result = c.user_repository.lock().await.save(&user).await;
+        let result = c.user_repository.save(&user).await;
         assert!(result.is_err());
 
         let saved_user = c
             .user_repository
-            .lock()
-            .await
             .get_by_id(&user.id)
             .await
             .unwrap();

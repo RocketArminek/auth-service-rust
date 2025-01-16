@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[async_trait]
 pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
@@ -27,7 +26,7 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for NullPublisher {
 
 pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
     publisher_config: &MessagePublisherConfiguration,
-) -> Arc<Mutex<dyn MessagePublisher<T>>> {
+) -> Arc<dyn MessagePublisher<T>> {
     match publisher_config {
         MessagePublisherConfiguration::Rabbitmq(config) => {
             tracing::info!("Event driven is turned on");
@@ -35,7 +34,7 @@ pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
         }
         MessagePublisherConfiguration::None => {
             tracing::info!("Event driven is turned off. Events wont be published.");
-            Arc::new(Mutex::new(NullPublisher {}))
+            Arc::new(NullPublisher {})
         }
     }
 }

@@ -6,11 +6,9 @@ use auth_service::infrastructure::repository::RepositoryError;
 async fn it_can_add_role() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let row = c
             .role_repository
-            .lock()
-            .await
             .get_by_id(&role.id)
             .await
             .unwrap();
@@ -24,11 +22,9 @@ async fn it_can_add_role() {
 async fn it_can_get_role_by_id() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let row = c
             .role_repository
-            .lock()
-            .await
             .get_by_id(&role.id)
             .await
             .unwrap();
@@ -42,11 +38,9 @@ async fn it_can_get_role_by_id() {
 async fn it_can_get_role_by_name() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let row = c
             .role_repository
-            .lock()
-            .await
             .get_by_name(&role.name)
             .await
             .unwrap();
@@ -60,8 +54,8 @@ async fn it_can_get_role_by_name() {
 async fn it_can_get_all_roles() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
-        let rows = c.role_repository.lock().await.get_all().await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        let rows = c.role_repository.get_all().await.unwrap();
 
         assert_eq!(rows.len(), 1);
     })
@@ -72,15 +66,13 @@ async fn it_can_get_all_roles() {
 async fn it_can_delete_role() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         c.role_repository
-            .lock()
-            .await
             .delete(&role.id)
             .await
             .unwrap();
 
-        let row = c.role_repository.lock().await.get_by_id(&role.id).await;
+        let row = c.role_repository.get_by_id(&role.id).await;
 
         assert!(row.is_err());
         if let Err(e) = row {
@@ -95,8 +87,8 @@ async fn it_name_is_unique() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         let role2 = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
-        let r = c.role_repository.lock().await.save(&role2).await;
+        c.role_repository.save(&role).await.unwrap();
+        let r = c.role_repository.save(&role2).await;
 
         assert!(r.is_err(), "Should return error");
         match r {
@@ -112,14 +104,12 @@ async fn it_name_is_unique() {
 async fn it_can_update_role() {
     run_database_test_with_default(|c| async move {
         let mut role = Role::now("ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         role.name = "ROLE2".to_string();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let row = c
             .role_repository
-            .lock()
-            .await
             .get_by_id(&role.id)
             .await
             .unwrap();

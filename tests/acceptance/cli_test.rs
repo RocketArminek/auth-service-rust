@@ -11,7 +11,7 @@ async fn it_creates_user() {
         let email = "jon@snow.com";
         let password = "Iknow#othing1";
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
         let mut cmd = c.cf.create("app").unwrap();
 
         cmd.arg("create-user")
@@ -34,7 +34,7 @@ async fn it_checks_password_of_the_account() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let email = "jon@snow.com";
         let password = "Iknow#othing1";
@@ -48,7 +48,7 @@ async fn it_checks_password_of_the_account() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         user.add_role(role);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         cmd.arg("check-password")
             .arg("--email")
@@ -68,7 +68,7 @@ async fn it_gets_user_by_email() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let email = "jon@snow.com";
         let password = "Iknow#othing1";
@@ -82,7 +82,7 @@ async fn it_gets_user_by_email() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         user.add_role(role);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         cmd.arg("get-user-by-email")
             .arg("--email")
@@ -116,7 +116,7 @@ async fn it_deletes_user_by_email() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let email = "jon@snow.com";
         let password = "Iknow#othing1";
@@ -130,7 +130,7 @@ async fn it_deletes_user_by_email() {
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         user.add_role(role);
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         cmd.arg("delete-user-by-email")
             .arg("--email")
@@ -168,7 +168,7 @@ async fn it_assigns_role_to_user() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         let email = "jon@snow.com";
         let password = "Iknow#othing1";
@@ -181,7 +181,7 @@ async fn it_assigns_role_to_user() {
         )
         .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
-        c.user_repository.lock().await.save(&user).await.unwrap();
+        c.user_repository.save(&user).await.unwrap();
 
         cmd.arg("assign-role")
             .arg("--email")
@@ -201,7 +201,7 @@ async fn it_gets_role() {
     run_cli_test_with_default(|c| async move {
         let mut cmd = c.cf.create("app").unwrap();
         let role = Role::now("SOME_AWESOME_ROLE".to_string()).unwrap();
-        c.role_repository.lock().await.save(&role).await.unwrap();
+        c.role_repository.save(&role).await.unwrap();
 
         cmd.arg("get-role")
             .arg("--name")

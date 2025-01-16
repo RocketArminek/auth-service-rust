@@ -14,7 +14,6 @@ use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub enum RepositoryError {
@@ -83,23 +82,23 @@ impl IntoResponse for RepositoryError {
     }
 }
 
-pub fn create_user_repository(pool: DatabasePool) -> Arc<Mutex<dyn UserRepository>> {
+pub fn create_user_repository(pool: DatabasePool) -> Arc<dyn UserRepository> {
     match pool {
-        DatabasePool::MySql(pool) => Arc::new(Mutex::new(MysqlUserRepository::new(pool))),
-        DatabasePool::Sqlite(pool) => Arc::new(Mutex::new(SqliteUserRepository::new(pool))),
+        DatabasePool::MySql(pool) => Arc::new(MysqlUserRepository::new(pool)),
+        DatabasePool::Sqlite(pool) => Arc::new(SqliteUserRepository::new(pool)),
     }
 }
 
-pub fn create_role_repository(pool: DatabasePool) -> Arc<Mutex<dyn RoleRepository>> {
+pub fn create_role_repository(pool: DatabasePool) -> Arc<dyn RoleRepository> {
     match pool {
-        DatabasePool::MySql(pool) => Arc::new(Mutex::new(MysqlRoleRepository::new(pool))),
-        DatabasePool::Sqlite(pool) => Arc::new(Mutex::new(SqliteRoleRepository::new(pool))),
+        DatabasePool::MySql(pool) => Arc::new(MysqlRoleRepository::new(pool)),
+        DatabasePool::Sqlite(pool) => Arc::new(SqliteRoleRepository::new(pool)),
     }
 }
 
-pub fn create_session_repository(pool: DatabasePool) -> Arc<Mutex<dyn SessionRepository>> {
+pub fn create_session_repository(pool: DatabasePool) -> Arc<dyn SessionRepository> {
     match pool {
-        DatabasePool::MySql(pool) => Arc::new(Mutex::new(MysqlSessionRepository::new(pool))),
-        DatabasePool::Sqlite(pool) => Arc::new(Mutex::new(SqliteSessionRepository::new(pool))),
+        DatabasePool::MySql(pool) => Arc::new(MysqlSessionRepository::new(pool)),
+        DatabasePool::Sqlite(pool) => Arc::new(SqliteSessionRepository::new(pool)),
     }
 }

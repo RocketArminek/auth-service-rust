@@ -8,7 +8,6 @@ use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, Exchange
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -87,7 +86,7 @@ pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Conne
 
 pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(
     config: &RabbitmqConfiguration,
-) -> Arc<Mutex<dyn MessagePublisher<T> + Send + Sync>> {
+) -> Arc<dyn MessagePublisher<T> + Send + Sync> {
     let conn = create_rabbitmq_connection(config).await;
 
     let message_publisher = RabbitmqMessagePublisher::new(
@@ -99,5 +98,5 @@ pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'sta
     .await
     .expect("Failed to create message publisher");
 
-    Arc::new(Mutex::new(message_publisher))
+    Arc::new(message_publisher)
 }

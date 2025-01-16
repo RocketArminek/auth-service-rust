@@ -29,8 +29,6 @@ pub async fn login(
     let password = request.password.clone();
     let user = state
         .user_repository
-        .lock()
-        .await
         .get_by_email(&email)
         .await;
 
@@ -66,8 +64,6 @@ pub async fn login(
                     let outdated_user = outdated_user.into();
                     match state
                         .user_repository
-                        .lock()
-                        .await
                         .save(&outdated_user)
                         .await
                     {
@@ -177,7 +173,7 @@ pub async fn refresh(
     State(state): State<ServerState>,
     RefreshToken(request): RefreshToken,
 ) -> impl IntoResponse {
-    let locked_user_repository = state.user_repository.lock().await;
+    let locked_user_repository = state.user_repository;
     let user = locked_user_repository.get_by_email(&request.email).await;
 
     match user {

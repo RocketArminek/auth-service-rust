@@ -52,8 +52,6 @@ pub async fn create_user(
 
     let existing = state
         .user_repository
-        .lock()
-        .await
         .get_by_email(&email)
         .await;
     if let Ok(_) = existing {
@@ -66,7 +64,7 @@ pub async fn create_user(
             .into_response();
     }
 
-    let existing_role = state.role_repository.lock().await.get_by_name(&role).await;
+    let existing_role = state.role_repository.get_by_name(&role).await;
     if let Err(_) = existing_role {
         return (
             StatusCode::BAD_REQUEST,
@@ -95,7 +93,7 @@ pub async fn create_user(
                 }
 
                 user.add_roles(vec![existing_role.clone()]);
-                match state.user_repository.lock().await.save(&user).await {
+                match state.user_repository.save(&user).await {
                     Ok(_) => {
                         tracing::debug!("User created: {}", &user.email);
                         let user_dto = UserDTO::from(user);
@@ -135,8 +133,6 @@ pub async fn create_user(
 
                                 let result = state
                                     .message_publisher
-                                    .lock()
-                                    .await
                                     .publish_all(events)
                                     .await;
 
@@ -150,8 +146,6 @@ pub async fn create_user(
 
                         let result = state
                             .message_publisher
-                            .lock()
-                            .await
                             .publish_all(events)
                             .await;
 
@@ -220,7 +214,7 @@ pub async fn update_profile(
     let last_name = request.last_name.clone();
     let avatar_path = request.avatar_path.clone();
 
-    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
+    let user = state.user_repository.get_by_id(&user.id).await;
     match user {
         Ok(old_user) => {
             let mut user = old_user.clone();
@@ -228,14 +222,12 @@ pub async fn update_profile(
             user.last_name = Some(last_name);
             user.avatar_path = avatar_path;
 
-            match state.user_repository.lock().await.save(&user).await {
+            match state.user_repository.save(&user).await {
                 Ok(_) => {
                     let user_dto = UserDTO::from(user);
 
                     let result = state
                         .message_publisher
-                        .lock()
-                        .await
                         .publish(&UserEvents::Updated {
                             old_user: UserDTO::from(old_user),
                             new_user: user_dto.clone(),
@@ -278,7 +270,7 @@ pub async fn verify(
     StatelessLoggedInUser(user): StatelessLoggedInUser,
     request: Json<VerifyUserRequest>,
 ) -> impl IntoResponse {
-    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
+    let user = state.user_repository.get_by_id(&user.id).await;
     match user {
         Ok(mut user) => {
             if !state.config.verification_required() {
@@ -310,14 +302,12 @@ pub async fn verify(
                 Ok(t) => match t.claims.token_type {
                     TokenType::Verification => {
                         user.verify();
-                        match state.user_repository.lock().await.save(&user).await {
+                        match state.user_repository.save(&user).await {
                             Ok(_) => {
                                 let user_dto = UserDTO::from(user);
 
                                 let result = state
                                     .message_publisher
-                                    .lock()
-                                    .await
                                     .publish(&UserEvents::Verified {
                                         user: user_dto.clone(),
                                     })
@@ -383,7 +373,7 @@ pub async fn resend_verification(
     State(state): State<ServerState>,
     StatelessLoggedInUser(user): StatelessLoggedInUser,
 ) -> impl IntoResponse {
-    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
+    let user = state.user_repository.get_by_id(&user.id).await;
     match user {
         Ok(user) => {
             if !state.config.verification_required() {
@@ -434,8 +424,6 @@ pub async fn resend_verification(
 
                     let result = state
                         .message_publisher
-                        .lock()
-                        .await
                         .publish(&verification_requested)
                         .await;
 
@@ -478,8 +466,6 @@ pub async fn request_password_reset(
 ) -> impl IntoResponse {
     let user = state
         .user_repository
-        .lock()
-        .await
         .get_by_email(&request.email)
         .await;
 
@@ -514,8 +500,6 @@ pub async fn request_password_reset(
 
                     let result = state
                         .message_publisher
-                        .lock()
-                        .await
                         .publish(&password_reset_requested)
                         .await;
 
@@ -558,7 +542,7 @@ pub async fn reset_password(
     PasswordToken(user): PasswordToken,
     request: Json<ChangePasswordRequest>,
 ) -> impl IntoResponse {
-    let user = state.user_repository.lock().await.get_by_id(&user.id).await;
+    let user = state.user_repository.get_by_id(&user.id).await;
 
     match user {
         Ok(mut user) => {
@@ -569,7 +553,7 @@ pub async fn reset_password(
 
             match result {
                 Ok(_) => {
-                    let result = state.user_repository.lock().await.save(&user).await;
+                    let result = state.user_repository.save(&user).await;
 
                     match result {
                         Ok(_) => {
@@ -578,8 +562,6 @@ pub async fn reset_password(
 
                             let result = state
                                 .message_publisher
-                                .lock()
-                                .await
                                 .publish(&password_reset)
                                 .await;
 
