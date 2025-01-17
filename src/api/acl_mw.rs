@@ -1,6 +1,6 @@
 use crate::api::axum_extractor::LoggedInUser;
 use crate::api::dto::MessageResponse;
-use crate::api::server_state::{ServerState, VerificationRequired};
+use crate::api::server_state::{ServerState};
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
@@ -44,7 +44,7 @@ pub async fn verified_acl(
     tracing::debug!("Verified acl mw user: {:?}", user);
     tracing::debug!("Verified acl mw config: {:?}", state.config);
 
-    if state.get_verification_required() {
+    if state.config.verification_required() {
         if !user.is_verified {
             return (
                 StatusCode::FORBIDDEN,

@@ -147,11 +147,6 @@ impl AuthService for StatelessAuthService {
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
         let user_dto = self.validate_token(&refresh_token, TokenType::Refresh)?;
 
-        self.user_repository
-            .get_by_email(&user_dto.email)
-            .await
-            .map_err(|_| AuthError::UserNotFound)?;
-
         Ok((self.generate_token_pair(user_dto.clone())?, user_dto))
     }
 }
