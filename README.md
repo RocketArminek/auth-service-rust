@@ -97,9 +97,6 @@ LOG_LEVEL=info
 # Full database connection URL
 DATABASE_URL=mysql://root:toor@localhost:3306/auth_service_dev
 
-# Database engine to use (mysql or sqlite)
-DATABASE_ENGINE=mysql
-
 # Maximum number of connections in the pool
 DATABASE_MAX_CONNECTIONS=5
 
@@ -107,6 +104,12 @@ DATABASE_MAX_CONNECTIONS=5
 DATABASE_TIMEOUT_MS=500
 
 # Individual database connection parameters (alternative to DATABASE_URL)
+
+# Database engine to use (mysql or sqlite)
+# If not provided the engine will be choosen based on DATABASE_URL
+DATABASE_ENGINE=mysql
+
+# Mysql specific configuration
 DATABASE_USER=root
 DATABASE_PASSWORD=toor
 DATABASE_HOST=localhost
@@ -125,6 +128,7 @@ SQLITE_PATH=./database.sqlite
 AUTH_STRATEGY=stateless
 
 # Password hashing scheme (bcrypt, bcrypt_low, argon2)
+# Be mindful this hits the performance of the service
 PASSWORD_HASHING_SCHEME=bcrypt_low
 
 # JWT secret key for token signing
@@ -134,7 +138,7 @@ SECRET=your-secret-key
 AT_DURATION_IN_SECONDS=300
 
 # Refresh token duration in seconds (default: 30 days)
-# In stateful strategy this is used for duration of session
+# In stateful strategy this is also used for duration of session
 RT_DURATION_IN_SECONDS=2592000
 
 # Whether email verification is required
