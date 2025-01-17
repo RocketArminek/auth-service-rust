@@ -29,7 +29,7 @@ export function setup() {
     const email = 'admin@example.com';
     const password = 'Admin#123*';
 
-    const loginResponse = http.post(`${BASE_URL}/v1/stateless/login`, JSON.stringify({
+    const loginResponse = http.post(`${BASE_URL}/v1/login`, JSON.stringify({
         email: email,
         password: password,
     }), {

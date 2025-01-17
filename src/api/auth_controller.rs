@@ -7,8 +7,8 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 
-#[utoipa::path(post, path = "/v1/stateless/login",
-    tag="stateless",
+#[utoipa::path(post, path = "/v1/login",
+    tag="auth",
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login response", content_type = "application/json", body = LoginResponse),
@@ -45,8 +45,8 @@ pub async fn login(
     }
 }
 
-#[utoipa::path(get, path = "/v1/stateless/authenticate",
-    tag="stateless",
+#[utoipa::path(get, path = "/v1/authenticate",
+    tag="auth",
     responses(
         (status = 200, description = "Token verified", content_type = "application/json", body = UserDTO),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
@@ -69,8 +69,8 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
     (StatusCode::OK, headers, Json(UserDTO::from(user))).into_response()
 }
 
-#[utoipa::path(post, path = "/v1/stateless/refresh",
-    tag="stateless",
+#[utoipa::path(post, path = "/v1/refresh",
+    tag="auth",
     responses(
         (status = 200, description = "Token refresh", content_type = "application/json", body = LoginResponse),
         (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),

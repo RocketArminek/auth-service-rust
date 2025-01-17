@@ -39,7 +39,7 @@ const ENDPOINTS = [
     },
     {
         method: 'POST',
-        path: '/v1/stateless/login',
+        path: '/v1/login',
         body: () => ({
             email: 'admin@example.com',
             password: 'Admin#123*',

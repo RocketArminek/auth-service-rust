@@ -43,7 +43,7 @@ export function setup() {
 }
 
 export default function (data) {
-    const loginResponse = http.post(`${BASE_URL}/v1/stateless/login`, JSON.stringify({
+    const loginResponse = http.post(`${BASE_URL}/v1/login`, JSON.stringify({
         email: data.email,
         password: data.password
     }), {
@@ -59,7 +59,7 @@ export default function (data) {
         const accessToken = body.accessToken.value;
 
         // Test authenticated endpoints
-        const authenticateResponse = http.get(`${BASE_URL}/v1/stateless/authenticate`, {
+        const authenticateResponse = http.get(`${BASE_URL}/v1/authenticate`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
             },
@@ -85,7 +85,7 @@ export default function (data) {
             'profile update successful': (r) => r.status === 200,
         });
 
-        const refreshResponse = http.post(`${BASE_URL}/v1/stateless/refresh`, null, {
+        const refreshResponse = http.post(`${BASE_URL}/v1/refresh`, null, {
             headers: {
                 'Authorization': `Bearer ${body.refreshToken.value}`,
             },

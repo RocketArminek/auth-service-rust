@@ -126,7 +126,7 @@ async fn it_verifies_user() {
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": &password,
@@ -197,7 +197,7 @@ async fn it_can_request_for_resend_verification_message() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": &password,
@@ -425,7 +425,7 @@ async fn it_creates_restricted_user() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "ned@stark.test",
                 "password": "Iknow#othing1",
@@ -484,7 +484,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "ned@stark.test",
                 "password": "Iknow#othing1",
@@ -534,7 +534,7 @@ async fn it_can_list_all_user_as_an_privileged_role() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "ned@stark.test",
                 "password": "Iknow#othing1",
@@ -584,7 +584,7 @@ async fn it_can_list_all_user_with_roles() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "ned@stark.test",
                 "password": "Iknow#othing1",
@@ -645,7 +645,7 @@ async fn it_can_get_single_user() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "admin@test.com",
                 "password": "Admin#pass1",
@@ -699,7 +699,7 @@ async fn it_can_delete_user() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "admin@test.com",
                 "password": "Admin#pass1",
@@ -758,7 +758,7 @@ async fn it_returns_not_found_for_nonexistent_user() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "admin@test.com",
                 "password": "Admin#pass1",
@@ -801,7 +801,7 @@ async fn it_updates_user_information() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "user@test.com",
                 "password": "User#pass1",
@@ -886,7 +886,7 @@ async fn it_updates_other_user_information() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "admin@test.com",
                 "password": "Admin#pass1",
@@ -960,7 +960,7 @@ async fn it_cannot_update_none_existing_user() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "admin@test.com",
                 "password": "Admin#pass1",
@@ -1069,7 +1069,7 @@ async fn it_can_reset_password() {
 
                 let login_response = c
                     .server
-                    .post("/v1/stateless/login")
+                    .post("/v1/login")
                     .json(&json!({
                         "email": &email,
                         "password": &new_password,
@@ -1080,7 +1080,7 @@ async fn it_can_reset_password() {
 
                 let login_response = c
                     .server
-                    .post("/v1/stateless/login")
+                    .post("/v1/login")
                     .json(&json!({
                         "email": &email,
                         "password": &password,

@@ -16,7 +16,7 @@ async fn it_returns_not_found_if_user_does_not_exist() {
     run_integration_test_with_default(|c| async move {
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": "jon@snow.test",
                 "password": "Iknow#oth1ng",
@@ -45,7 +45,7 @@ async fn it_returns_unauthorized_for_invalid_password() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "some-bad-password",
@@ -74,7 +74,7 @@ async fn it_issues_access_token() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -112,7 +112,7 @@ async fn it_issues_access_token_for_not_verified_user() {
 
             let response = c
                 .server
-                .post("/v1/stateless/login")
+                .post("/v1/login")
                 .json(&json!({
                     "email": &email,
                     "password": "Iknow#othing1",
@@ -168,7 +168,7 @@ async fn it_issues_refresh_token() {
 
             let response = c
                 .server
-                .post("/v1/stateless/login")
+                .post("/v1/login")
                 .json(&json!({
                     "email": &email,
                     "password": "Iknow#othing1",
@@ -222,7 +222,7 @@ async fn it_auto_updates_password_scheme() {
 
             let response = c
                 .server
-                .post("/v1/stateless/login")
+                .post("/v1/login")
                 .json(&json!({
                     "email": &email,
                     "password": "Iknow#othing1",
@@ -262,7 +262,7 @@ async fn it_verifies_token() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -272,7 +272,7 @@ async fn it_verifies_token() {
 
         let response = c
             .server
-            .get("/v1/stateless/authenticate")
+            .get("/v1/authenticate")
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
                 HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -323,7 +323,7 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
 
             let response = c
                 .server
-                .post("/v1/stateless/login")
+                .post("/v1/login")
                 .json(&json!({
                     "email": &email,
                     "password": "Iknow#othing1",
@@ -333,7 +333,7 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
 
             let response = c
                 .server
-                .get("/v1/stateless/authenticate")
+                .get("/v1/authenticate")
                 .add_header(
                     HeaderName::try_from("Authorization").unwrap(),
                     HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -381,7 +381,7 @@ async fn it_does_not_verify_token_if_user_is_not_verified() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -391,7 +391,7 @@ async fn it_does_not_verify_token_if_user_is_not_verified() {
 
         let response = c
             .server
-            .get("/v1/stateless/authenticate")
+            .get("/v1/authenticate")
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
                 HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -423,7 +423,7 @@ async fn it_does_not_verify_token_by_using_refresh_token() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -433,7 +433,7 @@ async fn it_does_not_verify_token_by_using_refresh_token() {
 
         let response = c
             .server
-            .get("/v1/stateless/authenticate")
+            .get("/v1/authenticate")
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
                 HeaderValue::try_from(format!("Bearer {}", body.refresh_token.value)).unwrap(),
@@ -472,7 +472,7 @@ async fn it_refreshes_token() {
 
             let response = c
                 .server
-                .post("/v1/stateless/login")
+                .post("/v1/login")
                 .json(&json!({
                     "email": &email,
                     "password": "Iknow#othing1",
@@ -482,7 +482,7 @@ async fn it_refreshes_token() {
 
             let response = c
                 .server
-                .post("/v1/stateless/refresh")
+                .post("/v1/refresh")
                 .add_header(
                     HeaderName::try_from("Authorization").unwrap(),
                     HeaderValue::try_from(format!("Bearer {}", body.refresh_token.value)).unwrap(),
@@ -534,7 +534,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid() {
 
         let response = c
             .server
-            .post("/v1/stateless/refresh")
+            .post("/v1/refresh")
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
                 HeaderValue::try_from("Bearer notValidToken".to_string()).unwrap(),
@@ -566,7 +566,7 @@ async fn it_does_not_refresh_if_you_use_access_token() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -576,7 +576,7 @@ async fn it_does_not_refresh_if_you_use_access_token() {
 
         let response = c
             .server
-            .post("/v1/stateless/refresh")
+            .post("/v1/refresh")
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
                 HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -605,7 +605,7 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
 
         let response = c
             .server
-            .post("/v1/stateless/login")
+            .post("/v1/login")
             .json(&json!({
                 "email": &email,
                 "password": "Iknow#othing1",
@@ -617,7 +617,7 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
 
         let response = c
             .server
-            .get("/v1/stateless/authenticate")
+            .get("/v1/authenticate")
             .add_header(
                 header::AUTHORIZATION,
                 HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
@@ -666,7 +666,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
 
             let response = c
                 .server
-                .get("/v1/stateless/authenticate")
+                .get("/v1/authenticate")
                 .add_header(
                     header::AUTHORIZATION,
                     HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
