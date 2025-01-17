@@ -1,6 +1,6 @@
 use crate::api::axum_extractor::LoggedInUser;
 use crate::api::dto::MessageResponse;
-use crate::api::server_state::{ServerState};
+use crate::api::server_state::ServerState;
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;

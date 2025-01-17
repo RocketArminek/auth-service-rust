@@ -1,13 +1,13 @@
-use std::ops::Add;
-use std::sync::Arc;
-use async_trait::async_trait;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use crate::application::auth_service::{AuthError, AuthService, Token, TokenPair};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repositories::UserRepository;
 use crate::domain::user::PasswordHandler;
+use async_trait::async_trait;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use std::ops::Add;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct StatelessAuthService {
@@ -39,30 +39,24 @@ impl StatelessAuthService {
         let now = Utc::now();
 
         let at_exp = now.add(Duration::seconds(self.access_token_duration));
-        let at_claims = Claims::new(
-            at_exp.timestamp() as usize,
-            user.clone(),
-            TokenType::Access,
-        );
+        let at_claims = Claims::new(at_exp.timestamp() as usize, user.clone(), TokenType::Access);
 
         let access_token = encode(
             &Header::default(),
             &at_claims,
             &EncodingKey::from_secret(self.secret.as_bytes()),
-        ).map_err(|_| AuthError::TokenEncodingFailed)?;
+        )
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         let rt_exp = now.add(Duration::seconds(self.refresh_token_duration));
-        let rt_claims = Claims::new(
-            rt_exp.timestamp() as usize,
-            user,
-            TokenType::Refresh,
-        );
+        let rt_claims = Claims::new(rt_exp.timestamp() as usize, user, TokenType::Refresh);
 
         let refresh_token = encode(
             &Header::default(),
             &rt_claims,
             &EncodingKey::from_secret(self.secret.as_bytes()),
-        ).map_err(|_| AuthError::TokenEncodingFailed)?;
+        )
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         Ok(TokenPair {
             access_token: Token {
@@ -81,7 +75,8 @@ impl StatelessAuthService {
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
             &Validation::default(),
-        ).map_err(|e| match e.kind() {
+        )
+        .map_err(|e| match e.kind() {
             jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
             _ => AuthError::InvalidToken,
         })?;
@@ -96,10 +91,13 @@ impl StatelessAuthService {
 
 #[async_trait]
 impl AuthService for StatelessAuthService {
-    async fn login(&self, email: String, password: String)
-        -> Result<(TokenPair, UserDTO), AuthError>
-    {
-        let user = self.user_repository
+    async fn login(
+        &self,
+        email: String,
+        password: String,
+    ) -> Result<(TokenPair, UserDTO), AuthError> {
+        let user = self
+            .user_repository
             .get_by_email(&email)
             .await
             .map_err(|_| AuthError::UserNotFound)?;
@@ -116,10 +114,10 @@ impl AuthService for StatelessAuthService {
             let user_repository = self.user_repository.clone();
             tokio::task::spawn(async move {
                 tracing::debug!(
-                        "Password hash outdated for {}({}), updating...",
-                        &outdated_user.email,
-                        &outdated_user.id
-                    );
+                    "Password hash outdated for {}({}), updating...",
+                    &outdated_user.email,
+                    &outdated_user.id
+                );
                 let new_password = SchemeAwareHasher::with_scheme(scheme)
                     .hash_password(&password)
                     .unwrap_or(outdated_user.password.clone());
@@ -127,10 +125,10 @@ impl AuthService for StatelessAuthService {
                 let outdated_user = outdated_user.into();
                 match user_repository.save(&outdated_user).await {
                     Ok(_) => tracing::debug!(
-                            "Password updated for {}({})",
-                            &outdated_user.email,
-                            &outdated_user.id
-                        ),
+                        "Password updated for {}({})",
+                        &outdated_user.email,
+                        &outdated_user.id
+                    ),
                     Err(e) => tracing::error!("Could not update password hash {:?}", e),
                 }
             });

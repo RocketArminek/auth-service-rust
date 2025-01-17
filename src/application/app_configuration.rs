@@ -1,3 +1,4 @@
+use crate::application::auth_service::AuthStrategy;
 use crate::application::configuration_types::{DurationInSeconds, HiddenString};
 use crate::domain::crypto::HashingScheme;
 use lazy_regex::Regex;
@@ -6,7 +7,6 @@ use std::env;
 use std::env::VarError;
 use std::str::FromStr;
 use tracing::Level;
-use crate::application::auth_service::AuthStrategy;
 
 pub struct AppConfigurationBuilder {
     pub secret: Option<HiddenString>,
@@ -206,7 +206,7 @@ impl AppConfigurationBuilder {
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
             self.log_level.clone().unwrap_or(Level::INFO),
-            self.auth_strategy.clone().unwrap_or_default()
+            self.auth_strategy.clone().unwrap_or_default(),
         )
     }
 }
@@ -381,7 +381,10 @@ impl AppConfiguration {
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
         envs.insert(EnvNames::LOG_LEVEL.to_owned(), self.log_level.to_string());
-        envs.insert(EnvNames::AUTH_STRATEGY.to_owned(), self.auth_strategy.to_string());
+        envs.insert(
+            EnvNames::AUTH_STRATEGY.to_owned(),
+            self.auth_strategy.to_string(),
+        );
 
         envs
     }

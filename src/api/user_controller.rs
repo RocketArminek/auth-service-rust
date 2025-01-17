@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{PasswordToken, LoggedInUser};
+use crate::api::axum_extractor::{LoggedInUser, PasswordToken};
 use crate::api::dto::{
     ChangePasswordRequest, CreateUserRequest, CreatedResponse, MessageResponse,
     ResetPasswordRequest, UpdateUserRequest, VerifyUserRequest,

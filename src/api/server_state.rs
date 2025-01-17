@@ -1,9 +1,9 @@
 use crate::application::app_configuration::AppConfiguration;
+use crate::application::auth_service::AuthService;
 use crate::domain::event::UserEvents;
 use crate::domain::repositories::{RoleRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
-use crate::application::auth_service::AuthService;
 
 #[derive(Clone)]
 pub struct ServerState {

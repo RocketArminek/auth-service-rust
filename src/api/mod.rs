@@ -7,5 +7,5 @@ pub mod security_mw;
 pub mod server_state;
 pub mod stateless_auth_controller;
 pub mod user_controller;
-pub mod utils_controller;
 pub mod utils;
+pub mod utils_controller;

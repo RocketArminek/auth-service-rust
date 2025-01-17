@@ -1,6 +1,7 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::app_configuration::{AppConfiguration, EnvNames as AppEnvNames};
+use auth_service::application::auth_service::create_auth_service;
 use auth_service::application::configuration::Configuration;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
 use auth_service::domain::crypto::SchemeAwareHasher;
@@ -22,7 +23,6 @@ use lapin::types::FieldTable;
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
-use auth_service::application::auth_service::create_auth_service;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -102,10 +102,7 @@ async fn main() {
 
     let message_publisher = create_message_publisher(config.publisher()).await;
 
-    let auth_service = create_auth_service(
-        config.app(),
-        user_repository.clone(),
-    );
+    let auth_service = create_auth_service(config.app(), user_repository.clone());
 
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();

@@ -1,12 +1,12 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
+use auth_service::application::auth_service::AuthService;
 use auth_service::application::configuration::Configuration;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::repositories::{RoleRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use std::sync::Arc;
-use auth_service::application::auth_service::AuthService;
 
 pub async fn create_test_server(
     config: &Configuration,
