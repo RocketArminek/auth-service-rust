@@ -187,13 +187,8 @@ EVENT_DRIVEN=true
 
 ## API Documentation
 
-The API documentation is available at `/docs` when the service is running. Key endpoints include:
-
-- `POST /v1/users` - Create new user
-- `POST /v1/stateless/login` - User login
-- `GET /v1/stateless/authenticate` - Verify authentication
-- `POST /v1/stateless/refresh` - Refresh access token
-- `GET /v1/restricted/users` - List users (admin only)
+The API documentation is available at `/docs` when the service is running.
+There is also json version of open api schema at `/`
 
 ## CLI Commands
 
