@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::StatelessLoggedInUser;
+use crate::api::axum_extractor::LoggedInUser;
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::{ServerState, VerificationRequired};
 use axum::extract::{Request, State};
@@ -8,7 +8,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 
 pub async fn restricted_acl(
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     State(state): State<ServerState>,
     request: Request,
     next: Next,
@@ -36,7 +36,7 @@ pub async fn restricted_acl(
 }
 
 pub async fn verified_acl(
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     State(state): State<ServerState>,
     request: Request,
     next: Next,

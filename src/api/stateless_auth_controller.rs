@@ -1,16 +1,11 @@
-use crate::api::axum_extractor::{RefreshToken, StatelessLoggedInUser};
+use crate::api::axum_extractor::{BearerToken, LoggedInUser};
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
 use crate::api::server_state::ServerState;
-use crate::domain::crypto::{Hasher, SchemeAwareHasher};
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::user::PasswordHandler;
+use crate::domain::jwt::{UserDTO};
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use std::ops::Add;
 
 #[utoipa::path(post, path = "/v1/stateless/login",
     tag="stateless",
@@ -27,106 +22,30 @@ pub async fn login(
 ) -> impl IntoResponse {
     let email = request.email.clone();
     let password = request.password.clone();
-    let user = state.user_repository.get_by_email(&email).await;
 
-    match user {
-        Ok(user) => {
-            let hasher = SchemeAwareHasher::with_scheme(state.config.password_hashing_scheme());
-            let at_duration_in_seconds = state.config.at_duration_in_seconds().to_signed();
-            let rt_duration_in_seconds = state.config.rt_duration_in_seconds().to_signed();
-            let secret = state.config.secret().to_string();
+    let result = state.auth_service.login(email, password).await;
 
-            if !user.verify_password(&hasher, &password) {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(MessageResponse {
-                        message: String::from("Unauthorized"),
-                    }),
-                )
-                    .into_response();
-            }
-            if hasher.is_password_outdated(&user.password) {
-                let mut outdated_user = user.clone();
-                let scheme = state.config.password_hashing_scheme();
-                tokio::task::spawn(async move {
-                    tracing::debug!(
-                        "Password hash outdated for {}({}), updating...",
-                        &outdated_user.email,
-                        &outdated_user.id
-                    );
-                    let new_password = SchemeAwareHasher::with_scheme(scheme)
-                        .hash_password(&password)
-                        .unwrap_or(outdated_user.password.clone());
-                    outdated_user.set_password(new_password);
-                    let outdated_user = outdated_user.into();
-                    match state.user_repository.save(&outdated_user).await {
-                        Ok(_) => tracing::debug!(
-                            "Password updated for {}({})",
-                            &outdated_user.email,
-                            &outdated_user.id
-                        ),
-                        Err(e) => tracing::error!("Could not update password hash {:?}", e),
-                    }
-                });
-            }
-
-            let user_response = UserDTO::from(user);
-
-            let now = Utc::now();
-            let at_duration = Duration::new(at_duration_in_seconds, 0).unwrap_or_default();
-            let at_exp = now.add(at_duration);
-
-            let at_body = Claims::new(
-                at_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Access,
-            );
-            let access_token = encode(
-                &Header::default(),
-                &at_body,
-                &EncodingKey::from_secret(secret.as_ref()),
-            );
-
-            let rt_duration = Duration::new(rt_duration_in_seconds, 0).unwrap_or_default();
-            let rt_exp = now.add(rt_duration);
-            let rt_body = Claims::new(
-                rt_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Refresh,
-            );
-
-            let refresh_token = encode(
-                &Header::default(),
-                &rt_body,
-                &EncodingKey::from_secret(secret.as_ref()),
-            );
-
-            match (access_token, refresh_token) {
-                (Ok(access_token), Ok(refresh_token)) => (
-                    StatusCode::OK,
-                    Json(LoginResponse {
-                        user: user_response.clone(),
-                        refresh_token: TokenResponse {
-                            value: refresh_token,
-                            expires_at: rt_exp.timestamp() as usize,
-                        },
-                        access_token: TokenResponse {
-                            value: access_token,
-                            expires_at: at_exp.timestamp() as usize,
-                        },
-                    }),
-                )
-                    .into_response(),
-                _ => (
-                    StatusCode::FORBIDDEN,
-                    Json(MessageResponse {
-                        message: String::from("Could not encode token"),
-                    }),
-                )
-                    .into_response(),
-            }
+    match result {
+        Ok((tokens, user)) => {
+            (
+                StatusCode::OK,
+                Json(LoginResponse {
+                    user,
+                    refresh_token: TokenResponse {
+                        value: tokens.refresh_token.value,
+                        expires_at: tokens.refresh_token.expires_at,
+                    },
+                    access_token: TokenResponse {
+                        value: tokens.access_token.value,
+                        expires_at: tokens.access_token.expires_at,
+                    },
+                }),
+            )
+                .into_response()
         }
-        Err(e) => e.into_response(),
+        Err(e) => {
+            e.into_response()
+        }
     }
 }
 
@@ -138,7 +57,9 @@ pub async fn login(
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
-pub async fn authenticate(StatelessLoggedInUser(user): StatelessLoggedInUser) -> impl IntoResponse {
+pub async fn authenticate(
+    LoggedInUser(user): LoggedInUser,
+) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id;
     let user_roles = user.roles.join(",");
@@ -164,70 +85,26 @@ pub async fn authenticate(StatelessLoggedInUser(user): StatelessLoggedInUser) ->
 )]
 pub async fn refresh(
     State(state): State<ServerState>,
-    RefreshToken(request): RefreshToken,
+    BearerToken(token): BearerToken,
 ) -> impl IntoResponse {
-    let locked_user_repository = state.user_repository;
-    let user = locked_user_repository.get_by_email(&request.email).await;
-
-    match user {
-        Ok(user) => {
-            let user_response = UserDTO::from(user);
-
-            let now = Utc::now();
-            let at_duration = Duration::new(state.config.at_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let at_exp = now.add(at_duration);
-
-            let at_body = Claims::new(
-                at_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Access,
-            );
-            let access_token = encode(
-                &Header::default(),
-                &at_body,
-                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
-            );
-
-            let rt_duration = Duration::new(state.config.rt_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let rt_exp = now.add(rt_duration);
-            let rt_body = Claims::new(
-                rt_exp.timestamp() as usize,
-                user_response.clone(),
-                TokenType::Refresh,
-            );
-
-            let refresh_token = encode(
-                &Header::default(),
-                &rt_body,
-                &EncodingKey::from_secret(state.config.secret().to_string().as_ref()),
-            );
-
-            match (access_token, refresh_token) {
-                (Ok(access_token), Ok(refresh_token)) => (
-                    StatusCode::OK,
-                    Json(LoginResponse {
-                        user: user_response.clone(),
-                        refresh_token: TokenResponse {
-                            value: refresh_token,
-                            expires_at: rt_exp.timestamp() as usize,
-                        },
-                        access_token: TokenResponse {
-                            value: access_token,
-                            expires_at: at_exp.timestamp() as usize,
-                        },
-                    }),
-                )
-                    .into_response(),
-                _ => (
-                    StatusCode::FORBIDDEN,
-                    Json(MessageResponse {
-                        message: String::from("Could not encode token"),
-                    }),
-                )
-                    .into_response(),
-            }
+    let result = state.auth_service.refresh(token).await;
+    match result {
+        Ok((tokens, user)) => {
+            (
+                StatusCode::OK,
+                Json(LoginResponse {
+                    user,
+                    refresh_token: TokenResponse {
+                        value: tokens.refresh_token.value,
+                        expires_at: tokens.refresh_token.expires_at,
+                    },
+                    access_token: TokenResponse {
+                        value: tokens.access_token.value,
+                        expires_at: tokens.access_token.expires_at,
+                    },
+                }),
+            )
+                .into_response()
         }
         Err(e) => e.into_response(),
     }

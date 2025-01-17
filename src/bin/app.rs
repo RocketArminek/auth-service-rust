@@ -22,6 +22,7 @@ use lapin::types::FieldTable;
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
+use auth_service::application::auth_service::create_auth_service;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -101,6 +102,11 @@ async fn main() {
 
     let message_publisher = create_message_publisher(config.publisher()).await;
 
+    let auth_service = create_auth_service(
+        config.app(),
+        user_repository.clone(),
+    );
+
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();
 
@@ -112,8 +118,13 @@ async fn main() {
             let listener = tokio::net::TcpListener::bind(&addr).await;
             let config = config.app().clone();
 
-            let state =
-                ServerState::new(config, user_repository, role_repository, message_publisher);
+            let state = ServerState::new(
+                config,
+                user_repository,
+                role_repository,
+                message_publisher,
+                auth_service,
+            );
 
             match listener {
                 Ok(listener) => {

@@ -85,7 +85,7 @@ impl TryFrom<String> for DatabaseEngine {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
+        match value.to_lowercase().as_str() {
             "sqlite" => Ok(DatabaseEngine::Sqlite),
             "mysql" => Ok(DatabaseEngine::Mysql),
             _ => Err(format!("Unknown database type: {}", value)),

@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{PasswordToken, StatelessLoggedInUser};
+use crate::api::axum_extractor::{PasswordToken, LoggedInUser};
 use crate::api::dto::{
     ChangePasswordRequest, CreateUserRequest, CreatedResponse, MessageResponse,
     ResetPasswordRequest, UpdateUserRequest, VerifyUserRequest,
@@ -198,7 +198,7 @@ pub async fn create_user(
 )]
 pub async fn update_profile(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     request: Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
     let first_name = request.first_name.clone();
@@ -258,7 +258,7 @@ pub async fn update_profile(
 )]
 pub async fn verify(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
     request: Json<VerifyUserRequest>,
 ) -> impl IntoResponse {
     let user = state.user_repository.get_by_id(&user.id).await;
@@ -362,7 +362,7 @@ pub async fn verify(
 )]
 pub async fn resend_verification(
     State(state): State<ServerState>,
-    StatelessLoggedInUser(user): StatelessLoggedInUser,
+    LoggedInUser(user): LoggedInUser,
 ) -> impl IntoResponse {
     let user = state.user_repository.get_by_id(&user.id).await;
     match user {

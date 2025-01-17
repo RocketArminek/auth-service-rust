@@ -20,6 +20,7 @@ use auth_service::infrastructure::repository::{
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
+use auth_service::application::auth_service::create_auth_service;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagePublisherConfigurationBuilder) = |_| {};
@@ -115,11 +116,17 @@ where
     let message_publisher = create_message_publisher(config.publisher()).await;
     let (_, consumer, _) = setup_test_consumer(config.publisher()).await;
 
+    let auth_service = create_auth_service(
+        config.app(),
+        user_repository.clone()
+    );
+
     let server = create_test_server(
         &config,
         user_repository.clone(),
         role_repository.clone(),
         message_publisher,
+        auth_service
     )
     .await;
 

@@ -8,3 +8,4 @@ pub mod server_state;
 pub mod stateless_auth_controller;
 pub mod user_controller;
 pub mod utils_controller;
+pub mod utils;

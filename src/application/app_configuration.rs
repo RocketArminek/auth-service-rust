@@ -6,6 +6,7 @@ use std::env;
 use std::env::VarError;
 use std::str::FromStr;
 use tracing::Level;
+use crate::application::auth_service::AuthStrategy;
 
 pub struct AppConfigurationBuilder {
     pub secret: Option<HiddenString>,
@@ -23,6 +24,7 @@ pub struct AppConfigurationBuilder {
     pub port: Option<String>,
     pub host: Option<String>,
     pub log_level: Option<Level>,
+    pub auth_strategy: Option<AuthStrategy>,
 }
 
 impl AppConfigurationBuilder {
@@ -43,6 +45,7 @@ impl AppConfigurationBuilder {
             port: None,
             host: None,
             log_level: None,
+            auth_strategy: None,
         }
     }
 
@@ -118,6 +121,11 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn auth_strategy(&mut self, value: AuthStrategy) -> &mut Self {
+        self.auth_strategy = Some(value);
+        self
+    }
+
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
         self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
@@ -155,6 +163,9 @@ impl AppConfigurationBuilder {
         self.host = env::var(EnvNames::HOST).ok();
         self.log_level = env::var(EnvNames::LOG_LEVEL)
             .and_then(|v| Level::from_str(v.as_str()).map_err(|_| VarError::NotPresent))
+            .ok();
+        self.auth_strategy = env::var(EnvNames::AUTH_STRATEGY)
+            .and_then(|v| AuthStrategy::try_from(v).map_err(|_| VarError::NotPresent))
             .ok();
 
         self
@@ -195,6 +206,7 @@ impl AppConfigurationBuilder {
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
             self.log_level.clone().unwrap_or(Level::INFO),
+            self.auth_strategy.clone().unwrap_or_default()
         )
     }
 }
@@ -216,6 +228,7 @@ pub struct AppConfiguration {
     port: String,
     host: String,
     log_level: Level,
+    auth_strategy: AuthStrategy,
 }
 
 impl AppConfiguration {
@@ -235,6 +248,7 @@ impl AppConfiguration {
         port: String,
         host: String,
         log_level: Level,
+        auth_strategy: AuthStrategy,
     ) -> Self {
         AppConfiguration {
             super_admin_email,
@@ -252,6 +266,7 @@ impl AppConfiguration {
             port,
             host,
             log_level,
+            auth_strategy,
         }
     }
 
@@ -315,6 +330,10 @@ impl AppConfiguration {
         self.rp_duration_in_seconds.clone()
     }
 
+    pub fn auth_strategy(&self) -> AuthStrategy {
+        self.auth_strategy.clone()
+    }
+
     pub fn envs(&self) -> HashMap<String, String> {
         let mut envs = HashMap::new();
 
@@ -362,6 +381,7 @@ impl AppConfiguration {
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
         envs.insert(EnvNames::LOG_LEVEL.to_owned(), self.log_level.to_string());
+        envs.insert(EnvNames::AUTH_STRATEGY.to_owned(), self.auth_strategy.to_string());
 
         envs
     }
@@ -384,4 +404,5 @@ impl EnvNames {
     pub const PORT: &'static str = "PORT";
     pub const HOST: &'static str = "HOST";
     pub const LOG_LEVEL: &'static str = "LOG_LEVEL";
+    pub const AUTH_STRATEGY: &'static str = "AUTH_STRATEGY";
 }
