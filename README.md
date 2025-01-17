@@ -119,6 +119,11 @@ SQLITE_PATH=./database.sqlite
 
 #### Authentication Configuration
 ```env
+# Auth strategy
+# stateless -> all actions are performed based on decoded token. No session.
+# stateful -> all actions are checking state in DB. There is also a session correlated with token.
+AUTH_STRATEGY=stateless
+
 # Password hashing scheme (bcrypt, bcrypt_low, argon2)
 PASSWORD_HASHING_SCHEME=bcrypt_low
 
@@ -129,15 +134,16 @@ SECRET=your-secret-key
 AT_DURATION_IN_SECONDS=300
 
 # Refresh token duration in seconds (default: 30 days)
+# In stateful strategy this is used for duration of session
 RT_DURATION_IN_SECONDS=2592000
 
 # Whether email verification is required
 VERIFICATION_REQUIRED=true
 
-# Verification token duration in seconds
+# Verification token duration in seconds (default: 30 days)
 VR_DURATION_IN_SECONDS=2592000
 
-# Reset password token duration in seconds
+# Reset password token duration in seconds (default: 30 days)
 RP_DURATION_IN_SECONDS=2592000
 ```
 
