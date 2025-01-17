@@ -1,9 +1,9 @@
 [package]
 name = "auth-service"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Arkadiusz Krakowiak<arkadiusz.k.e@gmail.com>"]
-description = "A simple event driven authorization and authentication service written to be compatible with traefik forward auth."
+description = "A high-performance, event-driven authentication & authorization service written in Rust. This service provides robust user management and secure authentication flows."
 license = "GPL-3"
 
 [[bin]]
