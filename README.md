@@ -195,17 +195,8 @@ There is also json version of open api schema at `/`
 The service includes several CLI commands for management:
 
 ```bash
-# Create a new user
-app create-user --email user@example.com --password "Pass#word1" --role USER
-
-# Create admin role
-app create-role --name ADMIN
-
-# Health check
-app health-check
-
-# Start server
-app start
+# View help with list of all commands
+app help
 ```
 
 ### Testing Strategy
