@@ -5,6 +5,7 @@ use crate::domain::user::User;
 use crate::infrastructure::dto::SessionWithUserRow;
 use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
+use chrono::Utc;
 use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
 
@@ -196,5 +197,23 @@ impl SessionRepository for SqliteSessionRepository {
         .await?;
 
         Ok((sessions, total))
+    }
+
+    async fn delete_expired(&self) -> Result<(), RepositoryError> {
+        let mut tx = self.pool.begin().await?;
+        let now = Utc::now();
+
+        sqlx::query(
+            r#"
+            DELETE FROM sessions 
+            WHERE expires_at < ?
+            "#,
+        )
+        .bind(now)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
     }
 }

@@ -21,6 +21,7 @@ pub struct AppConfigurationBuilder {
     pub verification_required: Option<bool>,
     pub vr_duration_in_seconds: Option<DurationInSeconds>,
     pub rp_duration_in_seconds: Option<DurationInSeconds>,
+    pub cleanup_interval_in_minutes: Option<u64>,
     pub port: Option<String>,
     pub host: Option<String>,
     pub log_level: Option<Level>,
@@ -42,6 +43,7 @@ impl AppConfigurationBuilder {
             verification_required: None,
             vr_duration_in_seconds: None,
             rp_duration_in_seconds: None,
+            cleanup_interval_in_minutes: None,
             port: None,
             host: None,
             log_level: None,
@@ -101,6 +103,11 @@ impl AppConfigurationBuilder {
         self
     }
 
+    pub fn cleanup_interval_in_minutes(&mut self, value: u64) -> &mut Self {
+        self.cleanup_interval_in_minutes = Some(value);
+        self
+    }
+
     pub fn secret(&mut self, value: HiddenString) -> &mut Self {
         self.secret = Some(value);
         self
@@ -156,6 +163,9 @@ impl AppConfigurationBuilder {
         self.rp_duration_in_seconds = env::var(EnvNames::RP_DURATION_IN_SECONDS)
             .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
             .ok();
+        self.cleanup_interval_in_minutes = env::var(EnvNames::CLEANUP_INTERVAL_IN_MINUTES)
+            .and_then(|v| v.parse::<u64>().map_err(|_| VarError::NotPresent))
+            .ok();
         self.secret = env::var(EnvNames::SECRET)
             .and_then(|v| Ok(HiddenString(v)))
             .ok();
@@ -202,6 +212,7 @@ impl AppConfigurationBuilder {
             self.rp_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
+            self.cleanup_interval_in_minutes.unwrap_or(5),
             self.secret.clone().unwrap_or("secret".to_string().into()),
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
@@ -224,6 +235,7 @@ pub struct AppConfiguration {
     verification_required: bool,
     vr_duration_in_seconds: DurationInSeconds,
     rp_duration_in_seconds: DurationInSeconds,
+    cleanup_interval_in_minutes: u64,
     secret: HiddenString,
     port: String,
     host: String,
@@ -244,6 +256,7 @@ impl AppConfiguration {
         verification_required: bool,
         vr_duration_in_seconds: DurationInSeconds,
         rp_duration_in_seconds: DurationInSeconds,
+        cleanup_interval_in_minutes: u64,
         secret: HiddenString,
         port: String,
         host: String,
@@ -262,6 +275,7 @@ impl AppConfiguration {
             verification_required,
             vr_duration_in_seconds,
             rp_duration_in_seconds,
+            cleanup_interval_in_minutes,
             secret,
             port,
             host,
@@ -304,6 +318,10 @@ impl AppConfiguration {
 
     pub fn vr_duration_in_seconds(&self) -> DurationInSeconds {
         self.vr_duration_in_seconds.clone()
+    }
+
+    pub fn cleanup_interval_in_minutes(&self) -> u64 {
+        self.cleanup_interval_in_minutes
     }
 
     pub fn secret(&self) -> HiddenString {
@@ -377,6 +395,10 @@ impl AppConfiguration {
             EnvNames::RP_DURATION_IN_SECONDS.to_owned(),
             self.rp_duration_in_seconds.0.to_string(),
         );
+        envs.insert(
+            EnvNames::CLEANUP_INTERVAL_IN_MINUTES.to_owned(),
+            self.cleanup_interval_in_minutes.to_string(),
+        );
         envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
@@ -403,6 +425,7 @@ impl EnvNames {
     pub const VERIFICATION_REQUIRED: &'static str = "VERIFICATION_REQUIRED";
     pub const VR_DURATION_IN_SECONDS: &'static str = "VR_DURATION_IN_SECONDS";
     pub const RP_DURATION_IN_SECONDS: &'static str = "RP_DURATION_IN_SECONDS";
+    pub const CLEANUP_INTERVAL_IN_MINUTES: &'static str = "CLEANUP_INTERVAL_IN_MINUTES";
     pub const SECRET: &'static str = "SECRET";
     pub const PORT: &'static str = "PORT";
     pub const HOST: &'static str = "HOST";

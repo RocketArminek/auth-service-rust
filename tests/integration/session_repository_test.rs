@@ -2,8 +2,8 @@ use crate::utils::runners::run_database_test_with_default;
 use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::User;
-use chrono::{Duration, Utc};
-use uuid::Uuid;
+use chrono::{Duration, Timelike, Utc};
+use uuid::{NoContext, Timestamp, Uuid};
 
 #[tokio::test]
 async fn it_can_add_session() {
@@ -181,6 +181,42 @@ async fn it_can_get_session_with_user() {
         assert_eq!(saved_user.id, user.id);
         assert_eq!(saved_user.email, user.email);
         assert_eq!(saved_user.roles.len(), 1);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_delete_expired_sessions() {
+    run_database_test_with_default(|c| async move {
+        let user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Password123!".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+        c.user_repository.save(&user).await.unwrap();
+
+        let then = Utc::now() - Duration::hours(2);
+        let timestamp = Timestamp::from_unix(NoContext, then.timestamp() as u64, then.nanosecond());
+
+        let expired_session = Session::new(
+            Uuid::new_v7(timestamp),
+            user.id,
+            then,
+            Utc::now() - Duration::hours(1),
+        );
+        let valid_session = Session::now(user.id, Utc::now() + Duration::hours(1));
+
+        c.session_repository.save(&expired_session).await.unwrap();
+        c.session_repository.save(&valid_session).await.unwrap();
+
+        c.session_repository.delete_expired().await.unwrap();
+
+        let remaining_sessions = c.session_repository.get_by_user_id(&user.id).await.unwrap();
+        assert_eq!(remaining_sessions.len(), 1);
+        assert_eq!(remaining_sessions[0].id, valid_session.id);
     })
     .await;
 }

@@ -197,4 +197,20 @@ impl SessionRepository for MysqlSessionRepository {
 
         Ok((sessions, total))
     }
+
+    async fn delete_expired(&self) -> Result<(), RepositoryError> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query(
+            r#"
+            DELETE FROM sessions 
+            WHERE expires_at < NOW()
+            "#,
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
 }
