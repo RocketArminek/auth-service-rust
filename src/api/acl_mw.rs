@@ -10,7 +10,7 @@ use axum::Json;
 pub async fn restricted_acl(
     LoggedInUser(user): LoggedInUser,
     State(state): State<ServerState>,
-    request: Request,
+    mut request: Request,
     next: Next,
 ) -> impl IntoResponse {
     tracing::debug!("Restricted acl mw: User: {:?}", user);
@@ -32,6 +32,7 @@ pub async fn restricted_acl(
             .into_response();
     }
 
+    request.extensions_mut().insert(user);
     next.run(request).await
 }
 

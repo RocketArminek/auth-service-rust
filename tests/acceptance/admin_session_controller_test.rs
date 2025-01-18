@@ -419,3 +419,87 @@ async fn it_returns_not_found_when_deleting_sessions_for_nonexistent_user() {
     )
     .await;
 }
+
+#[tokio::test]
+async fn it_cannot_delete_own_session() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+        },
+        |c| async move {
+            let (_, access_token) = create_admin_with_token(&c).await;
+
+            let response = c
+                .server
+                .get("/v1/restricted/sessions?page=1&limit=10")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+            let sessions = response.json::<SessionListResponse>();
+            let admin_session = sessions.items.first().expect("Admin should have a session");
+
+            let response = c
+                .server
+                .delete(&format!("/v1/restricted/sessions/{}", admin_session.id))
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
+            let body = response.json::<MessageResponse>();
+            assert_eq!(body.message, "Cannot delete your own session");
+
+            let session = c.session_repository.get_by_id(&admin_session.id).await;
+            assert!(session.is_ok());
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_cannot_delete_own_user_sessions() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+        },
+        |c| async move {
+            let (admin, access_token) = create_admin_with_token(&c).await;
+
+            let response = c
+                .server
+                .delete(&format!("/v1/restricted/users/{}/sessions", admin.id))
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
+            let body = response.json::<MessageResponse>();
+            assert_eq!(body.message, "Cannot delete your own sessions");
+
+            let response = c
+                .server
+                .get("/v1/restricted/sessions?page=1&limit=10")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+            let sessions = response.json::<SessionListResponse>();
+            assert!(
+                !sessions.items.is_empty(),
+                "Admin sessions should still exist"
+            );
+        },
+    )
+    .await;
+}
