@@ -136,19 +136,25 @@ impl AuthService for StatefulAuthService {
         if let Some(session_id) = claims.session_id {
             let (_, user_dto) = self.validate_session(&session_id).await?;
 
-            let session = self
-                .create_session(user_dto.id, self.refresh_token_duration)
-                .await?;
+            let r = self.session_repository.delete(&session_id).await;
+            match r {
+                Ok(_) => {
+                    let session = self
+                        .create_session(user_dto.id, self.refresh_token_duration)
+                        .await?;
 
-            let token_pair = self.generate_token_pair(
-                user_dto.clone(),
-                self.access_token_duration,
-                self.refresh_token_duration,
-                &self.secret,
-                Some(session.id),
-            )?;
+                    let token_pair = self.generate_token_pair(
+                        user_dto.clone(),
+                        self.access_token_duration,
+                        self.refresh_token_duration,
+                        &self.secret,
+                        Some(session.id),
+                    )?;
 
-            Ok((token_pair, user_dto))
+                    Ok((token_pair, user_dto))
+                }
+                Err(e) => Err(AuthError::InternalError(e.to_string())),
+            }
         } else {
             Err(AuthError::InvalidToken)
         }
