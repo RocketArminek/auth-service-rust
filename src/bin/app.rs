@@ -124,6 +124,7 @@ async fn main() {
                 config,
                 user_repository,
                 role_repository,
+                session_repository,
                 message_publisher,
                 auth_service,
             );

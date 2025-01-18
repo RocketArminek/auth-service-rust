@@ -54,6 +54,7 @@ impl DatabaseTestContext {
 pub struct AcceptanceTestContext {
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
+    pub session_repository: Arc<dyn SessionRepository>,
     pub server: TestServer,
     pub consumer: Consumer,
 }
@@ -62,12 +63,14 @@ impl AcceptanceTestContext {
     pub fn new(
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
+        session_repository: Arc<dyn SessionRepository>,
         server: TestServer,
         consumer: Consumer,
     ) -> Self {
         AcceptanceTestContext {
             user_repository,
             role_repository,
+            session_repository,
             server,
             consumer,
         }

@@ -1,9 +1,10 @@
 use chrono::{DateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use utoipa::ToSchema;
 use uuid::{NoContext, Timestamp, Uuid};
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,

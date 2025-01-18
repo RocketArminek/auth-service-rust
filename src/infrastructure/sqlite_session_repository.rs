@@ -179,4 +179,22 @@ impl SessionRepository for SqliteSessionRepository {
 
         Ok((session, user))
     }
+
+    async fn get_all(&self, page: i32, limit: i32) -> Result<(Vec<Session>, i32), RepositoryError> {
+        let offset = (page - 1) * limit;
+
+        let total = sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM sessions")
+            .fetch_one(&self.pool)
+            .await?;
+
+        let sessions = sqlx::query_as::<_, Session>(
+            "SELECT * FROM sessions ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok((sessions, total))
+    }
 }

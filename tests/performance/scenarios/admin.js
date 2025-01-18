@@ -130,5 +130,15 @@ export default function (data) {
         });
     }
 
+    const getSessionsResponse = http.get(`${BASE_URL}/v1/restricted/sessions?page=1&limit=10`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+        },
+    });
+
+    check(getSessionsResponse, {
+        'get sessions successful': (r) => r.status === 200,
+    });
+
     sleep(0.5);
 }

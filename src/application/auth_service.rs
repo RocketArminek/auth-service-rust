@@ -123,7 +123,7 @@ pub struct Token {
     pub expires_at: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AuthStrategy {
     Stateless,
     Stateful,

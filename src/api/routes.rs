@@ -1,19 +1,20 @@
 use crate::api::acl_mw::{restricted_acl, verified_acl};
-use axum::routing::{patch, post, put};
-use axum::{middleware, routing::get, Router};
-use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
-
+use crate::api::admin_session_controller::*;
+use crate::api::admin_users_controller::*;
 use crate::api::auth_controller::*;
 use crate::api::dto::*;
-use crate::api::restricted_controller::*;
 use crate::api::security_mw::{restrict_methods, security_headers};
 use crate::api::server_state::ServerState;
 use crate::api::user_controller::*;
 use crate::api::utils_controller::*;
 use crate::domain::jwt::UserDTO;
+use crate::domain::session::Session;
+use axum::routing::{delete, patch, post, put};
+use axum::{middleware, routing::get, Router};
+use tower::ServiceBuilder;
+use tower_http::trace::TraceLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 pub fn routes(state: ServerState) -> Router {
     Router::new()
@@ -46,6 +47,15 @@ pub fn routes(state: ServerState) -> Router {
                 .route(
                     "/v1/restricted/users/{id}",
                     get(get_user).delete(delete_user).put(update_user),
+                )
+                .route("/v1/restricted/sessions", get(list_sessions))
+                .route(
+                    "/v1/restricted/sessions/{id}",
+                    get(get_session).delete(delete_session),
+                )
+                .route(
+                    "/v1/restricted/users/{user_id}/sessions",
+                    delete(delete_all_user_sessions),
                 )
                 .layer(
                     ServiceBuilder::new()
@@ -85,6 +95,10 @@ pub fn routes(state: ServerState) -> Router {
         request_password_reset,
         reset_password,
         logout,
+        delete_all_user_sessions,
+        list_sessions,
+        get_session,
+        delete_session,
     ),
     components(
         schemas(
@@ -101,6 +115,8 @@ pub fn routes(state: ServerState) -> Router {
             VerifyUserRequest,
             ResetPasswordRequest,
             ChangePasswordRequest,
+            Session,
+            SessionListResponse,
         ),
     )
 )]

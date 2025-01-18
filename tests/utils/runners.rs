@@ -127,6 +127,7 @@ where
         &config,
         user_repository.clone(),
         role_repository.clone(),
+        session_repository.clone(),
         message_publisher,
         auth_service,
     )
@@ -135,6 +136,7 @@ where
     test(AcceptanceTestContext::new(
         user_repository,
         role_repository,
+        session_repository,
         server,
         consumer,
     ))
