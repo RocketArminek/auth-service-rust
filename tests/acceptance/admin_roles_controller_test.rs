@@ -235,3 +235,41 @@ async fn it_requires_admin_role() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_assign_role_to_user() {
+    run_integration_test_with_default(|c| async move {
+        let (_, token) = create_admin_with_token(&c).await;
+
+        let user = User::now_with_email_and_password(
+            "test@example.com".to_string(),
+            "Test#pass123".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+        c.user_repository.save(&user).await.unwrap();
+
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let response = c
+            .server
+            .patch(&format!("/v1/restricted/users/{}/roles", user.id))
+            .json(&json!({
+                "role": "TEST_ROLE"
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let updated_user = c.user_repository.get_by_id(&user.id).await.unwrap();
+        assert!(updated_user.has_role("TEST_ROLE".to_string()));
+    })
+    .await;
+}

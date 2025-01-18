@@ -1,6 +1,6 @@
 use crate::api::dto::{
-    CreateUserRequest, CreatedResponse, MessageResponse, Pagination, UpdateUserRequest,
-    UserListResponse,
+    AssignRoleRequest, CreateUserRequest, CreatedResponse, MessageResponse, Pagination,
+    UpdateUserRequest, UserListResponse,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
@@ -318,5 +318,62 @@ pub async fn update_user(
             tracing::error!("Failed to update user");
             e.into_response()
         }
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/restricted/users/{id}/roles",
+    tag="admin",
+    request_body = AssignRoleRequest,
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Role assigned", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User or role not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn assign_role(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<AssignRoleRequest>,
+) -> impl IntoResponse {
+    let user = match state.user_repository.get_by_id(&id).await {
+        Ok(user) => user,
+        Err(e) => return e.into_response(),
+    };
+
+    let role = match state.role_repository.get_by_name(&request.role).await {
+        Ok(role) => role,
+        Err(e) => return e.into_response(),
+    };
+
+    let mut updated_user = user;
+    updated_user.add_role(role.clone());
+
+    match state.user_repository.save(&updated_user).await {
+        Ok(_) => {
+            let result = state
+                .message_publisher
+                .publish(&UserEvents::RoleAssigned {
+                    user: UserDTO::from(updated_user.clone()),
+                    role: role.name.clone(),
+                })
+                .await;
+
+            if let Err(e) = result {
+                tracing::error!("Failed to publish role assigned event: {:?}", e);
+            }
+
+            (
+                StatusCode::OK,
+                Json(MessageResponse {
+                    message: format!("Role {} assigned successfully", role.name),
+                }),
+            )
+                .into_response()
+        }
+        Err(e) => e.into_response(),
     }
 }

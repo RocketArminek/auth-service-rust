@@ -23,4 +23,6 @@ pub enum UserEvents {
     PasswordResetRequested { user: UserDTO, token: String },
     #[serde(rename = "user.passwordReset")]
     PasswordReset { user: UserDTO },
+    #[serde(rename = "user.roleAssigned")]
+    RoleAssigned { user: UserDTO, role: String },
 }

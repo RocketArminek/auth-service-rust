@@ -112,3 +112,8 @@ pub struct RoleResponse {
 pub struct RoleListResponse {
     pub roles: Vec<RoleResponse>,
 }
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AssignRoleRequest {
+    pub role: String,
+}
