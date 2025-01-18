@@ -442,12 +442,21 @@ async fn load_fixtures(
     user_repository: &Arc<dyn UserRepository>,
     role_repository: &Arc<dyn RoleRepository>,
 ) {
-    init_role(config.regular_role_name(), &role_repository, false)
+    init_role(config.regular_role_name(), &role_repository)
         .await
         .unwrap();
-    let restricted_role = init_role(config.restricted_role_name(), &role_repository, true)
+    let restricted_role = init_role(config.restricted_role_name(), &role_repository)
         .await
         .unwrap();
+    let mark = role_repository.mark_as_system(&restricted_role.id).await;
+    match mark {
+        Ok(_) => tracing::info!(
+            "Marked as system role {}, {}",
+            restricted_role.id,
+            restricted_role.name
+        ),
+        Err(e) => tracing::error!("{}", e),
+    }
     init_user(config, &user_repository, restricted_role)
         .await
         .unwrap();
@@ -503,7 +512,6 @@ async fn init_user(
 async fn init_role(
     role_name: &str,
     role_repository: &Arc<dyn RoleRepository>,
-    is_system: bool,
 ) -> Result<Role, RepositoryError> {
     let existing_role = role_repository.get_by_name(role_name).await;
 
@@ -514,15 +522,6 @@ async fn init_role(
             &existing_role.name,
             &existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
         );
-
-        if is_system {
-            role_repository.mark_as_system(&existing_role.id).await?;
-            tracing::info!(
-                "Marked as system role {}, {}",
-                existing_role.id,
-                existing_role.name
-            );
-        }
 
         return Ok(existing_role);
     }
@@ -538,11 +537,6 @@ async fn init_role(
         );
 
         return Err(e);
-    }
-
-    if is_system {
-        role_repository.mark_as_system(&role.id).await?;
-        tracing::info!("Marked as system role {}, {}", role.id, role.name);
     }
 
     tracing::info!(
