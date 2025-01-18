@@ -95,3 +95,20 @@ pub struct SessionListResponse {
     pub limit: i32,
     pub pages: i32,
 }
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct CreateRoleRequest {
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RoleResponse {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RoleListResponse {
+    pub roles: Vec<RoleResponse>,
+}

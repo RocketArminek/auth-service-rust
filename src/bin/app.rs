@@ -1,14 +1,13 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::app_configuration::{AppConfiguration, EnvNames as AppEnvNames};
-use auth_service::application::auth_service::create_auth_service;
+use auth_service::application::auth_service::{create_auth_service, AuthStrategy};
 use auth_service::application::configuration::Configuration;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
-use auth_service::cli::cleanup_sessions::spawn_cleanup_expired_session_job;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repositories::{RoleRepository, UserRepository};
+use auth_service::domain::repositories::{RoleRepository, SessionRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
@@ -17,6 +16,7 @@ use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_co
 use auth_service::infrastructure::repository::{
     create_role_repository, create_session_repository, create_user_repository, RepositoryError,
 };
+use chrono::Duration;
 use clap::{Parser, Subcommand};
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
@@ -24,6 +24,7 @@ use lapin::types::FieldTable;
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
+use tokio::time::sleep;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -113,10 +114,12 @@ async fn main() {
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();
 
-    spawn_cleanup_expired_session_job(
-        session_repository.clone(),
-        config.app().cleanup_interval_in_minutes(),
-    );
+    if config.app().auth_strategy() == AuthStrategy::Stateful {
+        spawn_cleanup_expired_session_job(
+            session_repository.clone(),
+            config.app().cleanup_interval_in_minutes(),
+        );
+    }
 
     match &cli.command {
         Some(Commands::Start) | None => {
@@ -564,4 +567,30 @@ fn debug_config(config: &Configuration) {
             }
         }
     }
+}
+
+pub fn spawn_cleanup_expired_session_job(
+    session_repository: Arc<dyn SessionRepository>,
+    cleanup_interval_in_minutes: u64,
+) {
+    tokio::spawn(async move {
+        tracing::info!(
+            "Cleanup expired session job started with interval {} minutes",
+            cleanup_interval_in_minutes
+        );
+
+        loop {
+            sleep(
+                Duration::minutes(cleanup_interval_in_minutes as i64)
+                    .to_std()
+                    .unwrap(),
+            )
+            .await;
+
+            match session_repository.delete_expired().await {
+                Ok(_) => tracing::debug!("Expired sessions cleaned up successfully"),
+                Err(e) => tracing::error!("Failed to clean up expired sessions: {:?}", e),
+            }
+        }
+    });
 }

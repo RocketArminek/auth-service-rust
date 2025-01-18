@@ -67,14 +67,6 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(role)
     }
 
-    async fn get_all(&self) -> Result<Vec<Role>, RepositoryError> {
-        let roles = query_as::<_, Role>("SELECT * FROM roles ORDER BY created_at DESC")
-            .fetch_all(&self.pool)
-            .await?;
-
-        Ok(roles)
-    }
-
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
         query("DELETE FROM roles WHERE id = ?")
             .bind(id)
@@ -91,5 +83,16 @@ impl RoleRepository for MysqlRoleRepository {
             .await?;
 
         Ok(())
+    }
+
+    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {
+        let roles =
+            query_as::<_, Role>("SELECT * FROM roles ORDER BY created_at DESC LIMIT ? OFFSET ?")
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(&self.pool)
+                .await?;
+
+        Ok(roles)
     }
 }

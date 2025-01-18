@@ -43,7 +43,7 @@ async fn it_can_get_all_roles() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        let rows = c.role_repository.get_all().await.unwrap();
+        let rows = c.role_repository.get_all(0, 10).await.unwrap();
 
         assert_eq!(rows.len(), 1);
     })

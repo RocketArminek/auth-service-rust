@@ -19,7 +19,7 @@ pub trait RoleRepository: Send + Sync {
     async fn save(&self, role: &Role) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError>;
     async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError>;
-    async fn get_all(&self) -> Result<Vec<Role>, RepositoryError>;
+    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Role>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
 }

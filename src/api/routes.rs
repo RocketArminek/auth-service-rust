@@ -1,4 +1,5 @@
 use crate::api::acl_mw::{restricted_acl, verified_acl};
+use crate::api::admin_roles_controller::*;
 use crate::api::admin_session_controller::*;
 use crate::api::admin_users_controller::*;
 use crate::api::auth_controller::*;
@@ -57,6 +58,11 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/users/{user_id}/sessions",
                     delete(delete_all_user_sessions),
                 )
+                .route("/v1/restricted/roles", get(list_roles).post(create_role))
+                .route(
+                    "/v1/restricted/roles/{id}",
+                    get(get_role).delete(delete_role),
+                )
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
@@ -99,6 +105,10 @@ pub fn routes(state: ServerState) -> Router {
         list_sessions,
         get_session,
         delete_session,
+        create_role,
+        list_roles,
+        get_role,
+        delete_role,
     ),
     components(
         schemas(
@@ -117,6 +127,9 @@ pub fn routes(state: ServerState) -> Router {
             ChangePasswordRequest,
             Session,
             SessionListResponse,
+            CreateRoleRequest,
+            RoleResponse,
+            RoleListResponse,
         ),
     )
 )]

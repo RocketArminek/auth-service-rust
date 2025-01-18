@@ -1,4 +1,5 @@
 pub mod acl_mw;
+pub mod admin_roles_controller;
 pub mod admin_session_controller;
 pub mod admin_users_controller;
 pub mod auth_controller;
