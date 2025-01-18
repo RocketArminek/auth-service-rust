@@ -129,7 +129,11 @@ impl AuthService for StatefulAuthService {
         let claims = self.validate_token(&refresh_token, &self.secret, TokenType::Refresh)?;
         
         if let Some(session_id) = claims.session_id {
-            let (session, user_dto) = self.validate_session(&session_id).await?;
+            let (_, user_dto) = self
+                .validate_session(&session_id).await?;
+
+            let session = self
+                .create_session(user_dto.id, self.refresh_token_duration).await?;
 
             let token_pair = self.generate_token_pair(
                 user_dto.clone(),
