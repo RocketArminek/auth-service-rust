@@ -267,7 +267,7 @@ dependencies = [
  "async-task",
  "concurrent-queue",
  "fastrand 2.0.2",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.0",
  "slab",
 ]
 
@@ -282,7 +282,7 @@ dependencies = [
  "async-io 2.3.3",
  "async-lock 3.4.0",
  "blocking",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.0",
  "once_cell",
 ]
 
@@ -327,7 +327,7 @@ dependencies = [
  "cfg-if",
  "concurrent-queue",
  "futures-io",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.0",
  "parking",
  "polling 3.7.2",
  "rustix 0.38.32",
@@ -402,7 +402,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "auth-service"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "argon2",
  "assert_cmd",
@@ -413,7 +413,7 @@ dependencies = [
  "chrono",
  "clap",
  "dotenvy",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.0",
  "jsonwebtoken",
  "lapin",
  "lazy-regex",
@@ -499,9 +499,9 @@ dependencies = [
 
 [[package]]
 name = "axum-test"
-version = "17.0.1"
+version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53f1009889890a439cbf67a4071a2593d027c65209da4faeac5582f28ca9e6c3"
+checksum = "375ec4f6db373ce6d696839249203c57049aefe1213cfa77bb2e12e10ed43d08"
 dependencies = [
  "anyhow",
  "assert-json-diff",
@@ -633,7 +633,7 @@ dependencies = [
  "async-channel",
  "async-task",
  "futures-io",
- "futures-lite 2.5.0",
+ "futures-lite 2.6.0",
  "piper",
 ]
 
@@ -1245,9 +1245,9 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef40d21ae2c515b51041df9ed313ed21e572df340ea58a922a0aefe7e8891a1"
+checksum = "f5edaec856126859abb19ed65f39e90fea3a9574b9707f13539acf4abf7eb532"
 dependencies = [
  "fastrand 2.0.2",
  "futures-core",
@@ -3411,9 +3411,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa-swagger-ui"
-version = "8.1.1"
+version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "040cad8bd8de63f3d028e08e5b39be49d68f8a646e99f4aea2e2d4d82c34b21f"
+checksum = "161166ec520c50144922a625d8bc4925cc801b2dda958ab69878527c0e5c5d61"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -3429,9 +3429,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
+checksum = "744018581f9a3454a9e15beb8a33b017183f1e7c0cd170232a2d1453b23a51c4"
 dependencies = [
  "getrandom",
  "rand",
@@ -3441,9 +3441,9 @@ dependencies = [
 
 [[package]]
 name = "uuid-macro-internal"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b91f57fe13a38d0ce9e28a03463d8d3c2468ed03d75375110ec71d93b449a08"
+checksum = "144b419c512fdd5eaa4c2998813e32aaab2b257746ee038de93985a99635501d"
 dependencies = [
  "proc-macro2",
  "quote",
