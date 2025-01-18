@@ -149,6 +149,9 @@ VR_DURATION_IN_SECONDS=2592000
 
 # Reset password token duration in seconds (default: 30 days)
 RP_DURATION_IN_SECONDS=2592000
+
+# Interval in minutes for cleanup tasks (e.g., expired sessions -> default: 5 minutes)
+CLEANUP_INTERVAL_IN_MINUTES
 ```
 
 #### Role Configuration

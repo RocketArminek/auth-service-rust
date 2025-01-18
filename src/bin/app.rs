@@ -4,7 +4,7 @@ use auth_service::application::app_configuration::{AppConfiguration, EnvNames as
 use auth_service::application::auth_service::create_auth_service;
 use auth_service::application::configuration::Configuration;
 use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
-use auth_service::cli::cleanup_sessions::cleanup_expired_sessions;
+use auth_service::cli::cleanup_sessions::spawn_cleanup_expired_session_job;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
@@ -84,11 +84,6 @@ enum Commands {
         #[arg(short, long)]
         dry_run: Option<bool>,
     },
-    #[command(about = "Spawn job to clean up expired sessions")]
-    CleanupSessions {
-        #[arg(long)]
-        interval: Option<u64>,
-    },
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
@@ -117,6 +112,11 @@ async fn main() {
 
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();
+
+    spawn_cleanup_expired_session_job(
+        session_repository.clone(),
+        config.app().cleanup_interval_in_minutes(),
+    );
 
     match &cli.command {
         Some(Commands::Start) | None => {
@@ -406,13 +406,6 @@ async fn main() {
                 println!("No message publishing enabled");
             }
         },
-        Some(Commands::CleanupSessions { interval }) => {
-            cleanup_expired_sessions(
-                session_repository,
-                interval.unwrap_or(config.app().cleanup_interval_in_minutes()),
-            )
-            .await
-        }
     }
 }
 
