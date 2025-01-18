@@ -515,6 +515,11 @@ async fn init_role(
             &existing_role.created_at.format("%Y-%m-%d %H:%M:%S")
         );
 
+        if is_system {
+            role_repository.mark_as_system(&existing_role.id).await?;
+            tracing::info!("Marked as system role {}, {}", existing_role.id, existing_role.name);
+        }
+
         return Ok(existing_role);
     }
 
