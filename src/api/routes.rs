@@ -6,11 +6,11 @@ use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::api::auth_controller::*;
 use crate::api::dto::*;
 use crate::api::restricted_controller::*;
 use crate::api::security_mw::{restrict_methods, security_headers};
 use crate::api::server_state::ServerState;
-use crate::api::auth_controller::*;
 use crate::api::user_controller::*;
 use crate::api::utils_controller::*;
 use crate::domain::jwt::UserDTO;

@@ -60,7 +60,7 @@ impl AuthError {
                 Json(MessageResponse {
                     message: "Action not supported in this strategy".to_string(),
                 }),
-            )
+            ),
         }
     }
 }

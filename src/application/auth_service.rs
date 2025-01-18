@@ -1,13 +1,13 @@
-use std::ops::Add;
 use crate::application::app_configuration::AppConfiguration;
+use crate::application::stateful_auth_service::StatefulAuthService;
 use crate::application::stateless_auth_service::StatelessAuthService;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repositories::{SessionRepository, UserRepository};
 use async_trait::async_trait;
-use std::sync::Arc;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use crate::application::stateful_auth_service::StatefulAuthService;
+use std::ops::Add;
+use std::sync::Arc;
 
 #[async_trait]
 pub trait AuthService: Send + Sync {
@@ -45,7 +45,7 @@ pub trait AuthService: Send + Sync {
             &at_claims,
             &EncodingKey::from_secret(secret.as_bytes()),
         )
-            .map_err(|_| AuthError::TokenEncodingFailed)?;
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         let rt_exp = now.add(Duration::seconds(rt_duration));
         let rt_claims = Claims::new(
@@ -60,7 +60,7 @@ pub trait AuthService: Send + Sync {
             &rt_claims,
             &EncodingKey::from_secret(secret.as_bytes()),
         )
-            .map_err(|_| AuthError::TokenEncodingFailed)?;
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         Ok(TokenPair {
             access_token: Token {
@@ -78,17 +78,17 @@ pub trait AuthService: Send + Sync {
         &self,
         token: &str,
         secret: &str,
-        expected_type: TokenType
+        expected_type: TokenType,
     ) -> Result<Claims, AuthError> {
         let decoded = decode::<Claims>(
             token,
             &DecodingKey::from_secret(secret.as_bytes()),
             &Validation::default(),
         )
-            .map_err(|e| match e.kind() {
-                jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-                _ => AuthError::InvalidToken,
-            })?;
+        .map_err(|e| match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
+            _ => AuthError::InvalidToken,
+        })?;
 
         if decoded.claims.token_type != expected_type {
             return Err(AuthError::InvalidTokenType);
@@ -108,7 +108,7 @@ pub enum AuthError {
     InternalError(String),
     TokenEncodingFailed,
     SessionNotFound,
-    AuthStrategyNotSupported
+    AuthStrategyNotSupported,
 }
 
 #[derive(Debug, Clone)]

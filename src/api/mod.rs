@@ -1,11 +1,11 @@
 pub mod acl_mw;
+pub mod auth_controller;
 pub mod axum_extractor;
 pub mod dto;
 pub mod restricted_controller;
 pub mod routes;
 pub mod security_mw;
 pub mod server_state;
-pub mod auth_controller;
 pub mod user_controller;
 pub mod utils;
 pub mod utils_controller;

@@ -86,25 +86,20 @@ impl AuthService for StatelessAuthService {
                 self.access_token_duration,
                 self.refresh_token_duration,
                 &self.secret,
-                None
+                None,
             )?,
-            user_dto
+            user_dto,
         ))
     }
 
     async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError> {
-        let claims = self
-            .validate_token(&access_token, &self.secret, TokenType::Access)?;
+        let claims = self.validate_token(&access_token, &self.secret, TokenType::Access)?;
 
         Ok(claims.user)
     }
 
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
-        let claims = self.validate_token(
-            &refresh_token,
-            &self.secret,
-            TokenType::Refresh
-        )?;
+        let claims = self.validate_token(&refresh_token, &self.secret, TokenType::Refresh)?;
 
         Ok((
             self.generate_token_pair(
@@ -112,9 +107,9 @@ impl AuthService for StatelessAuthService {
                 self.access_token_duration,
                 self.refresh_token_duration,
                 &self.secret,
-                None
+                None,
             )?,
-            claims.user
+            claims.user,
         ))
     }
 }

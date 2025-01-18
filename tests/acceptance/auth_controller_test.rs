@@ -1,6 +1,7 @@
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse};
+use auth_service::application::auth_service::AuthStrategy;
 use auth_service::application::configuration_types::{DurationInSeconds, HiddenString};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
@@ -10,7 +11,6 @@ use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::ops::{Add, Sub};
-use auth_service::application::auth_service::AuthStrategy;
 
 #[tokio::test]
 async fn it_returns_not_found_if_user_does_not_exist() {
@@ -657,7 +657,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
                 exp.timestamp() as usize,
                 UserDTO::from(user),
                 TokenType::Access,
-                None
+                None,
             );
             let token = encode(
                 &Header::default(),
@@ -699,7 +699,7 @@ async fn it_can_logout_with_valid_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -707,9 +707,9 @@ async fn it_can_logout_with_valid_token() {
                 .server
                 .post("/v1/login")
                 .json(&json!({
-                "email": &email,
-                "password": "Iknow#othing1",
-            }))
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                }))
                 .await;
             let body = response.json::<LoginResponse>();
 
@@ -734,7 +734,7 @@ async fn it_can_logout_with_valid_token() {
                 .await;
 
             assert_eq!(auth_response.status_code(), StatusCode::UNAUTHORIZED);
-        }
+        },
     )
     .await;
 }
@@ -756,7 +756,7 @@ async fn it_returns_unauthorized_on_logout_with_invalid_token() {
                 .await;
 
             assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
-        }
+        },
     )
     .await;
 }
@@ -831,7 +831,7 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -839,9 +839,9 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
                 .server
                 .post("/v1/login")
                 .json(&json!({
-                "email": &email,
-                "password": "Iknow#othing1",
-            }))
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                }))
                 .await;
             let body = response.json::<LoginResponse>();
 
@@ -855,7 +855,7 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
                 .await;
 
             assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
-        }
+        },
     )
     .await;
 }
@@ -875,7 +875,7 @@ async fn it_does_not_work_for_stateless_auth_strategy() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -883,9 +883,9 @@ async fn it_does_not_work_for_stateless_auth_strategy() {
                 .server
                 .post("/v1/login")
                 .json(&json!({
-                "email": &email,
-                "password": "Iknow#othing1",
-            }))
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                }))
                 .await;
             let body = response.json::<LoginResponse>();
 
@@ -900,7 +900,10 @@ async fn it_does_not_work_for_stateless_auth_strategy() {
 
             assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
             let body_bad_request = response.json::<MessageResponse>();
-            assert_eq!(body_bad_request.message, "Action not supported in this strategy");
+            assert_eq!(
+                body_bad_request.message,
+                "Action not supported in this strategy"
+            );
 
             let auth_response = c
                 .server
@@ -912,7 +915,7 @@ async fn it_does_not_work_for_stateless_auth_strategy() {
                 .await;
 
             assert_eq!(auth_response.status_code(), StatusCode::OK);
-        }
+        },
     )
-        .await;
+    .await;
 }

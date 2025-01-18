@@ -78,12 +78,15 @@ impl AuthService for StatefulAuthService {
             .await
             .map_err(|_| AuthError::UserNotFound)?;
 
-
-        if !user.verify_password(&SchemeAwareHasher::with_scheme(self.hashing_scheme), &password) {
+        if !user.verify_password(
+            &SchemeAwareHasher::with_scheme(self.hashing_scheme),
+            &password,
+        ) {
             return Err(AuthError::InvalidCredentials);
         }
 
-        if SchemeAwareHasher::with_scheme(self.hashing_scheme).is_password_outdated(&user.password) {
+        if SchemeAwareHasher::with_scheme(self.hashing_scheme).is_password_outdated(&user.password)
+        {
             let mut outdated_user = user.clone();
             let scheme = self.hashing_scheme;
             let user_repository = self.user_repository.clone();
@@ -99,7 +102,9 @@ impl AuthService for StatefulAuthService {
             });
         }
 
-        let session = self.create_session(user.id, self.refresh_token_duration).await?;
+        let session = self
+            .create_session(user.id, self.refresh_token_duration)
+            .await?;
         let user_dto = UserDTO::from(user);
 
         let token_pair = self.generate_token_pair(
@@ -127,13 +132,13 @@ impl AuthService for StatefulAuthService {
 
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
         let claims = self.validate_token(&refresh_token, &self.secret, TokenType::Refresh)?;
-        
+
         if let Some(session_id) = claims.session_id {
-            let (_, user_dto) = self
-                .validate_session(&session_id).await?;
+            let (_, user_dto) = self.validate_session(&session_id).await?;
 
             let session = self
-                .create_session(user_dto.id, self.refresh_token_duration).await?;
+                .create_session(user_dto.id, self.refresh_token_duration)
+                .await?;
 
             let token_pair = self.generate_token_pair(
                 user_dto.clone(),
