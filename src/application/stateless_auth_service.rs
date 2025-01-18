@@ -1,12 +1,9 @@
-use crate::application::auth_service::{AuthError, AuthService, Token, TokenPair};
+use crate::application::auth_service::{AuthError, AuthService, TokenPair};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::domain::jwt::{TokenType, UserDTO};
 use crate::domain::repositories::UserRepository;
 use crate::domain::user::PasswordHandler;
 use async_trait::async_trait;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use std::ops::Add;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -33,59 +30,6 @@ impl StatelessAuthService {
             access_token_duration,
             refresh_token_duration,
         }
-    }
-
-    fn generate_token_pair(&self, user: UserDTO) -> Result<TokenPair, AuthError> {
-        let now = Utc::now();
-
-        let at_exp = now.add(Duration::seconds(self.access_token_duration));
-        let at_claims = Claims::new(at_exp.timestamp() as usize, user.clone(), TokenType::Access);
-
-        let access_token = encode(
-            &Header::default(),
-            &at_claims,
-            &EncodingKey::from_secret(self.secret.as_bytes()),
-        )
-        .map_err(|_| AuthError::TokenEncodingFailed)?;
-
-        let rt_exp = now.add(Duration::seconds(self.refresh_token_duration));
-        let rt_claims = Claims::new(rt_exp.timestamp() as usize, user, TokenType::Refresh);
-
-        let refresh_token = encode(
-            &Header::default(),
-            &rt_claims,
-            &EncodingKey::from_secret(self.secret.as_bytes()),
-        )
-        .map_err(|_| AuthError::TokenEncodingFailed)?;
-
-        Ok(TokenPair {
-            access_token: Token {
-                value: access_token,
-                expires_at: at_exp.timestamp() as usize,
-            },
-            refresh_token: Token {
-                value: refresh_token,
-                expires_at: rt_exp.timestamp() as usize,
-            },
-        })
-    }
-
-    fn validate_token(&self, token: &str, expected_type: TokenType) -> Result<UserDTO, AuthError> {
-        let decoded = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.secret.as_bytes()),
-            &Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-            _ => AuthError::InvalidToken,
-        })?;
-
-        if decoded.claims.token_type != expected_type {
-            return Err(AuthError::InvalidTokenType);
-        }
-
-        Ok(decoded.claims.user)
     }
 }
 
@@ -135,16 +79,37 @@ impl AuthService for StatelessAuthService {
         }
 
         let user_dto = UserDTO::from(user);
-        Ok((self.generate_token_pair(user_dto.clone())?, user_dto))
+
+        Ok((
+            self.generate_token_pair(
+                user_dto.clone(),
+                self.access_token_duration,
+                self.refresh_token_duration,
+                &self.secret
+            )?,
+            user_dto
+        ))
     }
 
     async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError> {
-        self.validate_token(&access_token, TokenType::Access)
+        self.validate_token(&access_token, &self.secret, TokenType::Access)
     }
 
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
-        let user_dto = self.validate_token(&refresh_token, TokenType::Refresh)?;
+        let user_dto = self.validate_token(
+            &refresh_token,
+            &self.secret,
+            TokenType::Refresh
+        )?;
 
-        Ok((self.generate_token_pair(user_dto.clone())?, user_dto))
+        Ok((
+            self.generate_token_pair(
+                user_dto.clone(),
+                self.access_token_duration,
+                self.refresh_token_duration,
+                &self.secret
+            )?,
+            user_dto
+        ))
     }
 }

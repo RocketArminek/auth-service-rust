@@ -1,9 +1,12 @@
+use std::ops::Add;
 use crate::application::app_configuration::AppConfiguration;
 use crate::application::stateless_auth_service::StatelessAuthService;
-use crate::domain::jwt::UserDTO;
+use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repositories::UserRepository;
 use async_trait::async_trait;
 use std::sync::Arc;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 
 #[async_trait]
 pub trait AuthService: Send + Sync {
@@ -14,6 +17,70 @@ pub trait AuthService: Send + Sync {
     ) -> Result<(TokenPair, UserDTO), AuthError>;
     async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError>;
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError>;
+
+    fn generate_token_pair(
+        &self,
+        user: UserDTO,
+        at_duration: i64,
+        rt_duration: i64,
+        secret: &str
+    ) -> Result<TokenPair, AuthError> {
+        let now = Utc::now();
+
+        let at_exp = now.add(Duration::seconds(at_duration));
+        let at_claims = Claims::new(at_exp.timestamp() as usize, user.clone(), TokenType::Access);
+
+        let access_token = encode(
+            &Header::default(),
+            &at_claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+            .map_err(|_| AuthError::TokenEncodingFailed)?;
+
+        let rt_exp = now.add(Duration::seconds(rt_duration));
+        let rt_claims = Claims::new(rt_exp.timestamp() as usize, user, TokenType::Refresh);
+
+        let refresh_token = encode(
+            &Header::default(),
+            &rt_claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+            .map_err(|_| AuthError::TokenEncodingFailed)?;
+
+        Ok(TokenPair {
+            access_token: Token {
+                value: access_token,
+                expires_at: at_exp.timestamp() as usize,
+            },
+            refresh_token: Token {
+                value: refresh_token,
+                expires_at: rt_exp.timestamp() as usize,
+            },
+        })
+    }
+
+    fn validate_token(
+        &self,
+        token: &str,
+        secret: &str,
+        expected_type: TokenType
+    ) -> Result<UserDTO, AuthError> {
+        let decoded = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(secret.as_bytes()),
+            &Validation::default(),
+        )
+            .map_err(|e| match e.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
+                _ => AuthError::InvalidToken,
+            })?;
+
+        if decoded.claims.token_type != expected_type {
+            return Err(AuthError::InvalidTokenType);
+        }
+
+        Ok(decoded.claims.user)
+    }
 }
 
 #[derive(Debug)]
