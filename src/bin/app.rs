@@ -13,9 +13,7 @@ use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
-use auth_service::infrastructure::repository::{
-    create_role_repository, create_user_repository, RepositoryError,
-};
+use auth_service::infrastructure::repository::{create_role_repository, create_session_repository, create_user_repository, RepositoryError};
 use clap::{Parser, Subcommand};
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
@@ -99,10 +97,15 @@ async fn main() {
 
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
+    let session_repository = create_session_repository(db_pool.clone());
 
     let message_publisher = create_message_publisher(config.publisher()).await;
 
-    let auth_service = create_auth_service(config.app(), user_repository.clone());
+    let auth_service = create_auth_service(
+        config.app(),
+        user_repository.clone(),
+        session_repository.clone(),
+    );
 
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();

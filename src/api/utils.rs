@@ -49,6 +49,18 @@ impl AuthError {
                     message: "Token encoding failed".to_string(),
                 }),
             ),
+            AuthError::SessionNotFound => (
+                StatusCode::UNAUTHORIZED,
+                Json(MessageResponse {
+                    message: "Session not found".to_string(),
+                }),
+            ),
+            AuthError::AuthStrategyNotSupported => (
+                StatusCode::BAD_REQUEST,
+                Json(MessageResponse {
+                    message: "Action not supported in this strategy".to_string(),
+                }),
+            )
         }
     }
 }

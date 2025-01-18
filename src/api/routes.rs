@@ -24,6 +24,7 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/me/verification/resend", post(resend_verification))
         .route("/v1/me/password/reset", patch(reset_password))
         .route("/v1/login", post(login))
+        .route("/v1/logout", post(logout))
         .route("/v1/refresh", post(refresh))
         .route("/v1/password/reset", post(request_password_reset))
         .merge(
@@ -83,6 +84,7 @@ pub fn routes(state: ServerState) -> Router {
         resend_verification,
         request_password_reset,
         reset_password,
+        logout,
     ),
     components(
         schemas(

@@ -110,6 +110,7 @@ pub async fn create_user(
                                 vr_exp.timestamp() as usize,
                                 user_dto.clone(),
                                 TokenType::Verification,
+                                None
                             );
 
                             let token = encode(
@@ -396,6 +397,7 @@ pub async fn resend_verification(
                 vr_exp.timestamp() as usize,
                 user_dto.clone(),
                 TokenType::Verification,
+                None,
             );
 
             let token = encode(
@@ -469,6 +471,7 @@ pub async fn request_password_reset(
                 rp_exp.timestamp() as usize,
                 user_dto.clone(),
                 TokenType::Password,
+                None
             );
 
             let token = encode(

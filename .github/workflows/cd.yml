@@ -116,6 +116,9 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:8.0"
+        strategy:
+          - "stateful"
+          - "stateless"
         rabbitmq:
           - version: "4"
           - version: "3"
@@ -145,6 +148,7 @@ jobs:
     env:
       DATABASE_ENGINE: ${{ matrix.db.engine }}
       DATABASE_URL: ${{ matrix.db.url }}
+      AUTH_STRATEGY: ${{ matrix.strategy }}
       RABBITMQ_URL: amqp://127.0.0.1:5672
       RABBITMQ_EXCHANGE_AUTO_DELETE: true
       RABBITMQ_EXCHANGE_DURABLE: false
@@ -182,6 +186,9 @@ jobs:
           - "tests/performance/scenarios/auth_flow.js"
           - "tests/performance/scenarios/admin.js"
           - "tests/performance/scenarios/spike.js"
+        strategy:
+          - "stateful"
+          - "stateless"
         db:
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
@@ -221,6 +228,7 @@ jobs:
         env:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
+          AUTH_STRATEGY: ${{ matrix.strategy }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -236,7 +244,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
       - name: Run k6 test scenario
-        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }}
+        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }} --tag strategy=${{ matrix.strategy }}
 
   security-test:
     name: "Security"
@@ -251,6 +259,9 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
             service: "mysql:8.4"
+        strategy:
+          - "stateful"
+          - "stateless"
         rabbitmq:
           - version: "4"
     services:
@@ -286,6 +297,7 @@ jobs:
         env:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
+          AUTH_STRATEGY: ${{ matrix.strategy }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -306,7 +318,7 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ github.sha }}
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.sha }}
 
   publish-server-image:
     runs-on: ubuntu-22.04

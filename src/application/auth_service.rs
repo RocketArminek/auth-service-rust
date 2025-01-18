@@ -2,11 +2,12 @@ use std::ops::Add;
 use crate::application::app_configuration::AppConfiguration;
 use crate::application::stateless_auth_service::StatelessAuthService;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::repositories::UserRepository;
+use crate::domain::repositories::{SessionRepository, UserRepository};
 use async_trait::async_trait;
 use std::sync::Arc;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use crate::application::stateful_auth_service::StatefulAuthService;
 
 #[async_trait]
 pub trait AuthService: Send + Sync {
@@ -17,18 +18,27 @@ pub trait AuthService: Send + Sync {
     ) -> Result<(TokenPair, UserDTO), AuthError>;
     async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError>;
     async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError>;
+    async fn logout(&self, _access_token: String) -> Result<(), AuthError> {
+        Err(AuthError::AuthStrategyNotSupported)
+    }
 
     fn generate_token_pair(
         &self,
         user: UserDTO,
         at_duration: i64,
         rt_duration: i64,
-        secret: &str
+        secret: &str,
+        session_id: Option<uuid::Uuid>,
     ) -> Result<TokenPair, AuthError> {
         let now = Utc::now();
 
         let at_exp = now.add(Duration::seconds(at_duration));
-        let at_claims = Claims::new(at_exp.timestamp() as usize, user.clone(), TokenType::Access);
+        let at_claims = Claims::new(
+            at_exp.timestamp() as usize,
+            user.clone(),
+            TokenType::Access,
+            session_id,
+        );
 
         let access_token = encode(
             &Header::default(),
@@ -38,7 +48,12 @@ pub trait AuthService: Send + Sync {
             .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         let rt_exp = now.add(Duration::seconds(rt_duration));
-        let rt_claims = Claims::new(rt_exp.timestamp() as usize, user, TokenType::Refresh);
+        let rt_claims = Claims::new(
+            rt_exp.timestamp() as usize,
+            user,
+            TokenType::Refresh,
+            session_id,
+        );
 
         let refresh_token = encode(
             &Header::default(),
@@ -64,7 +79,7 @@ pub trait AuthService: Send + Sync {
         token: &str,
         secret: &str,
         expected_type: TokenType
-    ) -> Result<UserDTO, AuthError> {
+    ) -> Result<Claims, AuthError> {
         let decoded = decode::<Claims>(
             token,
             &DecodingKey::from_secret(secret.as_bytes()),
@@ -79,7 +94,7 @@ pub trait AuthService: Send + Sync {
             return Err(AuthError::InvalidTokenType);
         }
 
-        Ok(decoded.claims.user)
+        Ok(decoded.claims)
     }
 }
 
@@ -92,6 +107,8 @@ pub enum AuthError {
     InvalidTokenType,
     InternalError(String),
     TokenEncodingFailed,
+    SessionNotFound,
+    AuthStrategyNotSupported
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +165,7 @@ impl Default for AuthStrategy {
 pub fn create_auth_service(
     config: &AppConfiguration,
     user_repository: Arc<dyn UserRepository>,
+    session_repository: Arc<dyn SessionRepository>,
 ) -> Arc<dyn AuthService> {
     match config.auth_strategy() {
         AuthStrategy::Stateless => Arc::new(StatelessAuthService::new(
@@ -157,6 +175,13 @@ pub fn create_auth_service(
             config.at_duration_in_seconds().to_signed(),
             config.rt_duration_in_seconds().to_signed(),
         )),
-        AuthStrategy::Stateful => panic!("Unsupported auth strategy"),
+        AuthStrategy::Stateful => Arc::new(StatefulAuthService::new(
+            user_repository,
+            session_repository,
+            config.password_hashing_scheme(),
+            config.secret().to_string(),
+            config.at_duration_in_seconds().to_signed(),
+            config.rt_duration_in_seconds().to_signed(),
+        )),
     }
 }

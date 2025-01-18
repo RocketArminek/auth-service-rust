@@ -101,3 +101,21 @@ pub async fn refresh(
         Err(e) => e.into_response(),
     }
 }
+
+#[utoipa::path(post, path = "/v1/logout",
+    tag="auth",
+    responses(
+        (status = 200, description = "Logout successful"),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 400, description = "Bad request", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn logout(
+    State(state): State<ServerState>,
+    BearerToken(token): BearerToken,
+) -> impl IntoResponse {
+    match state.auth_service.logout(token).await {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(e) => e.into_response(),
+    }
+}

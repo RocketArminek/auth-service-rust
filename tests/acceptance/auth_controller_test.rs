@@ -10,6 +10,7 @@ use axum::http::{header, HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::ops::{Add, Sub};
+use auth_service::application::auth_service::AuthStrategy;
 
 #[tokio::test]
 async fn it_returns_not_found_if_user_does_not_exist() {
@@ -656,6 +657,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
                 exp.timestamp() as usize,
                 UserDTO::from(user),
                 TokenType::Access,
+                None
             );
             let token = encode(
                 &Header::default(),
@@ -680,4 +682,237 @@ async fn it_returns_unauthorized_when_token_is_expired() {
         },
     )
     .await;
+}
+
+#[tokio::test]
+async fn it_can_logout_with_valid_token() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+                .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            c.user_repository.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/login")
+                .json(&json!({
+                "email": &email,
+                "password": "Iknow#othing1",
+            }))
+                .await;
+            let body = response.json::<LoginResponse>();
+
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+
+            let auth_response = c
+                .server
+                .get("/v1/authenticate")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(auth_response.status_code(), StatusCode::UNAUTHORIZED);
+        }
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_unauthorized_on_logout_with_invalid_token() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+        },
+        |c| async move {
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from("Bearer invalidtoken").unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+        }
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_unauthorized_on_logout_with_expired_token() {
+    let secret = "secret";
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+            c.app.secret(HiddenString(secret.to_string()));
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+            .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            c.user_repository.save(&user).await.unwrap();
+
+            let now = Utc::now();
+            let exp = now.sub(Duration::days(2));
+
+            let claims = Claims::new(
+                exp.timestamp() as usize,
+                UserDTO::from(user),
+                TokenType::Access,
+                None,
+            );
+            let token = encode(
+                &Header::default(),
+                &claims,
+                &EncodingKey::from_secret(secret.as_ref()),
+            )
+            .unwrap();
+
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    header::AUTHORIZATION,
+                    HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+                )
+                .await;
+
+            let body = response.json::<MessageResponse>();
+
+            assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+            assert_eq!(body.message, "Expired token");
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_unauthorized_on_logout_with_refresh_token() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateful);
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+                .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            c.user_repository.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/login")
+                .json(&json!({
+                "email": &email,
+                "password": "Iknow#othing1",
+            }))
+                .await;
+            let body = response.json::<LoginResponse>();
+
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.refresh_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+        }
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_does_not_work_for_stateless_auth_strategy() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateless);
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+                .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            c.user_repository.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/login")
+                .json(&json!({
+                "email": &email,
+                "password": "Iknow#othing1",
+            }))
+                .await;
+            let body = response.json::<LoginResponse>();
+
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
+            let body_bad_request = response.json::<MessageResponse>();
+            assert_eq!(body_bad_request.message, "Action not supported in this strategy");
+
+            let auth_response = c
+                .server
+                .get("/v1/authenticate")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(auth_response.status_code(), StatusCode::OK);
+        }
+    )
+        .await;
 }

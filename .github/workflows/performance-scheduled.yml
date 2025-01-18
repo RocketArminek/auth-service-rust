@@ -18,6 +18,9 @@ jobs:
           - "tests/performance/scenarios/auth_flow.js"
           - "tests/performance/scenarios/admin.js"
           - "tests/performance/scenarios/spike.js"
+        strategy:
+          - "stateful"
+          - "stateless"
         db:
           - engine: "sqlite"
             url: "sqlite://test.db"
@@ -59,6 +62,7 @@ jobs:
         env:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
+          AUTH_STRATEGY: ${{ matrix.strategy }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -76,4 +80,4 @@ jobs:
       - name: Login to cloud
         run: k6 login cloud -t ${{ secrets.K6_CLOUD }}
       - name: Run k6 test scenario
-        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }} --out cloud
+        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }} --tag strategy=${{ matrix.strategy }} --out cloud

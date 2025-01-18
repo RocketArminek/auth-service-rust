@@ -112,11 +112,16 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
+    let session_repository = create_session_repository(pool.clone());
 
     let message_publisher = create_message_publisher(config.publisher()).await;
     let (_, consumer, _) = setup_test_consumer(config.publisher()).await;
 
-    let auth_service = create_auth_service(config.app(), user_repository.clone());
+    let auth_service = create_auth_service(
+        config.app(),
+        user_repository.clone(),
+        session_repository.clone(),
+    );
 
     let server = create_test_server(
         &config,
