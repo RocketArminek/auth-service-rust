@@ -517,7 +517,11 @@ async fn init_role(
 
         if is_system {
             role_repository.mark_as_system(&existing_role.id).await?;
-            tracing::info!("Marked as system role {}, {}", existing_role.id, existing_role.name);
+            tracing::info!(
+                "Marked as system role {}, {}",
+                existing_role.id,
+                existing_role.name
+            );
         }
 
         return Ok(existing_role);
