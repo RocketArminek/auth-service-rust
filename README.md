@@ -151,7 +151,7 @@ VR_DURATION_IN_SECONDS=2592000
 RP_DURATION_IN_SECONDS=2592000
 
 # Interval in minutes for cleanup tasks (e.g., expired sessions -> default: 5 minutes)
-CLEANUP_INTERVAL_IN_MINUTES
+CLEANUP_INTERVAL_IN_MINUTES=5
 ```
 
 #### Role Configuration

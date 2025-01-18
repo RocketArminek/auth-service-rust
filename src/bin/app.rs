@@ -285,6 +285,7 @@ async fn main() {
                 Err(_) => {
                     let role = Role::now(restricted_role_prefix).unwrap();
                     role_repository.save(&role).await.unwrap();
+                    role_repository.mark_as_system(&role.id).await.unwrap();
 
                     println!(
                         "Created initial restricted role base on pattern: {}, {}, {}",
@@ -441,10 +442,10 @@ async fn load_fixtures(
     user_repository: &Arc<dyn UserRepository>,
     role_repository: &Arc<dyn RoleRepository>,
 ) {
-    init_role(config.regular_role_name(), &role_repository)
+    init_role(config.regular_role_name(), &role_repository, false)
         .await
         .unwrap();
-    let restricted_role = init_role(config.restricted_role_name(), &role_repository)
+    let restricted_role = init_role(config.restricted_role_name(), &role_repository, true)
         .await
         .unwrap();
     init_user(config, &user_repository, restricted_role)
@@ -502,6 +503,7 @@ async fn init_user(
 async fn init_role(
     role_name: &str,
     role_repository: &Arc<dyn RoleRepository>,
+    is_system: bool,
 ) -> Result<Role, RepositoryError> {
     let existing_role = role_repository.get_by_name(role_name).await;
 
@@ -517,7 +519,6 @@ async fn init_role(
     }
 
     let role = Role::now(role_name.to_string()).unwrap();
-
     let r = role_repository.save(&role).await;
 
     if let Err(e) = r {
@@ -528,6 +529,11 @@ async fn init_role(
         );
 
         return Err(e);
+    }
+
+    if is_system {
+        role_repository.mark_as_system(&role.id).await?;
+        tracing::info!("Marked as system role {}, {}", role.id, role.name);
     }
 
     tracing::info!(

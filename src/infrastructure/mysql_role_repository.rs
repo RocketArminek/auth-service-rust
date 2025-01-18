@@ -2,7 +2,7 @@ use crate::domain::repositories::RoleRepository;
 use crate::domain::role::Role;
 use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
-use sqlx::{query, query_as, MySql, Pool};
+use sqlx::{query_as, MySql, Pool};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -68,20 +68,52 @@ impl RoleRepository for MysqlRoleRepository {
     }
 
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
-        query("DELETE FROM roles WHERE id = ?")
+        let mut tx = self.pool.begin().await?;
+
+        let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
             .bind(id)
-            .execute(&self.pool)
+            .fetch_optional(&mut *tx)
+            .await?
+            .unwrap_or(false);
+
+        if is_system {
+            tx.rollback().await?;
+            return Err(RepositoryError::Conflict(
+                "Cannot delete system role".to_string(),
+            ));
+        }
+
+        sqlx::query("DELETE FROM roles WHERE id = ?")
+            .bind(id)
+            .execute(&mut *tx)
             .await?;
 
+        tx.commit().await?;
         Ok(())
     }
 
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError> {
-        query("DELETE FROM roles WHERE name = ?")
+        let mut tx = self.pool.begin().await?;
+
+        let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE name = ?")
             .bind(name)
-            .execute(&self.pool)
+            .fetch_optional(&mut *tx)
+            .await?
+            .unwrap_or(false);
+
+        if is_system {
+            tx.rollback().await?;
+            return Err(RepositoryError::Conflict(
+                "Cannot delete system role".to_string(),
+            ));
+        }
+
+        sqlx::query("DELETE FROM roles WHERE name = ?")
+            .bind(name)
+            .execute(&mut *tx)
             .await?;
 
+        tx.commit().await?;
         Ok(())
     }
 
@@ -94,5 +126,25 @@ impl RoleRepository for MysqlRoleRepository {
                 .await?;
 
         Ok(roles)
+    }
+
+    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {
+        let mut tx = self.pool.begin().await?;
+
+        let result = sqlx::query("UPDATE roles SET is_system = TRUE WHERE id = ?")
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            tx.rollback().await?;
+            return Err(RepositoryError::NotFound(format!(
+                "Role with id {} not found",
+                id
+            )));
+        }
+
+        tx.commit().await?;
+        Ok(())
     }
 }

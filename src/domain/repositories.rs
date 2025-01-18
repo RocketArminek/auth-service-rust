@@ -22,6 +22,7 @@ pub trait RoleRepository: Send + Sync {
     async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Role>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
+    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
 }
 
 #[async_trait]

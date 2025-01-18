@@ -99,3 +99,19 @@ async fn it_can_update_role() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_mark_role_as_system() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        c.role_repository.mark_as_system(&role.id).await.unwrap();
+
+        let result = c.role_repository.delete(&role.id).await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Cannot delete system role"));
+        }
+    })
+    .await;
+}
