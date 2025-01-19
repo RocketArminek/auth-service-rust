@@ -1,4 +1,4 @@
-use crate::application::database_configuration::DatabaseConfiguration;
+use crate::application::config::database::DatabaseConfiguration;
 use crate::infrastructure::utils::retry_with_backoff;
 use sqlx::migrate::{MigrateDatabase, MigrateError};
 use sqlx::mysql::MySqlPoolOptions;

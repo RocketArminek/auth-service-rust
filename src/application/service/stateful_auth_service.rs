@@ -1,4 +1,4 @@
-use crate::application::auth_service::{AuthError, AuthService, TokenPair};
+use crate::application::service::auth_service::{AuthError, AuthService, TokenPair};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{TokenType, UserDTO};
 use crate::domain::repositories::{SessionRepository, UserRepository};

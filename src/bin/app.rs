@@ -1,9 +1,9 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
-use auth_service::application::app_configuration::{AppConfiguration, EnvNames as AppEnvNames};
-use auth_service::application::auth_service::{create_auth_service, AuthStrategy};
-use auth_service::application::configuration::Configuration;
-use auth_service::application::message_publisher_configuration::MessagePublisherConfiguration;
+use auth_service::application::config::app::{AppConfiguration, EnvNames as AppEnvNames};
+use auth_service::application::service::auth_service::{create_auth_service, AuthStrategy};
+use auth_service::application::config::configuration::Configuration;
+use auth_service::application::config::message_publisher::MessagePublisherConfiguration;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;

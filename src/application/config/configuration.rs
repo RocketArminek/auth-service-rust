@@ -1,8 +1,8 @@
-use crate::application::app_configuration::{AppConfiguration, AppConfigurationBuilder};
-use crate::application::database_configuration::{
+use crate::application::config::app::{AppConfiguration, AppConfigurationBuilder};
+use crate::application::config::database::{
     DatabaseConfiguration, DatabaseConfigurationBuilder,
 };
-use crate::application::message_publisher_configuration::{
+use crate::application::config::message_publisher::{
     EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
 };
 use dotenvy::{dotenv, from_filename};
@@ -99,7 +99,7 @@ impl Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Configuration::load(|mut app, mut db, mut publisher| {
-            from_filename(".env.local").or(dotenv()).ok();
+            from_filename("../../../.env.local").or(dotenv()).ok();
 
             (
                 app.load_env().build(),

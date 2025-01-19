@@ -1,13 +1,6 @@
-pub mod acl_mw;
-pub mod admin_roles_controller;
-pub mod admin_session_controller;
-pub mod admin_users_controller;
-pub mod auth_controller;
-pub mod axum_extractor;
 pub mod dto;
 pub mod routes;
-pub mod security_mw;
 pub mod server_state;
-pub mod user_controller;
-pub mod utils;
-pub mod utils_controller;
+pub mod controller;
+pub mod extractor;
+pub mod middleware;

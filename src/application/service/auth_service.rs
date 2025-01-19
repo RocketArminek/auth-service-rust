@@ -1,6 +1,6 @@
-use crate::application::app_configuration::AppConfiguration;
-use crate::application::stateful_auth_service::StatefulAuthService;
-use crate::application::stateless_auth_service::StatelessAuthService;
+use crate::application::config::app::AppConfiguration;
+use crate::application::service::stateful_auth_service::StatefulAuthService;
+use crate::application::service::stateless_auth_service::StatelessAuthService;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repositories::{SessionRepository, UserRepository};
 use async_trait::async_trait;

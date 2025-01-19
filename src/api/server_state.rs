@@ -1,5 +1,5 @@
-use crate::application::app_configuration::AppConfiguration;
-use crate::application::auth_service::AuthService;
+use crate::application::config::app::AppConfiguration;
+use crate::application::service::auth_service::AuthService;
 use crate::domain::event::UserEvents;
 use crate::domain::repositories::{RoleRepository, SessionRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;

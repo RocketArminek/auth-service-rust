@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::{BearerToken, LoggedInUser};
+use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;

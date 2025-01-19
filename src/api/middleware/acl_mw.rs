@@ -1,4 +1,4 @@
-use crate::api::axum_extractor::LoggedInUser;
+use crate::api::extractor::auth_extractor::LoggedInUser;
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::ServerState;
 use axum::extract::{Request, State};

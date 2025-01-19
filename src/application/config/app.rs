@@ -1,5 +1,5 @@
-use crate::application::auth_service::AuthStrategy;
-use crate::application::configuration_types::{DurationInSeconds, HiddenString};
+use crate::application::service::auth_service::AuthStrategy;
+use crate::application::config::dto::{DurationInSeconds, HiddenString};
 use crate::domain::crypto::HashingScheme;
 use lazy_regex::Regex;
 use std::collections::HashMap;

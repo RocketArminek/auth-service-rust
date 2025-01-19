@@ -1,7 +1,7 @@
 use crate::api::dto::Pagination;
 use crate::api::dto::{MessageResponse, SessionListResponse};
 use crate::api::server_state::ServerState;
-use crate::application::auth_service::AuthStrategy;
+use crate::application::service::auth_service::AuthStrategy;
 use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
 use axum::extract::{Extension, Path, Query, State};

@@ -2,7 +2,7 @@ use crate::utils::context::AcceptanceTestContext;
 use crate::utils::runners::run_integration_test;
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse, SessionListResponse};
-use auth_service::application::auth_service::AuthStrategy;
+use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
