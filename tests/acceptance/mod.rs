@@ -1,6 +1,6 @@
-mod cli_test;
-mod utils_controller_test;
+mod admin;
 mod auth;
+mod cli_test;
 mod user;
 mod utils;
-mod admin;
+mod utils_controller_test;

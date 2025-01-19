@@ -1,14 +1,14 @@
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use chrono::{Duration, Utc};
-use serde_json::json;
-use uuid::Uuid;
+use crate::acceptance::utils::create_admin_with_token;
+use crate::utils::runners::run_integration_test;
 use auth_service::api::dto::{LoginResponse, MessageResponse, SessionListResponse};
 use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::acceptance::utils::create_admin_with_token;
-use crate::utils::runners::run_integration_test;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use chrono::{Duration, Utc};
+use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn it_returns_not_found_for_nonexistent_session() {
@@ -37,7 +37,7 @@ async fn it_returns_not_found_for_nonexistent_session() {
             );
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -56,7 +56,7 @@ async fn it_can_list_sessions() {
                 None,
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -82,7 +82,7 @@ async fn it_can_list_sessions() {
             assert_eq!(body.pages, 1);
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -101,7 +101,7 @@ async fn it_can_get_session_by_id() {
                 None,
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -122,7 +122,7 @@ async fn it_can_get_session_by_id() {
             assert_eq!(body.user_id, user.id);
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -141,7 +141,7 @@ async fn it_can_delete_session() {
                 None,
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -164,7 +164,7 @@ async fn it_can_delete_session() {
             assert!(deleted_session.is_err());
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -181,7 +181,7 @@ async fn it_cannot_access_sessions_without_admin_role() {
                 None,
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -229,7 +229,7 @@ async fn it_cannot_access_sessions_without_admin_role() {
             assert_eq!(delete_response.status_code(), StatusCode::FORBIDDEN);
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -248,7 +248,7 @@ async fn it_can_delete_all_user_sessions() {
                 None,
                 Some(true),
             )
-                .unwrap();
+            .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -273,7 +273,7 @@ async fn it_can_delete_all_user_sessions() {
             assert_eq!(remaining_sessions.len(), 0);
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -306,7 +306,7 @@ async fn it_returns_not_found_when_deleting_sessions_for_nonexistent_user() {
             );
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -348,7 +348,7 @@ async fn it_cannot_delete_own_session() {
             assert!(session.is_ok());
         },
     )
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -390,5 +390,5 @@ async fn it_cannot_delete_own_user_sessions() {
             );
         },
     )
-        .await;
+    .await;
 }

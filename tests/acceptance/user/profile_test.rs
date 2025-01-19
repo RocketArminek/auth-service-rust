@@ -1,12 +1,12 @@
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::json;
+use crate::utils::runners::run_integration_test_with_default;
 use auth_service::api::dto::LoginResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::utils::runners::run_integration_test_with_default;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use serde_json::json;
 
 #[tokio::test]
 async fn it_updates_user_information() {
@@ -18,7 +18,7 @@ async fn it_updates_user_information() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("USER".to_string()).unwrap();
@@ -80,7 +80,7 @@ async fn it_updates_user_information() {
             assert_eq!(new_user.roles, vec!["USER".to_string()]);
         }
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -150,7 +150,7 @@ async fn it_verifies_user_account() {
 
         assert!(event.is_some(), "Should have received some event");
     })
-        .await
+    .await
 }
 
 #[tokio::test]
@@ -168,7 +168,7 @@ async fn it_can_request_for_resend_verification_message() {
             Some(String::from("Snow")),
             Some(false),
         )
-            .unwrap();
+        .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         user.add_role(role);
         c.user_repository.save(&user).await.unwrap();
@@ -230,5 +230,5 @@ async fn it_can_request_for_resend_verification_message() {
 
         assert!(event.is_some(), "Should have received some event");
     })
-        .await
+    .await
 }

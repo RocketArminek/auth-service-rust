@@ -1,10 +1,10 @@
-use axum::http::StatusCode;
-use serde_json::json;
+use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use auth_service::api::dto::MessageResponse;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
-use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
+use axum::http::StatusCode;
+use serde_json::json;
 
 #[tokio::test]
 async fn it_creates_new_user() {
@@ -44,7 +44,7 @@ async fn it_creates_new_user() {
             }
         },
     )
-        .await
+    .await
 }
 
 #[tokio::test]
@@ -99,7 +99,7 @@ async fn it_creates_not_verified_user() {
             assert_eq!(token.is_empty(), false);
         }
     })
-        .await
+    .await
 }
 
 #[tokio::test]
@@ -124,7 +124,7 @@ async fn it_does_not_create_user_with_invalid_password() {
         let event = c.wait_for_event(5, |_| true).await;
         assert!(event.is_none(), "Should not receive any message");
     })
-        .await
+    .await
 }
 
 #[tokio::test]
@@ -138,7 +138,7 @@ async fn it_returns_conflict_if_user_already_exists() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         c.user_repository.save(&user).await.unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -155,7 +155,7 @@ async fn it_returns_conflict_if_user_already_exists() {
 
         assert_eq!(response.status_code(), StatusCode::CONFLICT);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -179,7 +179,7 @@ async fn it_returns_bad_request_if_roles_does_not_exists() {
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         assert_eq!(body.message, "Role does not exist");
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -193,10 +193,10 @@ async fn it_returns_bad_request_if_role_is_restricted() {
                 .server
                 .post("/v1/users")
                 .json(&json!({
-                "email": &email,
-                "password": "Iknow#othing1",
-                "role": role,
-            }))
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                    "role": role,
+                }))
                 .await;
             let body = response.json::<MessageResponse>();
 
@@ -204,5 +204,5 @@ async fn it_returns_bad_request_if_role_is_restricted() {
             assert_eq!(body.message, "Role is restricted");
         }
     })
-        .await;
+    .await;
 }

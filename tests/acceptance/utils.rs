@@ -1,9 +1,9 @@
-use serde_json::json;
+use crate::utils::context::AcceptanceTestContext;
 use auth_service::api::dto::LoginResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::utils::context::AcceptanceTestContext;
+use serde_json::json;
 
 pub async fn create_admin_with_token(c: &AcceptanceTestContext) -> (User, String) {
     let mut admin = User::now_with_email_and_password(

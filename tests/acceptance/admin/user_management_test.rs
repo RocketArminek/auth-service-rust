@@ -1,13 +1,13 @@
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::json;
-use uuid::Uuid;
+use crate::utils::runners::run_integration_test_with_default;
 use auth_service::api::dto::{LoginResponse, UserListResponse};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::utils::runners::run_integration_test_with_default;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn it_creates_restricted_user() {
@@ -19,7 +19,7 @@ async fn it_creates_restricted_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -68,7 +68,7 @@ async fn it_creates_restricted_user() {
             assert_eq!(user.is_verified, true);
         }
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -81,7 +81,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         c.user_repository.save(&admin).await.unwrap();
@@ -117,7 +117,7 @@ async fn it_cannot_create_restricted_user_if_not_permitted() {
         let event = c.wait_for_event(5, |_| true).await;
         assert!(event.is_none(), "Should not receive any message");
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -130,7 +130,7 @@ async fn it_can_list_all_user_as_an_privileged_role() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -167,7 +167,7 @@ async fn it_can_list_all_user_as_an_privileged_role() {
         assert_eq!(body.total, 1);
         assert_eq!(body.pages, 1);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -180,7 +180,7 @@ async fn it_can_list_all_user_with_roles() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -218,7 +218,7 @@ async fn it_can_list_all_user_with_roles() {
         assert_eq!(body.total, 1);
         assert_eq!(body.pages, 1);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -231,7 +231,7 @@ async fn it_can_get_single_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -246,7 +246,7 @@ async fn it_can_get_single_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         c.user_repository.save(&user).await.unwrap();
 
         let response = c
@@ -272,7 +272,7 @@ async fn it_can_get_single_user() {
         let body = response.json::<UserDTO>();
         assert_eq!(body.email, "user@test.com");
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -285,7 +285,7 @@ async fn it_can_delete_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -300,7 +300,7 @@ async fn it_can_delete_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         c.user_repository.save(&user).await.unwrap();
 
         let response = c
@@ -341,7 +341,7 @@ async fn it_can_delete_user() {
             assert_eq!(user.roles.is_empty(), true);
         }
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -354,7 +354,7 @@ async fn it_returns_not_found_for_nonexistent_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -384,7 +384,7 @@ async fn it_returns_not_found_for_nonexistent_user() {
 
         assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -397,7 +397,7 @@ async fn it_updates_other_user_information() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -412,7 +412,7 @@ async fn it_updates_other_user_information() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         c.user_repository.save(&user).await.unwrap();
 
         let response = c
@@ -468,7 +468,7 @@ async fn it_updates_other_user_information() {
             assert_eq!(new_user.roles.is_empty(), true);
         }
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -481,7 +481,7 @@ async fn it_cannot_update_none_existing_user() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         admin.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("ADMIN_USER".to_string()).unwrap();
@@ -515,5 +515,5 @@ async fn it_cannot_update_none_existing_user() {
 
         assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
     })
-        .await;
+    .await;
 }

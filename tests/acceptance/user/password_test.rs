@@ -1,10 +1,10 @@
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::json;
+use crate::utils::runners::run_integration_test_with_default;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::utils::runners::run_integration_test_with_default;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use serde_json::json;
 
 #[tokio::test]
 async fn it_cannot_reset_password_if_user_does_not_exist() {
@@ -19,7 +19,7 @@ async fn it_cannot_reset_password_if_user_does_not_exist() {
 
         assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -34,7 +34,7 @@ async fn it_can_reset_password() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("USER".to_string()).unwrap();
@@ -111,5 +111,5 @@ async fn it_can_reset_password() {
             _ => panic!("Should have received password reset requested!"),
         }
     })
-        .await;
+    .await;
 }

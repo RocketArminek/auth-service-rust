@@ -1,12 +1,12 @@
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::json;
-use uuid::Uuid;
+use crate::acceptance::utils;
+use crate::utils::runners::run_integration_test_with_default;
 use auth_service::api::dto::{CreatedResponse, LoginResponse, RoleListResponse, RoleResponse};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use crate::acceptance::utils;
-use crate::utils::runners::run_integration_test_with_default;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn it_can_create_role() {
@@ -32,7 +32,7 @@ async fn it_can_create_role() {
         let role = c.role_repository.get_by_name("TEST_ROLE").await.unwrap();
         assert_eq!(role.name, "TEST_ROLE");
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -56,7 +56,7 @@ async fn it_cannot_create_duplicate_role() {
 
         assert_eq!(response.status_code(), StatusCode::CONFLICT);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -95,7 +95,7 @@ async fn it_can_list_roles_with_pagination() {
         let body = response.json::<RoleListResponse>();
         assert_eq!(body.roles.len(), 6);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -119,7 +119,7 @@ async fn it_can_get_role_by_id() {
         assert_eq!(body.name, "TEST_ROLE");
         assert_eq!(body.id, role.id.to_string());
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -139,7 +139,7 @@ async fn it_returns_not_found_for_nonexistent_role() {
 
         assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -163,7 +163,7 @@ async fn it_can_delete_role() {
         let result = c.role_repository.get_by_id(&role.id).await;
         assert!(result.is_err());
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -176,7 +176,7 @@ async fn it_requires_admin_role() {
             Some(String::from("User")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("USER".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -204,7 +204,7 @@ async fn it_requires_admin_role() {
 
         assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -219,7 +219,7 @@ async fn it_can_assign_role_to_user() {
             None,
             Some(true),
         )
-            .unwrap();
+        .unwrap();
         c.user_repository.save(&user).await.unwrap();
 
         let role = Role::now("TEST_ROLE".to_string()).unwrap();
@@ -242,5 +242,5 @@ async fn it_can_assign_role_to_user() {
         let updated_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert!(updated_user.has_role("TEST_ROLE".to_string()));
     })
-        .await;
+    .await;
 }
