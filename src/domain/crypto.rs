@@ -16,10 +16,11 @@ pub struct SchemeAwareHasher {
     pub current_scheme: HashingScheme,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum HashingScheme {
     Argon2,
     Bcrypt,
+    #[default]
     BcryptLow,
 }
 
@@ -49,14 +50,8 @@ impl TryFrom<String> for HashingScheme {
     }
 }
 
-impl Default for HashingScheme {
+impl Default for SchemeAwareHasher {
     fn default() -> Self {
-        HashingScheme::BcryptLow
-    }
-}
-
-impl SchemeAwareHasher {
-    pub fn default() -> Self {
         let mut hashers: HashMap<HashingScheme, Box<dyn Hasher>> = HashMap::new();
         hashers.insert(HashingScheme::Argon2, Box::new(Argon2Hasher::new()));
         hashers.insert(HashingScheme::Bcrypt, Box::new(BcryptHasher::default()));
@@ -67,7 +62,9 @@ impl SchemeAwareHasher {
             current_scheme: HashingScheme::BcryptLow,
         }
     }
+}
 
+impl SchemeAwareHasher {
     pub fn with_scheme(scheme: HashingScheme) -> Self {
         let mut hashers: HashMap<HashingScheme, Box<dyn Hasher>> = HashMap::new();
         hashers.insert(HashingScheme::Argon2, Box::new(Argon2Hasher::new()));

@@ -27,15 +27,15 @@ impl Debug for DurationInSeconds {
     }
 }
 
-impl Into<i64> for DurationInSeconds {
-    fn into(self) -> i64 {
-        self.0 as i64
+impl From<DurationInSeconds> for i64 {
+    fn from(dur: DurationInSeconds) -> Self {
+        dur.0 as i64
     }
 }
 
-impl Into<u64> for DurationInSeconds {
-    fn into(self) -> u64 {
-        self.0
+impl From<DurationInSeconds> for u64 {
+    fn from(dur: DurationInSeconds) -> Self {
+        dur.0
     }
 }
 

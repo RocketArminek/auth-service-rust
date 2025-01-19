@@ -66,7 +66,6 @@ impl AuthService for StatelessAuthService {
                     .hash_password(&password)
                     .unwrap_or(outdated_user.password.clone());
                 outdated_user.set_password(new_password);
-                let outdated_user = outdated_user.into();
                 match user_repository.save(&outdated_user).await {
                     Ok(_) => tracing::debug!(
                         "Password updated for {}({})",

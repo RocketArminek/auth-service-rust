@@ -156,7 +156,7 @@ pub async fn get_all_users(
             (
                 StatusCode::OK,
                 Json(UserListResponse {
-                    total: total,
+                    total,
                     page,
                     limit,
                     items: user_responses,

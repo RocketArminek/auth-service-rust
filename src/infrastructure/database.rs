@@ -7,9 +7,10 @@ use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum DatabaseEngine {
     Sqlite,
+    #[default]
     Mysql,
 }
 
@@ -48,20 +49,20 @@ impl DatabasePool {
     }
 }
 
-impl Into<Pool<MySql>> for DatabasePool {
-    fn into(self) -> Pool<MySql> {
-        match self {
+impl From<DatabasePool> for Pool<MySql> {
+    fn from(pool: DatabasePool) -> Self {
+        match pool {
             DatabasePool::MySql(pool) => pool,
             DatabasePool::Sqlite(_) => panic!("Cannot convert mysql into sqlite"),
         }
     }
 }
 
-impl Into<Pool<Sqlite>> for DatabasePool {
-    fn into(self) -> Pool<Sqlite> {
-        match self {
-            DatabasePool::MySql(_) => panic!("Cannot convert sqlite into mysql"),
-            DatabasePool::Sqlite(pool) => pool,
+impl From<DatabasePool> for Pool<Sqlite> {
+    fn from(pool: DatabasePool) -> Self {
+        match pool {
+            DatabasePool::MySql(_) => panic!("Cannot convert mysql into sqlite"),
+            DatabasePool::Sqlite(pool) => pool
         }
     }
 }
@@ -75,9 +76,9 @@ impl DatabaseEngine {
     }
 }
 
-impl Into<String> for DatabaseEngine {
-    fn into(self) -> String {
-        self.to_string()
+impl From<DatabaseEngine> for String {
+    fn from(value: DatabaseEngine) -> Self {
+        value.to_string()
     }
 }
 
@@ -90,12 +91,6 @@ impl TryFrom<String> for DatabaseEngine {
             "mysql" => Ok(DatabaseEngine::Mysql),
             _ => Err(format!("Unknown database type: {}", value)),
         }
-    }
-}
-
-impl Default for DatabaseEngine {
-    fn default() -> Self {
-        DatabaseEngine::Mysql
     }
 }
 

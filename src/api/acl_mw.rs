@@ -45,16 +45,14 @@ pub async fn verified_acl(
     tracing::debug!("Verified acl mw user: {:?}", user);
     tracing::debug!("Verified acl mw config: {:?}", state.config);
 
-    if state.config.verification_required() {
-        if !user.is_verified {
-            return (
-                StatusCode::FORBIDDEN,
-                Json(MessageResponse {
-                    message: String::from("User is not verified!"),
-                }),
-            )
-                .into_response();
-        }
+    if state.config.verification_required() && !user.is_verified {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(MessageResponse {
+                message: String::from("User is not verified!"),
+            }),
+        )
+            .into_response();
     }
 
     next.run(request).await

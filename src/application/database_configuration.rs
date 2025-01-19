@@ -9,6 +9,12 @@ pub struct DatabaseConfigurationBuilder {
     pub database_timeout_ms: Option<u64>,
 }
 
+impl Default for DatabaseConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DatabaseConfigurationBuilder {
     pub fn new() -> Self {
         DatabaseConfigurationBuilder {

@@ -12,6 +12,12 @@ pub struct MessagePublisherConfigurationBuilder {
     pub event_driven: Option<bool>,
 }
 
+impl Default for MessagePublisherConfigurationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MessagePublisherConfigurationBuilder {
     pub fn new() -> Self {
         MessagePublisherConfigurationBuilder {
@@ -58,16 +64,16 @@ impl MessagePublisherConfigurationBuilder {
         self.rabbitmq_url = env::var(EnvNames::RABBITMQ_URL).ok();
         self.rabbitmq_exchange_name = env::var(EnvNames::RABBITMQ_EXCHANGE_NAME).ok();
         self.rabbitmq_exchange_kind = env::var(EnvNames::RABBITMQ_EXCHANGE_KIND)
-            .and_then(|v| Ok(Self::exchange_kind_from_string(v)))
+            .map(|v| Self::exchange_kind_from_string(v))
             .ok();
         self.rabbitmq_exchange_durable = env::var(EnvNames::RABBITMQ_EXCHANGE_DURABLE)
-            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .map(|v| v.parse::<bool>().unwrap())
             .ok();
         self.rabbitmq_exchange_auto_delete = env::var(EnvNames::RABBITMQ_EXCHANGE_AUTO_DELETE)
-            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .map(|v| v.parse::<bool>().unwrap())
             .ok();
         self.event_driven = env::var(EnvNames::EVENT_DRIVEN)
-            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .map(|v| v.parse::<bool>().unwrap())
             .ok();
 
         self
@@ -79,9 +85,8 @@ impl MessagePublisherConfigurationBuilder {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
                     auto_delete: self
                         .rabbitmq_exchange_auto_delete
-                        .clone()
                         .unwrap_or_default(),
-                    durable: self.rabbitmq_exchange_durable.clone().unwrap_or_default(),
+                    durable: self.rabbitmq_exchange_durable.unwrap_or_default(),
                     ..ExchangeDeclareOptions::default()
                 };
 
