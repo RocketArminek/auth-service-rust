@@ -1,6 +1,6 @@
 use crate::utils::runners::run_database_test_with_default;
 use auth_service::domain::role::Role;
-use auth_service::infrastructure::repository::RepositoryError;
+use auth_service::domain::repository::RepositoryError;
 
 #[tokio::test]
 async fn it_can_add_role() {

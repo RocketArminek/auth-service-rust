@@ -1,4 +1,4 @@
-use auth_service::application::config::message_publisher::MessagePublisherConfiguration;
+use auth_service::application::configuration::message_publisher::MessagePublisherConfiguration;
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;

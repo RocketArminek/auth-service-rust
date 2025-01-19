@@ -1,7 +1,7 @@
 use crate::application::service::auth_service::{AuthError, AuthService, TokenPair};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{TokenType, UserDTO};
-use crate::domain::repositories::UserRepository;
+use crate::domain::repository::UserRepository;
 use crate::domain::user::PasswordHandler;
 use async_trait::async_trait;
 use std::sync::Arc;

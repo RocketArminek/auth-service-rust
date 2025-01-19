@@ -1,6 +1,6 @@
-use crate::application::config::app::{AppConfiguration, AppConfigurationBuilder};
-use crate::application::config::database::{DatabaseConfiguration, DatabaseConfigurationBuilder};
-use crate::application::config::message_publisher::{
+use crate::application::configuration::app::{AppConfiguration, AppConfigurationBuilder};
+use crate::application::configuration::database::{DatabaseConfiguration, DatabaseConfigurationBuilder};
+use crate::application::configuration::message_publisher::{
     EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
 };
 use dotenvy::{dotenv, from_filename};

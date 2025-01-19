@@ -1,7 +1,7 @@
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use ::serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse};
-use auth_service::application::config::dto::{DurationInSeconds, HiddenString};
+use auth_service::application::configuration::dto::{DurationInSeconds, HiddenString};
 use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};

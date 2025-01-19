@@ -9,9 +9,9 @@ use crate::utils::context::{
 use crate::utils::db::drop_database;
 use crate::utils::events::setup_test_consumer;
 use crate::utils::server::create_test_server;
-use auth_service::application::config::configuration::ConfigurationBuilder;
-use auth_service::application::config::database::DatabaseConfigurationBuilder;
-use auth_service::application::config::message_publisher::MessagePublisherConfigurationBuilder;
+use auth_service::application::configuration::configuration::ConfigurationBuilder;
+use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
+use auth_service::application::configuration::message_publisher::MessagePublisherConfigurationBuilder;
 use auth_service::application::service::auth_service::create_auth_service;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;

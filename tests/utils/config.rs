@@ -1,7 +1,7 @@
-use auth_service::application::config::app::AppConfigurationBuilder;
-use auth_service::application::config::configuration::ConfigurationBuilder;
-use auth_service::application::config::database::DatabaseConfigurationBuilder;
-use auth_service::application::config::message_publisher::MessagePublisherConfigurationBuilder;
+use auth_service::application::configuration::app::AppConfigurationBuilder;
+use auth_service::application::configuration::configuration::ConfigurationBuilder;
+use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
+use auth_service::application::configuration::message_publisher::MessagePublisherConfigurationBuilder;
 
 pub fn init_test_publisher_configuration_builder(
     test_case_id: &str,

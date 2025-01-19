@@ -1,8 +1,8 @@
-use crate::application::config::app::AppConfiguration;
+use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::stateful_auth_service::StatefulAuthService;
 use crate::application::service::stateless_auth_service::StatelessAuthService;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::repositories::{SessionRepository, UserRepository};
+use crate::domain::repository::{SessionRepository, UserRepository};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};

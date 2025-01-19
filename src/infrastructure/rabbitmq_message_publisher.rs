@@ -1,4 +1,4 @@
-use crate::application::config::message_publisher::RabbitmqConfiguration;
+use crate::application::configuration::message_publisher::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::utils::retry_with_backoff;
 use async_trait::async_trait;

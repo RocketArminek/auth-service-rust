@@ -1,9 +1,11 @@
 use crate::domain::role::Role;
 use crate::domain::session::Session;
 use crate::domain::user::User;
-use crate::infrastructure::repository::RepositoryError;
 use async_trait::async_trait;
 use uuid::Uuid;
+use sqlx::Error as SqlxError;
+use std::error::Error;
+use std::fmt;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
@@ -35,4 +37,32 @@ pub trait SessionRepository: Send + Sync {
     async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
     async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError>;
     async fn delete_expired(&self) -> Result<(), RepositoryError>;
+}
+
+#[derive(Debug)]
+pub enum RepositoryError {
+    NotFound(String),
+    Database(SqlxError),
+    Conflict(String),
+    ValidationError(String),
+}
+
+impl fmt::Display for RepositoryError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepositoryError::NotFound(msg) => write!(f, "{}", msg),
+            RepositoryError::Database(e) => write!(f, "Database error: {}", e),
+            RepositoryError::Conflict(msg) => write!(f, "Conflict error: {}", msg),
+            RepositoryError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+        }
+    }
+}
+
+impl Error for RepositoryError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            RepositoryError::Database(e) => Some(e),
+            _ => None,
+        }
+    }
 }

@@ -1,4 +1,4 @@
-use crate::application::config::dto::{DurationInSeconds, HiddenString};
+use crate::application::configuration::dto::{DurationInSeconds, HiddenString};
 use crate::application::service::auth_service::AuthStrategy;
 use crate::domain::crypto::HashingScheme;
 use lazy_regex::Regex;

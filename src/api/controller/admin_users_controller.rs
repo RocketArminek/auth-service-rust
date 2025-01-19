@@ -8,7 +8,7 @@ use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::jwt::UserDTO;
 use crate::domain::user::{PasswordHandler, User};
-use crate::infrastructure::repository::RepositoryError;
+use crate::domain::repository::RepositoryError;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;

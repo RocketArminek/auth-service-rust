@@ -1,7 +1,7 @@
 use crate::utils::cli::CommandFactory;
 use crate::utils::events::wait_for_event;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repositories::{RoleRepository, SessionRepository, UserRepository};
+use auth_service::domain::repository::{RoleRepository, SessionRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use lapin::Consumer;

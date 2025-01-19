@@ -1,4 +1,4 @@
-use crate::application::config::message_publisher::MessagePublisherConfiguration;
+use crate::application::configuration::message_publisher::MessagePublisherConfiguration;
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_publisher;
 use async_trait::async_trait;
 use serde::Serialize;

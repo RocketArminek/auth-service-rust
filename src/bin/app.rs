@@ -1,20 +1,20 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
-use auth_service::application::config::app::{AppConfiguration, EnvNames as AppEnvNames};
-use auth_service::application::config::configuration::Configuration;
-use auth_service::application::config::message_publisher::MessagePublisherConfiguration;
+use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
+use auth_service::application::configuration::configuration::Configuration;
+use auth_service::application::configuration::message_publisher::MessagePublisherConfiguration;
 use auth_service::application::service::auth_service::{create_auth_service, AuthStrategy};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repositories::{RoleRepository, SessionRepository, UserRepository};
+use auth_service::domain::repository::{RepositoryError, RoleRepository, SessionRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use auth_service::infrastructure::repository::{
-    create_role_repository, create_session_repository, create_user_repository, RepositoryError,
+    create_role_repository, create_session_repository, create_user_repository,
 };
 use chrono::Duration;
 use clap::{Parser, Subcommand};
