@@ -123,9 +123,10 @@ pub struct Token {
     pub expires_at: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum AuthStrategy {
     Stateless,
+    #[default]
     Stateful,
 }
 
@@ -153,12 +154,6 @@ impl TryFrom<String> for AuthStrategy {
             "stateful" => Ok(AuthStrategy::Stateful),
             _ => Err(format!("Unrecognized auth strategy: {}", value)),
         }
-    }
-}
-
-impl Default for AuthStrategy {
-    fn default() -> Self {
-        AuthStrategy::Stateless
     }
 }
 
