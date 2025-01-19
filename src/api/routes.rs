@@ -3,6 +3,7 @@ use crate::api::controller::admin_session_controller::*;
 use crate::api::controller::admin_users_controller::*;
 use crate::api::controller::auth_controller::*;
 use crate::api::controller::user_controller::*;
+use crate::api::controller::user_profile_controller::*;
 use crate::api::controller::utils_controller::*;
 use crate::api::dto::*;
 use crate::api::middleware::acl_mw::{restricted_acl, verified_acl};
@@ -21,7 +22,7 @@ pub fn routes(state: ServerState) -> Router {
     Router::new()
         .merge(SwaggerUi::new("/docs").url("/", ApiDoc::openapi()))
         .route("/v1/health", get(health_action))
-        .route("/v1/users", post(create_user))
+        .route("/v1/users", post(register))
         .route("/v1/me/verification", patch(verify))
         .route("/v1/me/verification/resend", post(resend_verification))
         .route("/v1/me/password/reset", patch(reset_password))
@@ -87,7 +88,7 @@ pub fn routes(state: ServerState) -> Router {
     paths(
         open_api_docs,
         health_action,
-        create_user,
+        register,
         create_restricted_user,
         get_all_users,
         get_user,

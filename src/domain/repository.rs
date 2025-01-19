@@ -2,10 +2,10 @@ use crate::domain::role::Role;
 use crate::domain::session::Session;
 use crate::domain::user::User;
 use async_trait::async_trait;
-use uuid::Uuid;
 use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {

@@ -1,9 +1,9 @@
+use crate::domain::repository::RepositoryError;
 use crate::domain::repository::SessionRepository;
 use crate::domain::role::Role;
 use crate::domain::session::Session;
 use crate::domain::user::User;
 use crate::infrastructure::dto::SessionWithUserRow;
-use crate::domain::repository::RepositoryError;
 use async_trait::async_trait;
 use chrono::Utc;
 use sqlx::{Pool, Sqlite};

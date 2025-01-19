@@ -1,5 +1,7 @@
 use crate::application::configuration::app::{AppConfiguration, AppConfigurationBuilder};
-use crate::application::configuration::database::{DatabaseConfiguration, DatabaseConfigurationBuilder};
+use crate::application::configuration::database::{
+    DatabaseConfiguration, DatabaseConfigurationBuilder,
+};
 use crate::application::configuration::message_publisher::{
     EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
 };

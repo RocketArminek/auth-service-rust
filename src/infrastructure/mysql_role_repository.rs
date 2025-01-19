@@ -1,6 +1,6 @@
+use crate::domain::repository::RepositoryError;
 use crate::domain::repository::RoleRepository;
 use crate::domain::role::Role;
-use crate::domain::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::{query_as, MySql, Pool};
 use uuid::Uuid;

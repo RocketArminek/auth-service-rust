@@ -7,7 +7,9 @@ use auth_service::application::service::auth_service::{create_auth_service, Auth
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{RepositoryError, RoleRepository, SessionRepository, UserRepository};
+use auth_service::domain::repository::{
+    RepositoryError, RoleRepository, SessionRepository, UserRepository,
+};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;

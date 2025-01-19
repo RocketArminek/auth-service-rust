@@ -1,4 +1,6 @@
-use crate::domain::repository::{RepositoryError, RoleRepository, SessionRepository, UserRepository};
+use crate::domain::repository::{
+    RepositoryError, RoleRepository, SessionRepository, UserRepository,
+};
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_session_repository::MysqlSessionRepository;
@@ -6,8 +8,8 @@ use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use crate::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 use crate::infrastructure::sqlite_session_repository::SqliteSessionRepository;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
-use std::sync::Arc;
 use sqlx::Error as SqlxError;
+use std::sync::Arc;
 
 pub fn create_user_repository(pool: DatabasePool) -> Arc<dyn UserRepository> {
     match pool {
