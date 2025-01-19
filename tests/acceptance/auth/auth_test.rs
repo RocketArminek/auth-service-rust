@@ -859,3 +859,63 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
     )
         .await;
 }
+
+#[tokio::test]
+async fn it_does_not_work_for_stateless_auth_strategy() {
+    run_integration_test(
+        |c| {
+            c.app.auth_strategy(AuthStrategy::Stateless);
+        },
+        |c| async move {
+            let email = String::from("jon@snow.test");
+            let mut user = User::now_with_email_and_password(
+                email.clone(),
+                String::from("Iknow#othing1"),
+                Some(String::from("Jon")),
+                Some(String::from("Snow")),
+                Some(true),
+            )
+                .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            c.user_repository.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/login")
+                .json(&json!({
+                    "email": &email,
+                    "password": "Iknow#othing1",
+                }))
+                .await;
+            let body = response.json::<LoginResponse>();
+
+            let response = c
+                .server
+                .post("/v1/logout")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
+            let body_bad_request = response.json::<MessageResponse>();
+            assert_eq!(
+                body_bad_request.message,
+                "Action not supported in this strategy"
+            );
+
+            let auth_response = c
+                .server
+                .get("/v1/authenticate")
+                .add_header(
+                    HeaderName::try_from("Authorization").unwrap(),
+                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+                )
+                .await;
+
+            assert_eq!(auth_response.status_code(), StatusCode::OK);
+        },
+    )
+        .await;
+}
