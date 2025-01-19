@@ -1,5 +1,9 @@
+use std::ops::{Add, Sub};
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
-use ::serde_json::json;
+use axum::http::{header, HeaderName, HeaderValue, StatusCode};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde_json::json;
 use auth_service::api::dto::{LoginResponse, MessageResponse};
 use auth_service::application::configuration::dto::{DurationInSeconds, HiddenString};
 use auth_service::application::service::auth_service::AuthStrategy;
@@ -7,10 +11,6 @@ use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
-use axum::http::{header, HeaderName, HeaderValue, StatusCode};
-use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use std::ops::{Add, Sub};
 
 #[tokio::test]
 async fn it_returns_not_found_if_user_does_not_exist() {
@@ -26,7 +26,7 @@ async fn it_returns_not_found_if_user_does_not_exist() {
 
         assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -40,7 +40,7 @@ async fn it_returns_unauthorized_for_invalid_password() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         c.user_repository.save(&user).await.unwrap();
 
@@ -55,7 +55,7 @@ async fn it_returns_unauthorized_for_invalid_password() {
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -69,7 +69,7 @@ async fn it_issues_access_token() {
             Some(String::from("Snow")),
             Some(false),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         c.user_repository.save(&user).await.unwrap();
 
@@ -88,7 +88,7 @@ async fn it_issues_access_token() {
 
         assert_eq!(body.user.is_verified, false);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -107,7 +107,7 @@ async fn it_issues_access_token_for_not_verified_user() {
                 Some(String::from("Snow")),
                 Some(false),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -135,14 +135,14 @@ async fn it_issues_access_token_for_not_verified_user() {
                 &DecodingKey::from_secret("secret".as_ref()),
                 &Validation::default(),
             )
-            .unwrap();
+                .unwrap();
 
             assert_eq!(token.claims.user.id, user.id);
             assert_eq!(token.claims.user.email, user.email);
             assert_eq!(token.claims.exp, exp.timestamp() as usize);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -163,7 +163,7 @@ async fn it_issues_refresh_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -191,13 +191,13 @@ async fn it_issues_refresh_token() {
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::default(),
             )
-            .unwrap();
+                .unwrap();
 
             assert_eq!(token.claims.user.id, user.id);
             assert_eq!(token.claims.exp, exp.timestamp() as usize);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -215,7 +215,7 @@ async fn it_auto_updates_password_scheme() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
 
             user.hash_password(&SchemeAwareHasher::with_scheme(HashingScheme::Bcrypt))
                 .unwrap();
@@ -240,11 +240,11 @@ async fn it_auto_updates_password_scheme() {
             assert_eq!(scheme, HashingScheme::BcryptLow)
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
-async fn it_verifies_token() {
+async fn it_authenticate_token() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let mut user = User::now_with_email_and_password(
@@ -254,7 +254,7 @@ async fn it_verifies_token() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -297,11 +297,11 @@ async fn it_verifies_token() {
         assert_eq!(user_id_from_header, user.id.to_string());
         assert!(roles_from_header.contains("user"));
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
-async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required() {
+async fn it_authenticate_token_for_not_verified_user_if_verification_is_not_required() {
     run_integration_test(
         |c| {
             c.app.verification_required(false);
@@ -315,7 +315,7 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
                 Some(String::from("Snow")),
                 Some(false),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             let role = Role::now("user".to_string()).unwrap();
             c.role_repository.save(&role).await.unwrap();
@@ -359,11 +359,11 @@ async fn it_verifies_token_for_not_verified_user_if_verification_is_not_required
             assert!(roles_from_header.contains("user"));
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
-async fn it_does_not_verify_token_if_user_is_not_verified() {
+async fn it_does_not_authenticate_token_if_user_is_not_verified() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let mut user = User::now_with_email_and_password(
@@ -373,7 +373,7 @@ async fn it_does_not_verify_token_if_user_is_not_verified() {
             Some(String::from("Snow")),
             Some(false),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -401,11 +401,11 @@ async fn it_does_not_verify_token_if_user_is_not_verified() {
 
         assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
-async fn it_does_not_verify_token_by_using_refresh_token() {
+async fn it_does_not_authenticate_token_by_using_refresh_token() {
     run_integration_test_with_default(|c| async move {
         let email = String::from("jon@snow.test");
         let mut user = User::now_with_email_and_password(
@@ -415,7 +415,7 @@ async fn it_does_not_verify_token_by_using_refresh_token() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -443,7 +443,7 @@ async fn it_does_not_verify_token_by_using_refresh_token() {
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -464,7 +464,7 @@ async fn it_refreshes_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             let role = Role::now("user".to_string()).unwrap();
             c.role_repository.save(&role).await.unwrap();
@@ -505,14 +505,14 @@ async fn it_refreshes_token() {
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::default(),
             )
-            .unwrap();
+                .unwrap();
 
             assert_eq!(token.claims.user.id, user.id);
             assert_eq!(token.claims.user.email, user.email);
             assert_eq!(token.claims.exp, exp.timestamp() as usize);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -526,7 +526,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -544,7 +544,7 @@ async fn it_does_not_refresh_token_if_token_is_not_valid() {
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -558,7 +558,7 @@ async fn it_does_not_refresh_if_you_use_access_token() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -586,7 +586,7 @@ async fn it_does_not_refresh_if_you_use_access_token() {
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -600,7 +600,7 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
             Some(String::from("Snow")),
             Some(true),
         )
-        .unwrap();
+            .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
         c.user_repository.save(&user).await.unwrap();
 
@@ -627,7 +627,7 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
     })
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -646,7 +646,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -664,7 +664,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
                 &claims,
                 &EncodingKey::from_secret(secret.as_ref()),
             )
-            .unwrap();
+                .unwrap();
 
             let response = c
                 .server
@@ -681,7 +681,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
             assert_eq!(body.message, "Expired token");
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -699,7 +699,7 @@ async fn it_can_logout_with_valid_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -736,7 +736,7 @@ async fn it_can_logout_with_valid_token() {
             assert_eq!(auth_response.status_code(), StatusCode::UNAUTHORIZED);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -758,7 +758,7 @@ async fn it_returns_unauthorized_on_logout_with_invalid_token() {
             assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -778,7 +778,7 @@ async fn it_returns_unauthorized_on_logout_with_expired_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -796,7 +796,7 @@ async fn it_returns_unauthorized_on_logout_with_expired_token() {
                 &claims,
                 &EncodingKey::from_secret(secret.as_ref()),
             )
-            .unwrap();
+                .unwrap();
 
             let response = c
                 .server
@@ -813,7 +813,7 @@ async fn it_returns_unauthorized_on_logout_with_expired_token() {
             assert_eq!(body.message, "Expired token");
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -831,7 +831,7 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
                 Some(String::from("Snow")),
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -857,65 +857,5 @@ async fn it_returns_unauthorized_on_logout_with_refresh_token() {
             assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
         },
     )
-    .await;
-}
-
-#[tokio::test]
-async fn it_does_not_work_for_stateless_auth_strategy() {
-    run_integration_test(
-        |c| {
-            c.app.auth_strategy(AuthStrategy::Stateless);
-        },
-        |c| async move {
-            let email = String::from("jon@snow.test");
-            let mut user = User::now_with_email_and_password(
-                email.clone(),
-                String::from("Iknow#othing1"),
-                Some(String::from("Jon")),
-                Some(String::from("Snow")),
-                Some(true),
-            )
-            .unwrap();
-            user.hash_password(&SchemeAwareHasher::default()).unwrap();
-            c.user_repository.save(&user).await.unwrap();
-
-            let response = c
-                .server
-                .post("/v1/login")
-                .json(&json!({
-                    "email": &email,
-                    "password": "Iknow#othing1",
-                }))
-                .await;
-            let body = response.json::<LoginResponse>();
-
-            let response = c
-                .server
-                .post("/v1/logout")
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-            let body_bad_request = response.json::<MessageResponse>();
-            assert_eq!(
-                body_bad_request.message,
-                "Action not supported in this strategy"
-            );
-
-            let auth_response = c
-                .server
-                .get("/v1/authenticate")
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(auth_response.status_code(), StatusCode::OK);
-        },
-    )
-    .await;
+        .await;
 }

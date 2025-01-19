@@ -1,125 +1,14 @@
-use crate::utils::context::AcceptanceTestContext;
-use crate::utils::runners::run_integration_test;
-use ::serde_json::json;
+use axum::http::{HeaderName, HeaderValue, StatusCode};
+use chrono::{Duration, Utc};
+use serde_json::json;
+use uuid::Uuid;
 use auth_service::api::dto::{LoginResponse, MessageResponse, SessionListResponse};
 use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::SchemeAwareHasher;
-use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::{PasswordHandler, User};
-use axum::http::{HeaderName, HeaderValue, StatusCode};
-use chrono::{Duration, Utc};
-use uuid::Uuid;
-
-async fn create_admin_with_token(c: &AcceptanceTestContext) -> (User, String) {
-    let mut admin = User::now_with_email_and_password(
-        String::from("admin@test.com"),
-        String::from("Admin#pass1"),
-        Some(String::from("Admin")),
-        Some(String::from("User")),
-        Some(true),
-    )
-    .unwrap();
-    admin.hash_password(&SchemeAwareHasher::default()).unwrap();
-
-    let role = Role::now("ADMIN_USER".to_string()).unwrap();
-    c.role_repository.save(&role).await.unwrap();
-    admin.add_role(role);
-    c.user_repository.save(&admin).await.unwrap();
-
-    let response = c
-        .server
-        .post("/v1/login")
-        .json(&json!({
-            "email": "admin@test.com",
-            "password": "Admin#pass1",
-        }))
-        .await;
-
-    let body = response.json::<LoginResponse>();
-    (admin, body.access_token.value)
-}
-
-#[tokio::test]
-async fn it_does_not_support_session_management_in_stateless_strategy() {
-    run_integration_test(
-        |c| {
-            c.app.auth_strategy(AuthStrategy::Stateless);
-        },
-        |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
-            let non_existent_id = Uuid::new_v4();
-
-            let response = c
-                .server
-                .get(&format!("/v1/restricted/sessions/{}", non_existent_id))
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-            let body = response.json::<MessageResponse>();
-            assert_eq!(
-                body.message,
-                "Action not supported in stateless this strategy"
-            );
-
-            let response = c
-                .server
-                .delete(&format!("/v1/restricted/sessions/{}", non_existent_id))
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-            let body = response.json::<MessageResponse>();
-            assert_eq!(
-                body.message,
-                "Action not supported in stateless this strategy"
-            );
-
-            let response = c
-                .server
-                .get("/v1/restricted/sessions")
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-            let body = response.json::<MessageResponse>();
-            assert_eq!(
-                body.message,
-                "Action not supported in stateless this strategy"
-            );
-
-            let response = c
-                .server
-                .delete(&format!(
-                    "/v1/restricted/users/{}/sessions",
-                    non_existent_id,
-                ))
-                .add_header(
-                    HeaderName::try_from("Authorization").unwrap(),
-                    HeaderValue::try_from(format!("Bearer {}", access_token)).unwrap(),
-                )
-                .await;
-
-            assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-            let body = response.json::<MessageResponse>();
-            assert_eq!(
-                body.message,
-                "Action not supported in stateless this strategy"
-            );
-        },
-    )
-    .await;
-}
+use crate::acceptance::utils::create_admin_with_token;
+use crate::utils::runners::run_integration_test;
 
 #[tokio::test]
 async fn it_returns_not_found_for_nonexistent_session() {
@@ -148,7 +37,7 @@ async fn it_returns_not_found_for_nonexistent_session() {
             );
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -167,7 +56,7 @@ async fn it_can_list_sessions() {
                 None,
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -193,7 +82,7 @@ async fn it_can_list_sessions() {
             assert_eq!(body.pages, 1);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -212,7 +101,7 @@ async fn it_can_get_session_by_id() {
                 None,
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -233,7 +122,7 @@ async fn it_can_get_session_by_id() {
             assert_eq!(body.user_id, user.id);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -252,7 +141,7 @@ async fn it_can_delete_session() {
                 None,
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -275,7 +164,7 @@ async fn it_can_delete_session() {
             assert!(deleted_session.is_err());
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -292,7 +181,7 @@ async fn it_cannot_access_sessions_without_admin_role() {
                 None,
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             user.hash_password(&SchemeAwareHasher::default()).unwrap();
             c.user_repository.save(&user).await.unwrap();
 
@@ -340,7 +229,7 @@ async fn it_cannot_access_sessions_without_admin_role() {
             assert_eq!(delete_response.status_code(), StatusCode::FORBIDDEN);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -359,7 +248,7 @@ async fn it_can_delete_all_user_sessions() {
                 None,
                 Some(true),
             )
-            .unwrap();
+                .unwrap();
             c.user_repository.save(&user).await.unwrap();
 
             let session1 = Session::now(user.id, Utc::now() + Duration::hours(1));
@@ -384,7 +273,7 @@ async fn it_can_delete_all_user_sessions() {
             assert_eq!(remaining_sessions.len(), 0);
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -417,7 +306,7 @@ async fn it_returns_not_found_when_deleting_sessions_for_nonexistent_user() {
             );
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -459,7 +348,7 @@ async fn it_cannot_delete_own_session() {
             assert!(session.is_ok());
         },
     )
-    .await;
+        .await;
 }
 
 #[tokio::test]
@@ -501,5 +390,5 @@ async fn it_cannot_delete_own_user_sessions() {
             );
         },
     )
-    .await;
+        .await;
 }

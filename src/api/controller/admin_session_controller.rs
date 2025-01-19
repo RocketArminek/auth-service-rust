@@ -1,7 +1,6 @@
 use crate::api::dto::Pagination;
 use crate::api::dto::{MessageResponse, SessionListResponse};
 use crate::api::server_state::ServerState;
-use crate::application::service::auth_service::AuthStrategy;
 use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
 use axum::extract::{Extension, Path, Query, State};
@@ -26,16 +25,6 @@ pub async fn list_sessions(
     State(state): State<ServerState>,
     Query(pagination): Query<Pagination>,
 ) -> impl IntoResponse {
-    if state.config.auth_strategy() == AuthStrategy::Stateless {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(MessageResponse {
-                message: "Action not supported in stateless this strategy".to_string(),
-            }),
-        )
-            .into_response();
-    }
-
     let page = pagination.page.unwrap_or(1);
     let limit = pagination.limit.unwrap_or(10);
 
@@ -76,16 +65,6 @@ pub async fn get_session(
     State(state): State<ServerState>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    if state.config.auth_strategy() == AuthStrategy::Stateless {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(MessageResponse {
-                message: "Action not supported in stateless this strategy".to_string(),
-            }),
-        )
-            .into_response();
-    }
-
     match state.session_repository.get_session_with_user(&id).await {
         Ok((session, _)) => (StatusCode::OK, Json(session)).into_response(),
         Err(e) => e.into_response(),
@@ -109,16 +88,6 @@ pub async fn delete_session(
     Extension(current_user): Extension<UserDTO>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    if state.config.auth_strategy() == AuthStrategy::Stateless {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(MessageResponse {
-                message: "Action not supported in stateless this strategy".to_string(),
-            }),
-        )
-            .into_response();
-    }
-
     match state.session_repository.get_by_id(&id).await {
         Ok(session) => {
             if session.user_id == current_user.id {
@@ -163,16 +132,6 @@ pub async fn delete_all_user_sessions(
     Extension(current_user): Extension<UserDTO>,
     Path(user_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    if state.config.auth_strategy() == AuthStrategy::Stateless {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(MessageResponse {
-                message: "Action not supported in stateless this strategy".to_string(),
-            }),
-        )
-            .into_response();
-    }
-
     if user_id == current_user.id {
         return (
             StatusCode::BAD_REQUEST,
