@@ -1,11 +1,12 @@
 use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
-use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse, TokenResponse};
+use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
+use crate::api::response::auth_response::IntoAuthResponse;
 
 #[utoipa::path(post, path = "/v1/login",
     tag="auth",
@@ -20,29 +21,10 @@ pub async fn login(
     State(state): State<ServerState>,
     request: Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let email = request.email.clone();
-    let password = request.password.clone();
-
-    let result = state.auth_service.login(email, password).await;
-
-    match result {
-        Ok((tokens, user)) => (
-            StatusCode::OK,
-            Json(LoginResponse {
-                user,
-                refresh_token: TokenResponse {
-                    value: tokens.refresh_token.value,
-                    expires_at: tokens.refresh_token.expires_at,
-                },
-                access_token: TokenResponse {
-                    value: tokens.access_token.value,
-                    expires_at: tokens.access_token.expires_at,
-                },
-            }),
-        )
-            .into_response(),
-        Err(e) => e.into_response(),
-    }
+    state.auth_service
+        .login(request.email.clone(), request.password.clone())
+        .await
+        .into_auth_response()
 }
 
 #[utoipa::path(get, path = "/v1/authenticate",
@@ -81,25 +63,10 @@ pub async fn refresh(
     State(state): State<ServerState>,
     BearerToken(token): BearerToken,
 ) -> impl IntoResponse {
-    let result = state.auth_service.refresh(token).await;
-    match result {
-        Ok((tokens, user)) => (
-            StatusCode::OK,
-            Json(LoginResponse {
-                user,
-                refresh_token: TokenResponse {
-                    value: tokens.refresh_token.value,
-                    expires_at: tokens.refresh_token.expires_at,
-                },
-                access_token: TokenResponse {
-                    value: tokens.access_token.value,
-                    expires_at: tokens.access_token.expires_at,
-                },
-            }),
-        )
-            .into_response(),
-        Err(e) => e.into_response(),
-    }
+    state.auth_service
+        .refresh(token)
+        .await
+        .into_auth_response()
 }
 
 #[utoipa::path(post, path = "/v1/logout",
@@ -114,8 +81,8 @@ pub async fn logout(
     State(state): State<ServerState>,
     BearerToken(token): BearerToken,
 ) -> impl IntoResponse {
-    match state.auth_service.logout(token).await {
-        Ok(_) => StatusCode::OK.into_response(),
-        Err(e) => e.into_response(),
-    }
+    state.auth_service
+        .logout(token)
+        .await
+        .into_auth_response()
 }
