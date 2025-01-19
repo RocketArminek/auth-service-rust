@@ -1,8 +1,8 @@
-use crate::api::extractor::auth_extractor::{LoggedInUser, PasswordToken};
 use crate::api::dto::{
     ChangePasswordRequest, CreateUserRequest, CreatedResponse, MessageResponse,
     ResetPasswordRequest, UpdateUserRequest, VerifyUserRequest,
 };
+use crate::api::extractor::auth_extractor::{LoggedInUser, PasswordToken};
 use crate::api::server_state::{SecretAware, ServerState};
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;

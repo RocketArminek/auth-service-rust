@@ -1,9 +1,9 @@
-use axum::response::IntoResponse;
-use axum::Json;
-use axum::http::StatusCode;
 use crate::api::dto::{LoginResponse, MessageResponse, TokenResponse};
 use crate::application::service::auth_service::{AuthError, TokenPair};
 use crate::domain::jwt::UserDTO;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::Json;
 
 pub trait IntoAuthResponse {
     fn into_auth_response(self) -> axum::response::Response;
@@ -22,7 +22,8 @@ impl IntoAuthResponse for Result<(TokenPair, UserDTO), AuthError> {
                     value: tokens.access_token.value,
                     expires_at: tokens.access_token.expires_at,
                 },
-            }).into_response(),
+            })
+            .into_response(),
             Err(e) => e.into_response(),
         }
     }

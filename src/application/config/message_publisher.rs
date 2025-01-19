@@ -83,9 +83,7 @@ impl MessagePublisherConfigurationBuilder {
         match self.event_driven.unwrap_or(true) {
             true => {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
-                    auto_delete: self
-                        .rabbitmq_exchange_auto_delete
-                        .unwrap_or_default(),
+                    auto_delete: self.rabbitmq_exchange_auto_delete.unwrap_or_default(),
                     durable: self.rabbitmq_exchange_durable.unwrap_or_default(),
                     ..ExchangeDeclareOptions::default()
                 };

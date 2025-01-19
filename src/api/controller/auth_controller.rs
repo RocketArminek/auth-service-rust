@@ -1,12 +1,12 @@
-use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse};
+use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
+use crate::api::response::auth_response::IntoAuthResponse;
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
-use crate::api::response::auth_response::IntoAuthResponse;
 
 #[utoipa::path(post, path = "/v1/login",
     tag="auth",
@@ -21,7 +21,8 @@ pub async fn login(
     State(state): State<ServerState>,
     request: Json<LoginRequest>,
 ) -> impl IntoResponse {
-    state.auth_service
+    state
+        .auth_service
         .login(request.email.clone(), request.password.clone())
         .await
         .into_auth_response()
@@ -63,10 +64,7 @@ pub async fn refresh(
     State(state): State<ServerState>,
     BearerToken(token): BearerToken,
 ) -> impl IntoResponse {
-    state.auth_service
-        .refresh(token)
-        .await
-        .into_auth_response()
+    state.auth_service.refresh(token).await.into_auth_response()
 }
 
 #[utoipa::path(post, path = "/v1/logout",
@@ -81,8 +79,5 @@ pub async fn logout(
     State(state): State<ServerState>,
     BearerToken(token): BearerToken,
 ) -> impl IntoResponse {
-    state.auth_service
-        .logout(token)
-        .await
-        .into_auth_response()
+    state.auth_service.logout(token).await.into_auth_response()
 }

@@ -1,5 +1,5 @@
-use crate::api::extractor::auth_extractor::LoggedInUser;
 use crate::api::dto::MessageResponse;
+use crate::api::extractor::auth_extractor::LoggedInUser;
 use crate::api::server_state::ServerState;
 use axum::extract::{Request, State};
 use axum::http::StatusCode;

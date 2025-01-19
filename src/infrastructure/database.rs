@@ -62,7 +62,7 @@ impl From<DatabasePool> for Pool<Sqlite> {
     fn from(pool: DatabasePool) -> Self {
         match pool {
             DatabasePool::MySql(_) => panic!("Cannot convert mysql into sqlite"),
-            DatabasePool::Sqlite(pool) => pool
+            DatabasePool::Sqlite(pool) => pool,
         }
     }
 }
