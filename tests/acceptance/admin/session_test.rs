@@ -1,4 +1,4 @@
-use crate::acceptance::utils::create_admin_with_token;
+use crate::acceptance::utils::i_am_logged_in_as_admin;
 use crate::utils::runners::run_integration_test;
 use auth_service::api::dto::{LoginResponse, MessageResponse, SessionListResponse};
 use auth_service::application::service::auth_service::AuthStrategy;
@@ -17,7 +17,7 @@ async fn it_returns_not_found_for_nonexistent_session() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
             let non_existent_id = Uuid::new_v4();
 
             let response = c
@@ -47,7 +47,7 @@ async fn it_can_list_sessions() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let user = User::now_with_email_and_password(
                 String::from("user@test.com"),
@@ -92,7 +92,7 @@ async fn it_can_get_session_by_id() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let user = User::now_with_email_and_password(
                 String::from("user@test.com"),
@@ -132,7 +132,7 @@ async fn it_can_delete_session() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let user = User::now_with_email_and_password(
                 String::from("user@test.com"),
@@ -239,7 +239,7 @@ async fn it_can_delete_all_user_sessions() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let user = User::now_with_email_and_password(
                 String::from("user@test.com"),
@@ -283,7 +283,7 @@ async fn it_returns_not_found_when_deleting_sessions_for_nonexistent_user() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
             let non_existent_id = Uuid::new_v4();
 
             let response = c
@@ -316,7 +316,7 @@ async fn it_cannot_delete_own_session() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (_, access_token) = create_admin_with_token(&c).await;
+            let (_, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let response = c
                 .server
@@ -358,7 +358,7 @@ async fn it_cannot_delete_own_user_sessions() {
             c.app.auth_strategy(AuthStrategy::Stateful);
         },
         |c| async move {
-            let (admin, access_token) = create_admin_with_token(&c).await;
+            let (admin, access_token) = i_am_logged_in_as_admin(&c).await;
 
             let response = c
                 .server

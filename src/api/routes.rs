@@ -64,7 +64,7 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/roles/{id}",
                     get(get_role).delete(delete_role),
                 )
-                .route("/v1/restricted/users/{id}/roles", patch(assign_role))
+                .route("/v1/restricted/users/{id}/roles", patch(assign_role_to_user).delete(remove_role_from_user))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
@@ -111,7 +111,8 @@ pub fn routes(state: ServerState) -> Router {
         list_roles,
         get_role,
         delete_role,
-        assign_role,
+        assign_role_to_user,
+        remove_role_from_user,
     ),
     components(
         schemas(
@@ -134,6 +135,7 @@ pub fn routes(state: ServerState) -> Router {
             RoleResponse,
             RoleListResponse,
             AssignRoleRequest,
+            RemoveRoleRequest,
         ),
     )
 )]

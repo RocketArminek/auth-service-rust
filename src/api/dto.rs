@@ -116,3 +116,8 @@ pub struct RoleListResponse {
 pub struct AssignRoleRequest {
     pub role: String,
 }
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RemoveRoleRequest {
+    pub role: String,
+}

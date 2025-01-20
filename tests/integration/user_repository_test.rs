@@ -186,6 +186,40 @@ async fn it_can_handle_multiple_roles() {
 }
 
 #[tokio::test]
+async fn it_can_handle_multiple_roles_removal() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("role1".to_string()).unwrap();
+        let role2 = Role::now("role2".to_string()).unwrap();
+        let role3 = Role::now("role3".to_string()).unwrap();
+        let mut user = User::now_with_email_and_password(
+            "jon@snow.test".to_string(),
+            "Iknow#othing1".to_string(),
+            Some(String::from("Jon")),
+            Some(String::from("Snow")),
+            Some(true),
+        )
+            .unwrap();
+
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+        c.role_repository.save(&role3).await.unwrap();
+
+        user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
+        c.user_repository.save(&user).await.unwrap();
+
+        user.remove_roles(&vec![role2]);
+        user.remove_role(&role3);
+        user.remove_role(&role1);
+        c.user_repository.save(&user).await.unwrap();
+
+        let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
+
+        assert_eq!(saved_user.roles.len(), 0);
+    })
+        .await;
+}
+
+#[tokio::test]
 async fn it_rolls_back_transaction_on_invalid_email() {
     run_database_test_with_default(|c| async move {
         let user = User::now_with_email_and_password(
@@ -247,6 +281,53 @@ async fn it_rolls_back_on_invalid_role_without_affecting_user_data() {
         let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(saved_user.roles.len(), 1);
         assert_eq!(saved_user.roles[0].name, "valid_role");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_handles_role_updates_atomically() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("role1".to_string()).unwrap();
+        let role2 = Role::now("role2".to_string()).unwrap();
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Test#pass123".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+        user.add_roles(vec![role1.clone(), role2.clone()]);
+        c.user_repository.save(&user).await.unwrap();
+
+        let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
+        assert_eq!(saved_user.roles.len(), 2);
+        
+        let invalid_role = Role::now("invalid_role".to_string()).unwrap();
+        user.roles = vec![role1.clone(), invalid_role];
+
+        let result = c.user_repository.save(&user).await;
+        assert!(result.is_err());
+        
+        let user_after_failed_update = c.user_repository.get_by_id(&user.id).await.unwrap();
+        assert_eq!(user_after_failed_update.roles.len(), 2);
+        
+        let mut role_names: Vec<String> = user_after_failed_update
+            .roles
+            .iter()
+            .map(|r| r.name.clone())
+            .collect();
+        role_names.sort();
+        
+        assert_eq!(role_names, vec!["role1", "role2"]);
+
+        assert_eq!(user_after_failed_update.email, "test@test.com");
+        assert_eq!(user_after_failed_update.first_name, Some("Test".to_string()));
+        assert_eq!(user_after_failed_update.last_name, Some("User".to_string()));
     })
     .await;
 }

@@ -10,7 +10,7 @@ use axum::Json;
 use uuid::Uuid;
 
 #[utoipa::path(get, path = "/v1/restricted/sessions",
-    tag="admin",
+    tag="sessions-management",
     params(
         ("page" = Option<i32>, Query, description = "Page number default 1"),
         ("limit" = Option<i32>, Query, description = "Number of items per page default 10"),
@@ -50,7 +50,7 @@ pub async fn list_sessions(
 }
 
 #[utoipa::path(get, path = "/v1/restricted/sessions/{id}",
-    tag="admin",
+    tag="sessions-management",
     params(
         ("id" = String, Path, description = "Session ID")
     ),
@@ -72,7 +72,7 @@ pub async fn get_session(
 }
 
 #[utoipa::path(delete, path = "/v1/restricted/sessions/{id}",
-    tag="admin",
+    tag="sessions-management",
     params(
         ("id" = String, Path, description = "Session ID")
     ),
@@ -116,7 +116,7 @@ pub async fn delete_session(
 }
 
 #[utoipa::path(delete, path = "/v1/restricted/users/{user_id}/sessions",
-    tag="admin",
+    tag="sessions-management",
     params(
         ("user_id" = String, Path, description = "User ID")
     ),

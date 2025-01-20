@@ -364,3 +364,30 @@ fn it_cannot_add_same_roles_multiple_times() {
     assert_eq!(user.roles[0].name, String::from("SUPER_ADMIN"));
     assert!(user.has_role(String::from("SUPER_ADMIN")));
 }
+
+#[test]
+fn it_can_remove_roles() {
+    let mut user = User::now_with_email_and_password(
+        String::from("test@test.com"),
+        String::from("Iknow#othing1"),
+        Some(String::from("Jon")),
+        Some(String::from("Snow")),
+        Some(true),
+    )
+    .unwrap();
+    
+    let role1 = Role::now(String::from("ROLE_1")).unwrap();
+    let role2 = Role::now(String::from("ROLE_2")).unwrap();
+    
+    user.add_roles(vec![role1.clone(), role2.clone()]);
+    assert_eq!(user.roles.len(), 2);
+    
+    user.remove_role(&role1);
+    assert_eq!(user.roles.len(), 1);
+    assert!(!user.has_role(String::from("ROLE_1")));
+    assert!(user.has_role(String::from("ROLE_2")));
+
+    user.remove_roles(&[role2]);
+    assert_eq!(user.roles.len(), 0);
+    assert!(!user.has_role(String::from("ROLE_2")));
+}

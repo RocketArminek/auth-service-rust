@@ -29,7 +29,6 @@ pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
 ) -> Arc<dyn MessagePublisher<T>> {
     match publisher_config {
         MessagePublisherConfiguration::Rabbitmq(config) => {
-            tracing::info!("Event driven is turned on");
             create_rabbitmq_message_publisher(config).await
         }
         MessagePublisherConfiguration::None => {

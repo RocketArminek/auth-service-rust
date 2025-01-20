@@ -98,5 +98,7 @@ pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'sta
     .await
     .expect("Failed to create message publisher");
 
+    tracing::info!("Rabbitmq message publisher connected");
+
     Arc::new(message_publisher)
 }

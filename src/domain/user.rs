@@ -117,6 +117,16 @@ impl User {
         Ok(())
     }
 
+    pub fn remove_role(&mut self, role: &Role) {
+        self.roles.retain(|r| r.id != role.id);
+    }
+
+    pub fn remove_roles(&mut self, roles: &[Role]) {
+        for role in roles {
+            self.remove_role(role);
+        }
+    }
+
     fn validate_password(password: &str) -> Result<(), UserError> {
         let password_digit_check = regex!(r#"\d"#);
         let password_special_character_check = regex!(r#"[@$!%*#?&]"#);

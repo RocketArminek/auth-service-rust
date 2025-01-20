@@ -99,7 +99,7 @@ impl Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Configuration::load(|mut app, mut db, mut publisher| {
-            from_filename("../../../.env.local").or(dotenv()).ok();
+            from_filename(".env.local").or(dotenv()).ok();
 
             (
                 app.load_env().build(),

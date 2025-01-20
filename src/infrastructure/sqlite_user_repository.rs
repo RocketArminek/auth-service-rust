@@ -120,6 +120,11 @@ impl UserRepository for SqliteUserRepository {
             }
         }
 
+        sqlx::query("DELETE FROM user_roles WHERE user_id = ?")
+            .bind(&user.id)
+            .execute(&mut *tx)
+            .await?;
+
         if !user.roles.is_empty() {
             let placeholders = "?,".repeat(user.roles.len());
             let query = format!(
@@ -140,11 +145,6 @@ impl UserRepository for SqliteUserRepository {
                     "One or more roles not found".to_string(),
                 ));
             }
-
-            sqlx::query("DELETE FROM user_roles WHERE user_id = ?")
-                .bind(&user.id)
-                .execute(&mut *tx)
-                .await?;
 
             for role in &user.roles {
                 sqlx::query(
