@@ -38,7 +38,7 @@ COPY --from=dist /app/target/release/app /usr/local/bin
 RUN chown appuser /usr/local/bin/app
 
 USER appuser
-WORKDIR app
+WORKDIR /app
 
 ENTRYPOINT ["app"]
 EXPOSE 8080/tcp

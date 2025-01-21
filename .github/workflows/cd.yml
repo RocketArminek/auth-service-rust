@@ -13,6 +13,10 @@ on:
     branches:
       - "main"
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: rocketarminek/auth-api-rust
