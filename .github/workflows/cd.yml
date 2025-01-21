@@ -80,6 +80,10 @@ jobs:
         strategy:
           - "stateful"
           - "stateless"
+        hashing_scheme:
+          - "bcrypt_low"
+          - "bcrypt"
+          - "argon2"
         rabbitmq:
           - version: "4"
           - version: "3"
@@ -115,7 +119,7 @@ jobs:
       RABBITMQ_EXCHANGE_DURABLE: false
       RABBITMQ_EXCHANGE_NAME: nebula.auth.test
       SECRET: secret
-      PASSWORD_HASHING_SCHEME: bcrypt_low
+      PASSWORD_HASHING_SCHEME: ${{ matrix.hashing_scheme }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
