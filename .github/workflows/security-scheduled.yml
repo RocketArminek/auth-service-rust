@@ -2,8 +2,8 @@ name: Security Scan Monthly
 
 on:
   workflow_dispatch: ~
-  schedule:
-    - cron: '0 10 1 * *'
+#  schedule:
+#    - cron: '0 10 1 * *'
 
 jobs:
 #  security-audit:
