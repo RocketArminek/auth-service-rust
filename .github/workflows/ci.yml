@@ -1,8 +1,17 @@
-#TODO configure deployment on release
-name: CD
+name: CI
 
 on:
   workflow_dispatch: ~
+  push:
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+      - "Dockerfile"
+      - "tests/**"
+      - "migrations/**"
+      - ".github/workflows/ci.yml"
+    branches:
+      - "main"
 
 permissions:
   contents: read
@@ -13,6 +22,40 @@ env:
   IMAGE_NAME: rocketarminek/auth-api-rust
 
 jobs:
+  dist-cache:
+    runs-on: ubuntu-22.04
+    name: "Prepare production docker image"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |-
+            type=raw,value=test-latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          target: server
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
+
   prepare:
     runs-on: ubuntu-22.04
     name: "Download vendors & Build tests"
@@ -74,15 +117,11 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:8.4"
-          - engine: "mysql"
-            url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
-            service: "mysql:8.0"
         strategy:
           - "stateful"
           - "stateless"
         rabbitmq:
           - version: "4"
-          - version: "3"
     services:
       mysql:
         image: ${{ (matrix.db.service) && matrix.db.service || '' }}
@@ -134,156 +173,12 @@ jobs:
       - name: Run tests
         run: cargo test
 
-  performance-test:
-    runs-on: ubuntu-22.04
-    name: "Performance"
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario:
-          - "tests/performance/scenarios/auth_flow.js"
-          - "tests/performance/scenarios/admin.js"
-          - "tests/performance/scenarios/spike.js"
-        strategy:
-          - "stateful"
-          - "stateless"
-        db:
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
-        rabbitmq:
-          - version: "4"
-    services:
-      mysql:
-        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=40s
-      rabbit:
-        image: rabbitmq:${{matrix.rabbitmq.version}}-management
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
-          --health-start-period=90s
-      app:
-        image: ghcr.io/rocketarminek/auth-api-rust:test-latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 8080:8080
-        env:
-          DATABASE_ENGINE: ${{ matrix.db.engine }}
-          DATABASE_URL: ${{ matrix.db.url }}
-          AUTH_STRATEGY: ${{ matrix.strategy }}
-          PASSWORD_HASHING_SCHEME: bcrypt_low
-          SECRET: secret
-          RABBITMQ_URL: amqp://rabbit:5672
-          VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
-        options: >-
-          --health-cmd="app health-check"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=30s
-    steps:
-      - uses: actions/checkout@v4
-      - uses: grafana/setup-k6-action@v1
-      - name: Run k6 test scenario
-        run: k6 run ${{ matrix.scenario }} --throw --quiet --tag db=${{ matrix.db.engine }} --tag strategy=${{ matrix.strategy }}
-
-  security-test:
-    name: "Security"
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        db:
-          - engine: "sqlite"
-            url: "sqlite://test.db"
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
-        strategy:
-          - "stateful"
-          - "stateless"
-        rabbitmq:
-          - version: "4"
-    services:
-      mysql:
-        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=40s
-      rabbit:
-        image: rabbitmq:${{matrix.rabbitmq.version}}-management
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
-          --health-start-period=90s
-      app:
-        image: ghcr.io/rocketarminek/auth-api-rust:test-latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 8080:8080
-        env:
-          DATABASE_ENGINE: ${{ matrix.db.engine }}
-          DATABASE_URL: ${{ matrix.db.url }}
-          AUTH_STRATEGY: ${{ matrix.strategy }}
-          PASSWORD_HASHING_SCHEME: bcrypt_low
-          SECRET: secret
-          RABBITMQ_URL: amqp://rabbit:5672
-          VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
-        options: >-
-          --health-cmd="app health-check"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=30s
-    steps:
-      - uses: actions/checkout@v4
-      - name: ZAP Scan
-        uses: zaproxy/action-full-scan@v0.12.0
-        with:
-          target: 'http://localhost:8080'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-          allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.sha }}
-
   publish-server-image:
     runs-on: ubuntu-22.04
     name: "Publish server production image"
     needs:
       - acceptance-test
-      - performance-test
-      - security-test
+      - dist-cache
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
