@@ -101,7 +101,6 @@ async fn it_verifies_user_account() {
             }))
             .await;
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         let response = c
             .server
             .post("/v1/login")
