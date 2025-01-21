@@ -39,6 +39,8 @@ export function setup() {
         'user created successfully': (r) => r.status === 201,
     });
 
+    sleep(1);
+
     return { email, password };
 }
 
