@@ -38,14 +38,14 @@ impl DatabasePool {
 
     fn handle_migration_result(&self, r: Result<(), MigrateError>) {
         match r {
-            Ok(_) => {
-                match self {
-                    DatabasePool::MySql(_) =>
-                        tracing::info!("Mysql database migration completed successfully"),
-                    DatabasePool::Sqlite(_) =>
-                        tracing::info!("Sqlite database migration completed successfully"),
+            Ok(_) => match self {
+                DatabasePool::MySql(_) => {
+                    tracing::info!("Mysql database migration completed successfully")
                 }
-            }
+                DatabasePool::Sqlite(_) => {
+                    tracing::info!("Sqlite database migration completed successfully")
+                }
+            },
             Err(e) => {
                 tracing::error!("Failed to migrate database: {}", e);
                 panic!("Failed to migrate database");

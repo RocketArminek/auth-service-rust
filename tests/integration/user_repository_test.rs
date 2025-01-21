@@ -198,7 +198,7 @@ async fn it_can_handle_multiple_roles_removal() {
             Some(String::from("Snow")),
             Some(true),
         )
-            .unwrap();
+        .unwrap();
 
         c.role_repository.save(&role1).await.unwrap();
         c.role_repository.save(&role2).await.unwrap();
@@ -216,7 +216,7 @@ async fn it_can_handle_multiple_roles_removal() {
 
         assert_eq!(saved_user.roles.len(), 0);
     })
-        .await;
+    .await;
 }
 
 #[tokio::test]
@@ -306,27 +306,30 @@ async fn it_handles_role_updates_atomically() {
 
         let saved_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(saved_user.roles.len(), 2);
-        
+
         let invalid_role = Role::now("invalid_role".to_string()).unwrap();
         user.roles = vec![role1.clone(), invalid_role];
 
         let result = c.user_repository.save(&user).await;
         assert!(result.is_err());
-        
+
         let user_after_failed_update = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert_eq!(user_after_failed_update.roles.len(), 2);
-        
+
         let mut role_names: Vec<String> = user_after_failed_update
             .roles
             .iter()
             .map(|r| r.name.clone())
             .collect();
         role_names.sort();
-        
+
         assert_eq!(role_names, vec!["role1", "role2"]);
 
         assert_eq!(user_after_failed_update.email, "test@test.com");
-        assert_eq!(user_after_failed_update.first_name, Some("Test".to_string()));
+        assert_eq!(
+            user_after_failed_update.first_name,
+            Some("Test".to_string())
+        );
         assert_eq!(user_after_failed_update.last_name, Some("User".to_string()));
     })
     .await;

@@ -1,5 +1,6 @@
 use crate::application::service::auth_service::{AuthError, AuthService, TokenPair};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
+use crate::domain::error::UserError;
 use crate::domain::jwt::{TokenType, UserDTO};
 use crate::domain::repository::{SessionRepository, UserRepository};
 use crate::domain::session::Session;
@@ -72,7 +73,7 @@ impl AuthService for StatefulAuthService {
         email: String,
         password: String,
     ) -> Result<(TokenPair, UserDTO), AuthError> {
-        let user = self
+        let mut user = self
             .user_repository
             .get_by_email(&email)
             .await
@@ -87,19 +88,20 @@ impl AuthService for StatefulAuthService {
 
         if SchemeAwareHasher::with_scheme(self.hashing_scheme).is_password_outdated(&user.password)
         {
-            let mut outdated_user = user.clone();
-            let scheme = self.hashing_scheme;
-            let user_repository = self.user_repository.clone();
-            tokio::task::spawn(async move {
-                let new_password = SchemeAwareHasher::with_scheme(scheme)
-                    .hash_password(&password)
-                    .unwrap_or(outdated_user.password.clone());
-                outdated_user.set_password(new_password);
-                match user_repository.save(&outdated_user).await {
-                    Ok(_) => tracing::debug!("Password updated for user {}", outdated_user.id),
-                    Err(e) => tracing::error!("Could not update password hash {:?}", e),
+            let new_password =
+                SchemeAwareHasher::with_scheme(self.hashing_scheme).hash_password(&password);
+            match new_password {
+                Ok(new_password) => {
+                    user.set_password(new_password);
+                    match self.user_repository.save(&user).await {
+                        Ok(_) => {
+                            tracing::debug!("Password updated for {}({})", &user.email, &user.id)
+                        }
+                        Err(e) => tracing::error!("Could not update password hash {:?}", e),
+                    }
                 }
-            });
+                Err(e) => tracing::error!("Could not update password hash {:?}", e),
+            }
         }
 
         let session = self

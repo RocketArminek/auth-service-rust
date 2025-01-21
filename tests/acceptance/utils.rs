@@ -13,7 +13,12 @@ pub async fn i_am_logged_in_as_user(c: &AcceptanceTestContext) -> (User, String)
     create_and_login(c, "user@test.com", "User#pass1", None).await
 }
 
-async fn create_and_login(c: &AcceptanceTestContext, email: &str, password: &str, role: Option<&str>) -> (User, String) {
+async fn create_and_login(
+    c: &AcceptanceTestContext,
+    email: &str,
+    password: &str,
+    role: Option<&str>,
+) -> (User, String) {
     let role = role.map(|r| Role::now(r.to_string()).unwrap());
 
     let mut user = User::now_with_email_and_password(
@@ -22,7 +27,8 @@ async fn create_and_login(c: &AcceptanceTestContext, email: &str, password: &str
         Some(String::from("User")),
         Some(String::from("Regular")),
         Some(true),
-    ).unwrap();
+    )
+    .unwrap();
     user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
     match role {

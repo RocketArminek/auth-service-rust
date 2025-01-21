@@ -375,13 +375,13 @@ fn it_can_remove_roles() {
         Some(true),
     )
     .unwrap();
-    
+
     let role1 = Role::now(String::from("ROLE_1")).unwrap();
     let role2 = Role::now(String::from("ROLE_2")).unwrap();
-    
+
     user.add_roles(vec![role1.clone(), role2.clone()]);
     assert_eq!(user.roles.len(), 2);
-    
+
     user.remove_role(&role1);
     assert_eq!(user.roles.len(), 1);
     assert!(!user.has_role(String::from("ROLE_1")));

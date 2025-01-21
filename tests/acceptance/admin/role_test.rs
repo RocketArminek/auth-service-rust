@@ -2,12 +2,12 @@ use crate::acceptance::utils;
 use crate::utils::runners::run_integration_test_with_default;
 use auth_service::api::dto::{CreatedResponse, LoginResponse, RoleListResponse, RoleResponse};
 use auth_service::domain::crypto::SchemeAwareHasher;
+use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use serde_json::json;
 use uuid::Uuid;
-use auth_service::domain::event::UserEvents;
 
 #[tokio::test]
 async fn it_can_create_role() {
@@ -270,7 +270,7 @@ async fn it_can_remove_role_from_user() {
             None,
             Some(true),
         )
-            .unwrap();
+        .unwrap();
 
         let role = Role::now("TEST_ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -306,5 +306,5 @@ async fn it_can_remove_role_from_user() {
             _ => panic!("Should have received role assigned event!"),
         }
     })
-        .await;
+    .await;
 }

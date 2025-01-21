@@ -1,6 +1,6 @@
 use crate::api::dto::{
-    CreateUserRequest, CreatedResponse, MessageResponse, Pagination,
-    UpdateUserRequest, UserListResponse,
+    CreateUserRequest, CreatedResponse, MessageResponse, Pagination, UpdateUserRequest,
+    UserListResponse,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
@@ -58,7 +58,6 @@ pub async fn create_restricted_user(
             .into_response();
     }
     let existing_role = existing_role.unwrap();
-
     let user = User::now_with_email_and_password(email, password, None, None, Some(true));
 
     match user {
@@ -66,32 +65,29 @@ pub async fn create_restricted_user(
             let id = user.id.clone();
             let hashing_scheme = state.config.password_hashing_scheme().clone();
 
-            tokio::task::spawn(async move {
-                if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme))
-                {
-                    tracing::error!("Failed to hash user's password: {:?}", e);
+            if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme)) {
+                tracing::error!("Failed to hash user's password: {:?}", e);
 
-                    return;
-                }
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
 
-                user.add_roles(vec![existing_role.clone()]);
-                match state.user_repository.save(&user).await {
-                    Ok(_) => {
-                        tracing::debug!("User created: {}", user.email);
-                        let result = state
-                            .message_publisher
-                            .publish(&UserEvents::Created {
-                                user: UserDTO::from(user),
-                            })
-                            .await;
+            user.add_roles(vec![existing_role.clone()]);
+            match state.user_repository.save(&user).await {
+                Ok(_) => {
+                    tracing::debug!("User created: {}", user.email);
+                    let result = state
+                        .message_publisher
+                        .publish(&UserEvents::Created {
+                            user: UserDTO::from(user),
+                        })
+                        .await;
 
-                        if result.is_err() {
-                            tracing::error!("Error publishing user created event: {:?}", result);
-                        }
+                    if result.is_err() {
+                        tracing::error!("Error publishing user created event: {:?}", result);
                     }
-                    Err(error) => tracing::error!("Failed to create user {:?}", error),
                 }
-            });
+                Err(error) => tracing::error!("Failed to create user {:?}", error),
+            }
 
             (
                 StatusCode::CREATED,

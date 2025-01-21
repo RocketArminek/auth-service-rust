@@ -76,74 +76,76 @@ pub async fn register(
         Ok(mut user) => {
             let id = user.id.clone();
 
-            tokio::task::spawn(async move {
-                if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(
-                    state.config.password_hashing_scheme(),
-                )) {
-                    tracing::error!("Failed to hash user's password: {:?}", e);
+            if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(
+                state.config.password_hashing_scheme(),
+            )) {
+                tracing::error!("Failed to hash user's password: {:?}", e);
 
-                    return;
-                }
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
 
-                user.add_roles(vec![existing_role.clone()]);
-                match state.user_repository.save(&user).await {
-                    Ok(_) => {
-                        tracing::debug!("User created: {}", &user.email);
-                        let user_dto = UserDTO::from(user);
-                        let user_created = UserEvents::Created {
-                            user: user_dto.clone(),
-                        };
-                        let mut events = vec![&user_created];
+            user.add_roles(vec![existing_role.clone()]);
+            match state.user_repository.save(&user).await {
+                Ok(_) => {
+                    tracing::debug!("User created: {}", &user.email);
+                    let user_dto = UserDTO::from(user);
+                    let user_created = UserEvents::Created {
+                        user: user_dto.clone(),
+                    };
+                    let mut events = vec![&user_created];
 
-                        if !user_dto.is_verified {
-                            let now = Utc::now();
-                            let vr_duration =
-                                Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
-                                    .unwrap_or_default();
-                            let vr_exp = now.add(vr_duration);
+                    if !user_dto.is_verified {
+                        let now = Utc::now();
+                        let vr_duration =
+                            Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
+                                .unwrap_or_default();
+                        let vr_exp = now.add(vr_duration);
 
-                            let vr_body = Claims::new(
-                                vr_exp.timestamp() as usize,
-                                user_dto.clone(),
-                                TokenType::Verification,
-                                None,
-                            );
+                        let vr_body = Claims::new(
+                            vr_exp.timestamp() as usize,
+                            user_dto.clone(),
+                            TokenType::Verification,
+                            None,
+                        );
 
-                            let token = encode(
-                                &Header::default(),
-                                &vr_body,
-                                &EncodingKey::from_secret(state.get_secret().as_ref()),
-                            );
+                        let token = encode(
+                            &Header::default(),
+                            &vr_body,
+                            &EncodingKey::from_secret(state.get_secret().as_ref()),
+                        );
 
-                            if let Ok(token) = token {
-                                let verification_requested = UserEvents::VerificationRequested {
-                                    user: user_dto,
-                                    token: token.clone(),
-                                };
+                        if let Ok(token) = token {
+                            let verification_requested = UserEvents::VerificationRequested {
+                                user: user_dto,
+                                token: token.clone(),
+                            };
 
-                                tracing::debug!("User verification requested. Token {}", token);
+                            tracing::debug!("User verification requested. Token {}", token);
 
-                                events.push(&verification_requested);
+                            events.push(&verification_requested);
 
-                                let result = state.message_publisher.publish_all(events).await;
+                            let result = state.message_publisher.publish_all(events).await;
 
-                                if result.is_err() {
-                                    tracing::error!("Error publishing user events: {:?}", result);
-                                }
-
-                                return;
+                            if result.is_err() {
+                                tracing::error!("Error publishing user events: {:?}", result);
                             }
-                        }
 
-                        let result = state.message_publisher.publish_all(events).await;
-
-                        if result.is_err() {
-                            tracing::error!("Error publishing user events: {:?}", result);
+                            return (
+                                StatusCode::CREATED,
+                                Json(CreatedResponse { id: id.to_string() }),
+                            )
+                                .into_response();
                         }
                     }
-                    Err(error) => tracing::error!("Failed to create user {:?}", error),
+
+                    let result = state.message_publisher.publish_all(events).await;
+
+                    if result.is_err() {
+                        tracing::error!("Error publishing user events: {:?}", result);
+                    }
                 }
-            });
+                Err(error) => tracing::error!("Failed to create user {:?}", error),
+            }
 
             (
                 StatusCode::CREATED,

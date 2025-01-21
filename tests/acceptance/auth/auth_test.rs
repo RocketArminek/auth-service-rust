@@ -232,7 +232,7 @@ async fn it_auto_updates_password_scheme() {
 
             assert_eq!(response.status_code(), StatusCode::OK);
 
-            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            // tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
             let found_user = c.user_repository.get_by_id(&user.id).await.unwrap();
             let parts: Vec<&str> = found_user.password.splitn(2, '.').collect();
             let scheme = HashingScheme::from_string(parts[0].to_string()).unwrap();

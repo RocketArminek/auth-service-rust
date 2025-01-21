@@ -1,13 +1,16 @@
-use crate::api::dto::{AssignRoleRequest, CreateRoleRequest, CreatedResponse, MessageResponse, Pagination, RemoveRoleRequest, RoleListResponse, RoleResponse};
+use crate::api::dto::{
+    AssignRoleRequest, CreateRoleRequest, CreatedResponse, MessageResponse, Pagination,
+    RemoveRoleRequest, RoleListResponse, RoleResponse,
+};
 use crate::api::server_state::ServerState;
+use crate::domain::event::UserEvents;
+use crate::domain::jwt::UserDTO;
 use crate::domain::role::Role;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use uuid::Uuid;
-use crate::domain::event::UserEvents;
-use crate::domain::jwt::UserDTO;
 
 #[utoipa::path(post, path = "/v1/restricted/roles",
     tag="roles-management",

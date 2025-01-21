@@ -1,12 +1,12 @@
+use crate::acceptance::utils;
 use crate::utils::runners::run_integration_test_with_default;
-use auth_service::api::dto::{UserListResponse};
+use auth_service::api::dto::UserListResponse;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
-use auth_service::domain::user::{User};
+use auth_service::domain::user::User;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use serde_json::json;
 use uuid::Uuid;
-use crate::acceptance::utils;
 
 #[tokio::test]
 async fn it_creates_restricted_user() {

@@ -64,7 +64,10 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/roles/{id}",
                     get(get_role).delete(delete_role),
                 )
-                .route("/v1/restricted/users/{id}/roles", patch(assign_role_to_user).delete(remove_role_from_user))
+                .route(
+                    "/v1/restricted/users/{id}/roles",
+                    patch(assign_role_to_user).delete(remove_role_from_user),
+                )
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
