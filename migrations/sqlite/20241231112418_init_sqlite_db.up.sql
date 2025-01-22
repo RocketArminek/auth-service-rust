@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users
     first_name  TEXT,
     last_name   TEXT,
     avatar_path TEXT,
-    is_verified INTEGER DEFAULT 0
+    is_verified BOOLEAN DEFAULT FALSE
 );
 
 -- Create roles table

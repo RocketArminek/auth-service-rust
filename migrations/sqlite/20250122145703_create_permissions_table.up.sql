@@ -5,6 +5,7 @@ CREATE TABLE permissions
     name        TEXT NOT NULL,
     group_name  TEXT NOT NULL,
     description TEXT,
+    is_system   BOOLEAN NOT NULL DEFAULT FALSE,
     created_at  DATETIME NOT NULL,
     UNIQUE (name, group_name)
 );
