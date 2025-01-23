@@ -11,3 +11,9 @@ pub enum UserError {
 pub enum RoleError {
     Empty,
 }
+
+#[derive(Debug, PartialEq)]
+pub enum PermissionError {
+    EmptyName,
+    EmptyGroupName,
+}
