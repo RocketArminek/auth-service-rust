@@ -1,7 +1,4 @@
-use crate::api::dto::{
-    CreateUserRequest, CreatedResponse, MessageResponse, Pagination, UpdateUserRequest,
-    UserListResponse,
-};
+use crate::api::dto::{AssignRoleRequest, CreateUserRequest, CreatedResponse, MessageResponse, Pagination, RemoveRoleRequest, UpdateUserRequest, UserListResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
@@ -12,7 +9,7 @@ use crate::domain::user::{PasswordHandler, User};
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
+use axum::{Extension, Json};
 use uuid::Uuid;
 
 #[utoipa::path(post, path = "/v1/restricted/users",
@@ -314,5 +311,167 @@ pub async fn update_user(
             tracing::error!("Failed to update user");
             e.into_response()
         }
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/restricted/users/{id}/roles",
+    tag="roles-management",
+    request_body = AssignRoleRequest,
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Role assigned to user", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User or role not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn assign_role_to_user(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<AssignRoleRequest>,
+) -> impl IntoResponse {
+    let user = match state.user_repository.get_by_id(&id).await {
+        Ok(user) => user,
+        Err(e) => return e.into_response(),
+    };
+
+    let role = match state.role_repository.get_by_name(&request.role).await {
+        Ok(role) => role,
+        Err(e) => return e.into_response(),
+    };
+
+    let mut updated_user = user;
+    updated_user.add_role(role.clone());
+
+    match state.user_repository.save(&updated_user).await {
+        Ok(_) => {
+            let result = state
+                .message_publisher
+                .publish(&UserEvents::RoleAssigned {
+                    user: UserDTO::from(updated_user.clone()),
+                    role: role.name.clone(),
+                })
+                .await;
+
+            if let Err(e) = result {
+                tracing::error!("Failed to publish role assigned event: {:?}", e);
+            }
+
+            (
+                StatusCode::OK,
+                Json(MessageResponse {
+                    message: format!("Role {} assigned successfully", role.name),
+                }),
+            )
+                .into_response()
+        }
+        Err(e) => e.into_response(),
+    }
+}
+
+#[utoipa::path(delete, path = "/v1/restricted/users/{id}/roles",
+    tag="roles-management",
+    request_body = RemoveRoleRequest,
+    params(
+        ("id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Role removed from user", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User or role not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn remove_role_from_user(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<RemoveRoleRequest>,
+) -> impl IntoResponse {
+    let user = match state.user_repository.get_by_id(&id).await {
+        Ok(user) => user,
+        Err(e) => return e.into_response(),
+    };
+
+    let role = match state.role_repository.get_by_name(&request.role).await {
+        Ok(role) => role,
+        Err(e) => return e.into_response(),
+    };
+
+    let mut updated_user = user;
+    updated_user.remove_role(&role);
+
+    match state.user_repository.save(&updated_user).await {
+        Ok(_) => {
+            let result = state
+                .message_publisher
+                .publish(&UserEvents::RoleRemoved {
+                    user: UserDTO::from(updated_user.clone()),
+                    role: role.name.clone(),
+                })
+                .await;
+
+            if let Err(e) = result {
+                tracing::error!("Failed to publish role removed event: {:?}", e);
+            }
+
+            (
+                StatusCode::OK,
+                Json(MessageResponse {
+                    message: format!("Role {} removed successfully", role.name),
+                }),
+            )
+                .into_response()
+        }
+        Err(e) => e.into_response(),
+    }
+}
+
+#[utoipa::path(delete, path = "/v1/restricted/users/{user_id}/sessions",
+    tag="sessions-management",
+    params(
+        ("user_id" = String, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "All sessions deleted", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn delete_all_user_sessions(
+    State(state): State<ServerState>,
+    Extension(current_user): Extension<UserDTO>,
+    Path(user_id): Path<Uuid>,
+) -> impl IntoResponse {
+    if user_id == current_user.id {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(MessageResponse {
+                message: "Cannot delete your own sessions".to_string(),
+            }),
+        )
+            .into_response();
+    }
+
+    match state.user_repository.get_by_id(&user_id).await {
+        Ok(_) => {
+            match state
+                .session_repository
+                .delete_all_by_user_id(&user_id)
+                .await
+            {
+                Ok(_) => (
+                    StatusCode::OK,
+                    Json(MessageResponse {
+                        message: "All sessions deleted successfully".to_string(),
+                    }),
+                )
+                    .into_response(),
+                Err(e) => e.into_response(),
+            }
+        }
+        Err(e) => e.into_response(),
     }
 }
