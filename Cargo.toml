@@ -3,7 +3,7 @@ name = "auth-service"
 version = "0.10.9"
 edition = "2021"
 authors = ["Arkadiusz Krakowiak<arkadiusz.k.e@gmail.com>"]
-description = "A high-performance, event-driven authentication & authorization service written in Rust. This service provides robust user management and secure authentication flows."
+description = "A high-performance, event-driven authentication & authorization service. This service provides robust user management and secure authentication flows."
 license = "GPL-3"
 
 [[bin]]
