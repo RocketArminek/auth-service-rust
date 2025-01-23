@@ -1,5 +1,5 @@
 use crate::domain::repository::{
-    RepositoryError, RoleRepository, SessionRepository, UserRepository,
+    RepositoryError, RoleRepository, SessionRepository, UserRepository, PermissionRepository,
 };
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
@@ -8,6 +8,8 @@ use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use crate::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 use crate::infrastructure::sqlite_session_repository::SqliteSessionRepository;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
+use crate::infrastructure::mysql_permission_repository::MysqlPermissionRepository;
+use crate::infrastructure::sqlite_permission_repository::SqlitePermissionRepository;
 use sqlx::Error as SqlxError;
 use std::sync::Arc;
 
@@ -29,6 +31,13 @@ pub fn create_session_repository(pool: DatabasePool) -> Arc<dyn SessionRepositor
     match pool {
         DatabasePool::MySql(pool) => Arc::new(MysqlSessionRepository::new(pool)),
         DatabasePool::Sqlite(pool) => Arc::new(SqliteSessionRepository::new(pool)),
+    }
+}
+
+pub fn create_permission_repository(pool: DatabasePool) -> Arc<dyn PermissionRepository> {
+    match pool {
+        DatabasePool::MySql(pool) => Arc::new(MysqlPermissionRepository::new(pool)),
+        DatabasePool::Sqlite(pool) => Arc::new(SqlitePermissionRepository::new(pool)),
     }
 }
 

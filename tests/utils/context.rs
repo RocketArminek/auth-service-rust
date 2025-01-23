@@ -1,7 +1,7 @@
 use crate::utils::cli::CommandFactory;
 use crate::utils::events::wait_for_event;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{RoleRepository, SessionRepository, UserRepository};
+use auth_service::domain::repository::{PermissionRepository, RoleRepository, SessionRepository, UserRepository};
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use lapin::Consumer;
@@ -35,6 +35,7 @@ pub struct DatabaseTestContext {
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
     pub session_repository: Arc<dyn SessionRepository>,
+    pub permission_repository: Arc<dyn PermissionRepository>,
 }
 
 impl DatabaseTestContext {
@@ -42,11 +43,13 @@ impl DatabaseTestContext {
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
         session_repository: Arc<dyn SessionRepository>,
+        permission_repository: Arc<dyn PermissionRepository>,
     ) -> DatabaseTestContext {
         DatabaseTestContext {
             user_repository,
             role_repository,
             session_repository,
+            permission_repository,
         }
     }
 }

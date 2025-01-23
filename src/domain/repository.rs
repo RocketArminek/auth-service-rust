@@ -6,6 +6,7 @@ use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
 use uuid::Uuid;
+use crate::domain::permission::Permission;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
@@ -37,6 +38,17 @@ pub trait SessionRepository: Send + Sync {
     async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
     async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError>;
     async fn delete_expired(&self) -> Result<(), RepositoryError>;
+}
+
+#[async_trait]
+pub trait PermissionRepository: Send + Sync {
+    async fn save(&self, permission: &Permission) -> Result<(), RepositoryError>;
+    async fn get_by_id(&self, id: &Uuid) -> Result<Permission, RepositoryError>;
+    async fn get_by_name(&self, name: &str, group_name: &str) -> Result<Permission, RepositoryError>;
+    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError>;
+    async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError>;
+    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
+    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
 }
 
 #[derive(Debug)]

@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
+use sqlx::FromRow;
 use uuid::Uuid;
 use crate::domain::error::PermissionError;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, FromRow)]
 pub struct Permission {
     pub id: Uuid,
     pub name: String,
