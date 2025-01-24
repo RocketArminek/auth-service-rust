@@ -221,4 +221,25 @@ impl RoleRepository for SqliteRoleRepository {
 
         Ok(permissions)
     }
+
+    async fn get_permissions_for_roles(&self, role_ids: &[Uuid]) -> Result<Vec<Permission>, RepositoryError> {
+        if role_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let query = format!(
+            "SELECT DISTINCT p.* FROM permissions p 
+             INNER JOIN role_permissions rp ON p.id = rp.permission_id 
+             WHERE rp.role_id IN ({})",
+            role_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",")
+        );
+
+        let mut q = sqlx::query_as::<_, Permission>(&query);
+        for role_id in role_ids {
+            q = q.bind(role_id);
+        }
+
+        let permissions = q.fetch_all(&self.pool).await?;
+        Ok(permissions)
+    }
 }

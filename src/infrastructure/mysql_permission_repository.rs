@@ -113,23 +113,33 @@ impl PermissionRepository for MysqlPermissionRepository {
         )
         .bind(id)
         .fetch_optional(&mut *tx)
-        .await?
-        .unwrap_or(false);
+        .await?;
 
-        if is_system {
-            tx.rollback().await?;
-            return Err(RepositoryError::Conflict(
-                "Cannot delete system permission".to_string(),
-            ));
+        match is_system {
+            None => {
+                tx.rollback().await?;
+                Err(RepositoryError::NotFound(format!(
+                    "Permission with id {} not found",
+                    id
+                )))
+            }
+            Some(is_system) => {
+                if is_system {
+                    tx.rollback().await?;
+                    return Err(RepositoryError::Conflict(
+                        "Cannot delete system permission".to_string(),
+                    ));
+                }
+
+                sqlx::query("DELETE FROM permissions WHERE id = ?")
+                    .bind(id)
+                    .execute(&mut *tx)
+                    .await?;
+
+                tx.commit().await?;
+                Ok(())
+            }
         }
-
-        sqlx::query("DELETE FROM permissions WHERE id = ?")
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
-
-        tx.commit().await?;
-        Ok(())
     }
 
     async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {

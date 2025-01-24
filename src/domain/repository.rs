@@ -29,6 +29,7 @@ pub trait RoleRepository: Send + Sync {
     async fn add_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
     async fn remove_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
     async fn get_permissions(&self, role_id: &Uuid) -> Result<Vec<Permission>, RepositoryError>;
+    async fn get_permissions_for_roles(&self, role_ids: &[Uuid]) -> Result<Vec<Permission>, RepositoryError>;
 }
 
 #[async_trait]

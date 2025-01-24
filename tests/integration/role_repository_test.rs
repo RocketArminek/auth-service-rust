@@ -164,3 +164,54 @@ async fn it_handles_invalid_permission_assignments() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_get_permissions_for_multiple_roles() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("ROLE_1".to_string()).unwrap();
+        let role2 = Role::now("ROLE_2".to_string()).unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+
+        let permission1 = Permission::now(
+            "permission1".to_string(),
+            "test_group".to_string(),
+            None,
+        ).unwrap();
+        let permission2 = Permission::now(
+            "permission2".to_string(),
+            "test_group".to_string(),
+            None,
+        ).unwrap();
+        let permission3 = Permission::now(
+            "permission3".to_string(),
+            "test_group".to_string(),
+            None,
+        ).unwrap();
+
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+        c.permission_repository.save(&permission3).await.unwrap();
+
+        c.role_repository.add_permission(&role1.id, &permission1.id).await.unwrap();
+        c.role_repository.add_permission(&role1.id, &permission2.id).await.unwrap();
+        c.role_repository.add_permission(&role2.id, &permission2.id).await.unwrap();
+        c.role_repository.add_permission(&role2.id, &permission3.id).await.unwrap();
+
+        let permissions = c.role_repository.get_permissions_for_roles(&[role1.id, role2.id]).await.unwrap();
+        
+        assert_eq!(permissions.len(), 3);
+        
+        let permission_names: Vec<String> = permissions.iter()
+            .map(|p| p.name.clone())
+            .collect();
+        
+        assert!(permission_names.contains(&"permission1".to_string()));
+        assert!(permission_names.contains(&"permission2".to_string()));
+        assert!(permission_names.contains(&"permission3".to_string()));
+
+        let empty_permissions = c.role_repository.get_permissions_for_roles(&[]).await.unwrap();
+        assert!(empty_permissions.is_empty());
+    })
+    .await;
+}

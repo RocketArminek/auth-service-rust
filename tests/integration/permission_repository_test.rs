@@ -198,3 +198,81 @@ async fn it_can_update_permission() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_mark_permission_as_system() {
+    run_database_test_with_default(|c| async move {
+        let permission = Permission::now(
+            "system_permission".to_string(),
+            "system".to_string(),
+            Some("A system permission".to_string()),
+        ).unwrap();
+        
+        c.permission_repository.save(&permission).await.unwrap();
+        c.permission_repository.mark_as_system(&permission.id).await.unwrap();
+
+        let result = c.permission_repository.delete(&permission.id).await;
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::Conflict(msg)) => {
+                assert_eq!(msg, "Cannot delete system permission");
+            }
+            _ => panic!("Expected Conflict error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_delete_permission() {
+    run_database_test_with_default(|c| async move {
+        let permission = Permission::now(
+            "deletable_permission".to_string(),
+            "test_group".to_string(),
+            None,
+        ).unwrap();
+        
+        c.permission_repository.save(&permission).await.unwrap();
+        c.permission_repository.delete(&permission.id).await.unwrap();
+
+        let result = c.permission_repository.get_by_id(&permission.id).await;
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_cannot_mark_nonexistent_permission_as_system() {
+    run_database_test_with_default(|c| async move {
+        let nonexistent_id = Uuid::new_v4();
+        let result = c.permission_repository.mark_as_system(&nonexistent_id).await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(msg)) => {
+                assert!(msg.contains("Permission with id"));
+            }
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_cannot_delete_nonexistent_permission() {
+    run_database_test_with_default(|c| async move {
+        let nonexistent_id = Uuid::new_v4();
+        let result = c.permission_repository.delete(&nonexistent_id).await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
