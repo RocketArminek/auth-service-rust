@@ -1,4 +1,3 @@
-// tests/performance/scenarios/spike_test.js
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
@@ -10,12 +9,12 @@ export let options = {
         projectID: 3737499,
     },
     stages: [
-        { duration: '1m', target: 10 },    // Baseline load
-        { duration: '30s', target: 100 },  // Spike to 100 users
-        { duration: '30s', target: 10 },   // Scale down to baseline
-        { duration: '1m', target: 100 },   // Stay at 100 users
-        { duration: '1m', target: 100 },   // Stay at 100 users
-        { duration: '1m', target: 10 },    // Verify baseline performance
+        { duration: '1m', target: 10 },
+        { duration: '30s', target: 100 },
+        { duration: '30s', target: 10 },
+        { duration: '1m', target: 100 },
+        { duration: '1m', target: 100 },
+        { duration: '1m', target: 10 },
     ],
     thresholds: {
         http_req_failed: ['rate==0.0'],
@@ -45,11 +44,9 @@ const ENDPOINTS = [
             password: 'Admin#123*',
         }),
     },
-    // Add more endpoints as needed
 ];
 
 export default function () {
-    // Randomly select an endpoint
     const endpoint = ENDPOINTS[Math.floor(Math.random() * ENDPOINTS.length)];
 
     const response = http.post(
@@ -60,7 +57,6 @@ export default function () {
         }
     );
 
-    // Check response and record metrics
     check(response, {
         'status is 200 or 201': (r) => [200, 201].includes(r.status),
     });

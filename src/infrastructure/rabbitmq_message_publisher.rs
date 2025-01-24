@@ -53,7 +53,7 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublishe
                 &payload,
                 BasicProperties::default()
                     .with_content_type("application/json".into())
-                    .with_delivery_mode(2), // persistent delivery
+                    .with_delivery_mode(2),
             )
             .await?
             .await?;

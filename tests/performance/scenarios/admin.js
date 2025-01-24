@@ -1,4 +1,3 @@
-// tests/performance/scenarios/admin_scenarios.js
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
@@ -25,7 +24,6 @@ export let options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 
 export function setup() {
-    // Create admin user and get credentials
     const email = 'admin@example.com';
     const password = 'Admin#123*';
 
@@ -46,7 +44,6 @@ export function setup() {
 export default function (data) {
     const accessToken = data.accessToken.value;
 
-    // List all users with pagination
     const getUsersResponse = http.get(`${BASE_URL}/v1/restricted/users?page=1&limit=10`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -57,7 +54,6 @@ export default function (data) {
         'get users successful': (r) => r.status === 200,
     });
 
-    // Create a new regular user
     const createUserResponse = http.post(
         `${BASE_URL}/v1/restricted/users`,
         JSON.stringify({
@@ -79,8 +75,6 @@ export default function (data) {
 
     if (createUserResponse.status === 201) {
         const userId = JSON.parse(createUserResponse.body).id;
-        sleep(0.5);
-        // Get created user details
         const getUserResponse = http.get(
             `${BASE_URL}/v1/restricted/users/${userId}`,
             {
@@ -94,7 +88,6 @@ export default function (data) {
             'get user successful': (r) => r.status === 200,
         });
 
-        // Update user details
         const updateUserResponse = http.put(
             `${BASE_URL}/v1/restricted/users/${userId}`,
             JSON.stringify({
@@ -114,7 +107,6 @@ export default function (data) {
             'update user successful': (r) => r.status === 200,
         });
 
-        // Delete user
         const deleteUserResponse = http.del(
             `${BASE_URL}/v1/restricted/users/${userId}`,
             null,

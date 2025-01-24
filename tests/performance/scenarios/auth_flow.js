@@ -39,8 +39,6 @@ export function setup() {
         'user created successfully': (r) => r.status === 201,
     });
 
-    sleep(1);
-
     return { email, password };
 }
 
@@ -60,7 +58,6 @@ export default function (data) {
         const body = JSON.parse(loginResponse.body);
         const accessToken = body.accessToken.value;
 
-        // Test authenticated endpoints
         const authenticateResponse = http.get(`${BASE_URL}/v1/authenticate`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -71,7 +68,6 @@ export default function (data) {
             'authentication successful': (r) => r.status === 200,
         });
 
-        // Update profile
         const updateResponse = http.put(`${BASE_URL}/v1/me`, JSON.stringify({
             firstName: 'Test',
             lastName: 'User',
@@ -102,5 +98,4 @@ export default function (data) {
 }
 
 export function teardown(data) {
-    // Cleanup test data if needed
 }

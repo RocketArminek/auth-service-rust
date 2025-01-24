@@ -1,6 +1,8 @@
 use crate::utils::runners::run_database_test_with_default;
 use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
+use auth_service::domain::permission::Permission;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn it_can_add_role() {
@@ -111,6 +113,53 @@ async fn it_can_mark_role_as_system() {
         assert!(result.is_err());
         if let Err(e) = result {
             assert!(e.to_string().contains("Cannot delete system role"));
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_manage_role_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        let permission = Permission::now(
+            "test_permission".to_string(),
+            "test_group".to_string(),
+            None,
+        ).unwrap();
+
+        c.role_repository.save(&role).await.unwrap();
+        c.permission_repository.save(&permission).await.unwrap();
+
+        c.role_repository.add_permission(&role.id, &permission.id).await.unwrap();
+
+        let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
+        assert_eq!(permissions.len(), 1);
+        assert_eq!(permissions[0].id, permission.id);
+
+        c.role_repository.remove_permission(&role.id, &permission.id).await.unwrap();
+
+        let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
+        assert_eq!(permissions.len(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_handles_invalid_permission_assignments() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let invalid_permission_id = Uuid::new_v4();
+        let result = c.role_repository.add_permission(&role.id, &invalid_permission_id).await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(msg)) => {
+                assert_eq!(msg, "Permission not found");
+            }
+            _ => panic!("Expected NotFound error"),
         }
     })
     .await;

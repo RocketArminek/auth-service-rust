@@ -26,6 +26,9 @@ pub trait RoleRepository: Send + Sync {
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
     async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
+    async fn add_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
+    async fn remove_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
+    async fn get_permissions(&self, role_id: &Uuid) -> Result<Vec<Permission>, RepositoryError>;
 }
 
 #[async_trait]

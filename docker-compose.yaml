@@ -11,7 +11,7 @@ services:
       target: server
     environment:
       DATABASE_URL: mysql://root:toor@mysql:3306/auth_service_dev
-      PASSWORD_HASHING_SCHEME: 'bcrypt_low'
+      PASSWORD_HASHING_SCHEME: 'argon2'
       SECRET: "secret"
       RABBITMQ_URL: amqp://rabbit:5672
       VERIFICATION_REQUIRED: true
