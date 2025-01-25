@@ -33,7 +33,7 @@ pub async fn create_restricted_user(
     let role = request.role.clone();
 
     let existing = state.user_repository.get_by_email(&email).await;
-    if let Ok(_) = existing {
+    if existing.is_ok() {
         return (
             StatusCode::CONFLICT,
             Json(MessageResponse {
@@ -45,7 +45,7 @@ pub async fn create_restricted_user(
 
     let existing_role = state.role_repository.get_by_name(&role).await;
 
-    if let Err(_) = existing_role {
+    if existing_role.is_err() {
         return (
             StatusCode::BAD_REQUEST,
             Json(MessageResponse {
@@ -59,8 +59,8 @@ pub async fn create_restricted_user(
 
     match user {
         Ok(mut user) => {
-            let id = user.id.clone();
-            let hashing_scheme = state.config.password_hashing_scheme().clone();
+            let id = user.id;
+            let hashing_scheme = state.config.password_hashing_scheme();
 
             if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(hashing_scheme)) {
                 tracing::error!("Failed to hash user's password: {:?}", e);

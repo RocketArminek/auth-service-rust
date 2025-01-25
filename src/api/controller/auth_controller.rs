@@ -46,10 +46,10 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
     );
     headers.insert(
         "X-User-Roles",
-        HeaderValue::from_str(&user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
+        HeaderValue::from_str(user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
     );
 
-    (StatusCode::OK, headers, Json(UserDTO::from(user))).into_response()
+    (StatusCode::OK, headers, Json(user)).into_response()
 }
 
 #[utoipa::path(post, path = "/v1/refresh",

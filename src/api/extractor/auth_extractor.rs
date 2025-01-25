@@ -24,8 +24,8 @@ where
         match headers.get(header::AUTHORIZATION) {
             Some(value) => {
                 let value = value.to_str().unwrap_or("");
-                if value.starts_with("Bearer ") {
-                    Ok(BearerToken(value[7..].to_string()))
+                if let Some(token) = value.strip_prefix("Bearer ") {
+                    Ok(BearerToken(token.to_string()))
                 } else {
                     tracing::warn!("Invalid Authorization header: {}", value);
 
@@ -59,7 +59,7 @@ where
         let result = state.get_auth_service().authenticate(token).await;
 
         result
-            .map(|user| LoggedInUser(user))
+            .map(LoggedInUser)
             .map_err(|e| e.into_message_response())
     }
 }

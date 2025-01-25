@@ -24,7 +24,7 @@ pub async fn create_role(
     Json(request): Json<CreateRoleRequest>,
 ) -> impl IntoResponse {
     let existing = state.role_repository.get_by_name(&request.name).await;
-    if let Ok(_) = existing {
+    if existing.is_ok() {
         return (
             StatusCode::CONFLICT,
             Json(MessageResponse {

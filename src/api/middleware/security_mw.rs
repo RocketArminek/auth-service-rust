@@ -25,13 +25,11 @@ pub async fn restrict_methods(req: Request, next: Next) -> Response {
             next.run(req).await
         }
         Method::OPTIONS => {
-            let response = Response::builder()
+            Response::builder()
                 .status(StatusCode::OK)
                 .header("Allow", "GET, POST, PUT, PATCH")
                 .body(axum::body::Body::empty())
-                .unwrap();
-
-            response
+                .unwrap()
         }
         _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
     }

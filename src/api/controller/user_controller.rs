@@ -47,7 +47,7 @@ pub async fn register(
     }
 
     let existing = state.user_repository.get_by_email(&email).await;
-    if let Ok(_) = existing {
+    if existing.is_ok() {
         return (
             StatusCode::CONFLICT,
             Json(MessageResponse {
@@ -58,7 +58,7 @@ pub async fn register(
     }
 
     let existing_role = state.role_repository.get_by_name(&role).await;
-    if let Err(_) = existing_role {
+    if existing_role.is_err() {
         return (
             StatusCode::BAD_REQUEST,
             Json(MessageResponse {
@@ -74,7 +74,7 @@ pub async fn register(
 
     match user {
         Ok(mut user) => {
-            let id = user.id.clone();
+            let id = user.id;
 
             if let Err(e) = user.hash_password(&SchemeAwareHasher::with_scheme(
                 state.config.password_hashing_scheme(),

@@ -4,7 +4,6 @@ use crate::domain::crypto::HashingScheme;
 use lazy_regex::Regex;
 use std::collections::HashMap;
 use std::env;
-use std::env::VarError;
 use std::str::FromStr;
 use tracing::Level;
 
@@ -136,46 +135,44 @@ impl AppConfigurationBuilder {
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
         self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
-            .and_then(|v| Ok(HiddenString(v)))
+            .map(HiddenString)
             .ok();
         self.regular_role_name = env::var(EnvNames::REGULAR_ROLE_NAME).ok();
         self.restricted_role_name = env::var(EnvNames::RESTRICTED_ROLE_NAME).ok();
-        self.restricted_role_pattern = match &self.restricted_role_name {
-            None => None,
-            Some(name) => Some(Regex::new(format!("(?i)^{}.*", name).as_str()).unwrap()),
-        };
+        self.restricted_role_pattern = self.restricted_role_name.as_ref()
+            .map(|name| Regex::new(format!("(?i)^{}.*", name).as_str()).unwrap());
         self.password_hashing_scheme = env::var(EnvNames::PASSWORD_HASHING_SCHEME)
-            .and_then(|v| Ok(HashingScheme::from_string(v).unwrap()))
+            .map(|v| HashingScheme::from_string(v).unwrap())
             .ok();
 
         self.at_duration_in_seconds = env::var(EnvNames::AT_DURATION_IN_SECONDS)
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .map(|v| DurationInSeconds::try_from(v).unwrap())
             .ok();
         self.rt_duration_in_seconds = env::var(EnvNames::RT_DURATION_IN_SECONDS)
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .map(|v| DurationInSeconds::try_from(v).unwrap())
             .ok();
         self.verification_required = env::var(EnvNames::VERIFICATION_REQUIRED)
-            .and_then(|v| Ok(v.parse::<bool>().unwrap()))
+            .map(|v| v.parse::<bool>().unwrap())
             .ok();
         self.vr_duration_in_seconds = env::var(EnvNames::VR_DURATION_IN_SECONDS)
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .map(|v| DurationInSeconds::try_from(v).unwrap())
             .ok();
         self.rp_duration_in_seconds = env::var(EnvNames::RP_DURATION_IN_SECONDS)
-            .and_then(|v| Ok(DurationInSeconds::try_from(v).unwrap()))
+            .map(|v| DurationInSeconds::try_from(v).unwrap())
             .ok();
         self.cleanup_interval_in_minutes = env::var(EnvNames::CLEANUP_INTERVAL_IN_MINUTES)
-            .and_then(|v| v.parse::<u64>().map_err(|_| VarError::NotPresent))
+            .map(|v| v.parse::<u64>().unwrap())
             .ok();
         self.secret = env::var(EnvNames::SECRET)
-            .and_then(|v| Ok(HiddenString(v)))
+            .map(HiddenString)
             .ok();
         self.port = env::var(EnvNames::PORT).ok();
         self.host = env::var(EnvNames::HOST).ok();
         self.log_level = env::var(EnvNames::LOG_LEVEL)
-            .and_then(|v| Level::from_str(v.as_str()).map_err(|_| VarError::NotPresent))
+            .map(|v| Level::from_str(v.as_str()).unwrap())
             .ok();
         self.auth_strategy = env::var(EnvNames::AUTH_STRATEGY)
-            .and_then(|v| AuthStrategy::try_from(v).map_err(|_| VarError::NotPresent))
+            .map(|v| AuthStrategy::try_from(v).unwrap())
             .ok();
 
         self
@@ -197,7 +194,6 @@ impl AppConfigurationBuilder {
                 .clone()
                 .unwrap_or(Regex::new(format!("(?i)^{}.*", "ADMIN").as_str()).unwrap()),
             self.password_hashing_scheme
-                .clone()
                 .unwrap_or(HashingScheme::BcryptLow),
             self.at_duration_in_seconds
                 .clone()
@@ -216,9 +212,15 @@ impl AppConfigurationBuilder {
             self.secret.clone().unwrap_or("secret".to_string().into()),
             self.port.clone().unwrap_or("8080".to_string()),
             self.host.clone().unwrap_or("0.0.0.0".to_string()),
-            self.log_level.clone().unwrap_or(Level::INFO),
+            self.log_level.unwrap_or(Level::INFO),
             self.auth_strategy.clone().unwrap_or_default(),
         )
+    }
+}
+
+impl Default for AppConfigurationBuilder {
+    fn default() -> Self {
+        AppConfigurationBuilder::new()
     }
 }
 
