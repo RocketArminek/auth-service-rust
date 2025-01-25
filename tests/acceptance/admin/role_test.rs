@@ -8,6 +8,7 @@ use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use serde_json::json;
 use uuid::Uuid;
+use auth_service::domain::permission::Permission;
 
 #[tokio::test]
 async fn it_can_create_role() {
@@ -305,6 +306,62 @@ async fn it_can_remove_role_from_user() {
             }
             _ => panic!("Should have received role assigned event!"),
         }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_manage_role_permissions() {
+    run_integration_test_with_default(|c| async move {
+        let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
+
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let permission = Permission::now(
+            "test_permission".to_string(),
+            "test_group".to_string(),
+            Some("Test permission".to_string()),
+        )
+        .unwrap();
+        c.permission_repository.save(&permission).await.unwrap();
+
+        let response = c
+            .server
+            .patch(&format!("/v1/restricted/roles/{}/permissions", role.id))
+            .json(&json!({
+                "permission_name": "test_permission",
+                "permission_group": "test_group"
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
+        assert_eq!(permissions.len(), 1);
+        assert_eq!(permissions[0].id, permission.id);
+
+        let response = c
+            .server
+            .delete(&format!("/v1/restricted/roles/{}/permissions", role.id))
+            .json(&json!({
+                "permission_name": "test_permission",
+                "permission_group": "test_group"
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
+        assert_eq!(permissions.len(), 0);
     })
     .await;
 }

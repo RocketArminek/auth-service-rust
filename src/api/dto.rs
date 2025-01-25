@@ -144,3 +144,15 @@ pub struct PermissionResponse {
 pub struct PermissionListResponse {
     pub permissions: Vec<PermissionResponse>,
 }
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AssignPermissionRequest {
+    pub permission_name: String,
+    pub permission_group: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RemovePermissionRequest {
+    pub permission_name: String,
+    pub permission_group: String,
+}

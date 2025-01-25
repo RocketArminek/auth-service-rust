@@ -1,5 +1,6 @@
 use crate::api::dto::{
     CreateRoleRequest, CreatedResponse, MessageResponse, Pagination, RoleListResponse, RoleResponse,
+    AssignPermissionRequest, RemovePermissionRequest,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::role::Role;
@@ -131,6 +132,104 @@ pub async fn delete_role(
 ) -> impl IntoResponse {
     match state.role_repository.delete(&id).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => e.into_response(),
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/restricted/roles/{id}/permissions",
+    tag="roles-management",
+    request_body = AssignPermissionRequest,
+    params(
+        ("id" = String, Path, description = "Role ID")
+    ),
+    responses(
+        (status = 200, description = "Permission assigned to role", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "Role or permission not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn assign_permission_to_role(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<AssignPermissionRequest>,
+) -> impl IntoResponse {
+    let role = match state.role_repository.get_by_id(&id).await {
+        Ok(role) => role,
+        Err(e) => return e.into_response(),
+    };
+
+    let permission = match state
+        .permission_repository
+        .get_by_name(&request.permission_name, &request.permission_group)
+        .await
+    {
+        Ok(permission) => permission,
+        Err(e) => return e.into_response(),
+    };
+
+    match state.role_repository.add_permission(&role.id, &permission.id).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(MessageResponse {
+                message: format!(
+                    "Permission {}/{} assigned to role {}",
+                    permission.group_name, permission.name, role.name
+                ),
+            }),
+        )
+            .into_response(),
+        Err(e) => e.into_response(),
+    }
+}
+
+#[utoipa::path(delete, path = "/v1/restricted/roles/{id}/permissions",
+    tag="roles-management",
+    request_body = RemovePermissionRequest,
+    params(
+        ("id" = String, Path, description = "Role ID")
+    ),
+    responses(
+        (status = 200, description = "Permission removed from role", content_type = "application/json", body = MessageResponse),
+        (status = 404, description = "Role or permission not found", content_type = "application/json", body = MessageResponse),
+        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
+        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+    )
+)]
+pub async fn remove_permission_from_role(
+    State(state): State<ServerState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<RemovePermissionRequest>,
+) -> impl IntoResponse {
+    let role = match state.role_repository.get_by_id(&id).await {
+        Ok(role) => role,
+        Err(e) => return e.into_response(),
+    };
+
+    let permission = match state
+        .permission_repository
+        .get_by_name(&request.permission_name, &request.permission_group)
+        .await
+    {
+        Ok(permission) => permission,
+        Err(e) => return e.into_response(),
+    };
+
+    match state
+        .role_repository
+        .remove_permission(&role.id, &permission.id)
+        .await
+    {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(MessageResponse {
+                message: format!(
+                    "Permission {}/{} removed from role {}",
+                    permission.group_name, permission.name, role.name
+                ),
+            }),
+        )
+            .into_response(),
         Err(e) => e.into_response(),
     }
 }

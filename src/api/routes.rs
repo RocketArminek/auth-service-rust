@@ -51,14 +51,18 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/users/{id}",
                     get(get_user).delete(delete_user).put(update_user),
                 )
+                .route(
+                    "/v1/restricted/users/{user_id}/sessions",
+                    delete(delete_all_user_sessions),
+                )
+                .route(
+                    "/v1/restricted/users/{id}/roles",
+                    patch(assign_role_to_user).delete(remove_role_from_user),
+                )
                 .route("/v1/restricted/sessions", get(list_sessions))
                 .route(
                     "/v1/restricted/sessions/{id}",
                     get(get_session).delete(delete_session),
-                )
-                .route(
-                    "/v1/restricted/users/{user_id}/sessions",
-                    delete(delete_all_user_sessions),
                 )
                 .route("/v1/restricted/roles", get(list_roles).post(create_role))
                 .route(
@@ -66,8 +70,8 @@ pub fn routes(state: ServerState) -> Router {
                     get(get_role).delete(delete_role),
                 )
                 .route(
-                    "/v1/restricted/users/{id}/roles",
-                    patch(assign_role_to_user).delete(remove_role_from_user),
+                    "/v1/restricted/roles/{id}/permissions",
+                    patch(assign_permission_to_role).delete(remove_permission_from_role),
                 )
                 .route("/v1/restricted/permissions", get(list_permissions).post(create_permission))
                 .route(
@@ -136,6 +140,8 @@ pub async fn open_api_docs() {
         get_permission,
         create_permission,
         delete_permission,
+        assign_permission_to_role,
+        remove_permission_from_role,
     ),
     components(
         schemas(
@@ -162,6 +168,8 @@ pub async fn open_api_docs() {
             PermissionListResponse,
             PermissionResponse,
             CreatePermissionRequest,
+            AssignPermissionRequest,
+            RemovePermissionRequest,
         ),
     )
 )]
