@@ -1,6 +1,6 @@
 use crate::utils::runners::run_database_test_with_default;
-use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::permission::Permission;
+use auth_service::domain::repository::RepositoryError;
 use uuid::Uuid;
 
 #[tokio::test]
@@ -14,7 +14,11 @@ async fn it_can_add_permission() {
         .unwrap();
 
         c.permission_repository.save(&permission).await.unwrap();
-        let saved = c.permission_repository.get_by_id(&permission.id).await.unwrap();
+        let saved = c
+            .permission_repository
+            .get_by_id(&permission.id)
+            .await
+            .unwrap();
 
         assert_eq!(saved.name, permission.name);
         assert_eq!(saved.group_name, permission.group_name);
@@ -33,9 +37,13 @@ async fn it_can_get_permission_by_id() {
             Some("Allows deleting users".to_string()),
         )
         .unwrap();
-        
+
         c.permission_repository.save(&permission).await.unwrap();
-        let saved = c.permission_repository.get_by_id(&permission.id).await.unwrap();
+        let saved = c
+            .permission_repository
+            .get_by_id(&permission.id)
+            .await
+            .unwrap();
 
         assert_eq!(saved.id, permission.id);
         assert_eq!(saved.name, permission.name);
@@ -53,9 +61,10 @@ async fn it_can_get_permission_by_name_and_group() {
             Some("Allows editing users".to_string()),
         )
         .unwrap();
-        
+
         c.permission_repository.save(&permission).await.unwrap();
-        let saved = c.permission_repository
+        let saved = c
+            .permission_repository
             .get_by_name(&permission.name, &permission.group_name)
             .await
             .unwrap();
@@ -76,7 +85,7 @@ async fn it_can_get_all_permissions() {
             None,
         )
         .unwrap();
-        
+
         let permission2 = Permission::now(
             "delete_role".to_string(),
             "role_management".to_string(),
@@ -105,7 +114,7 @@ async fn it_enforces_unique_name_and_group_combination() {
             None,
         )
         .unwrap();
-        
+
         let permission2 = Permission::now(
             "manage_users".to_string(),
             "user_management".to_string(),
@@ -128,13 +137,10 @@ async fn it_enforces_unique_name_and_group_combination() {
 #[tokio::test]
 async fn it_can_paginate_permissions() {
     run_database_test_with_default(|c| async move {
-        for i in 1..= 5 {
-            let permission = Permission::now(
-                format!("permission_{}", i),
-                "test_group".to_string(),
-                None,
-            )
-            .unwrap();
+        for i in 1..=5 {
+            let permission =
+                Permission::now(format!("permission_{}", i), "test_group".to_string(), None)
+                    .unwrap();
             c.permission_repository.save(&permission).await.unwrap();
         }
 
@@ -166,7 +172,8 @@ async fn it_returns_not_found_for_nonexistent_permission() {
 #[tokio::test]
 async fn it_return_not_found_for_nonexistent_permission_by_name_and_group() {
     run_database_test_with_default(|c| async move {
-        let result = c.permission_repository
+        let result = c
+            .permission_repository
             .get_by_name("nonexistent", "nonexistent")
             .await;
 
@@ -186,13 +193,18 @@ async fn it_can_update_permission() {
             "update_user".to_string(),
             "user_management".to_string(),
             Some("Allows updating users".to_string()),
-        ).unwrap();
+        )
+        .unwrap();
         c.permission_repository.save(&permission).await.unwrap();
 
         permission.description = Some("Allows updating user information".to_string());
         c.permission_repository.save(&permission).await.unwrap();
 
-        let updated = c.permission_repository.get_by_id(&permission.id).await.unwrap();
+        let updated = c
+            .permission_repository
+            .get_by_id(&permission.id)
+            .await
+            .unwrap();
 
         assert_eq!(updated.description, permission.description);
     })
@@ -206,10 +218,14 @@ async fn it_can_mark_permission_as_system() {
             "system_permission".to_string(),
             "system".to_string(),
             Some("A system permission".to_string()),
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         c.permission_repository.save(&permission).await.unwrap();
-        c.permission_repository.mark_as_system(&permission.id).await.unwrap();
+        c.permission_repository
+            .mark_as_system(&permission.id)
+            .await
+            .unwrap();
 
         let result = c.permission_repository.delete(&permission.id).await;
         assert!(result.is_err());
@@ -230,10 +246,14 @@ async fn it_can_delete_permission() {
             "deletable_permission".to_string(),
             "test_group".to_string(),
             None,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         c.permission_repository.save(&permission).await.unwrap();
-        c.permission_repository.delete(&permission.id).await.unwrap();
+        c.permission_repository
+            .delete(&permission.id)
+            .await
+            .unwrap();
 
         let result = c.permission_repository.get_by_id(&permission.id).await;
         assert!(result.is_err());
@@ -249,7 +269,10 @@ async fn it_can_delete_permission() {
 async fn it_cannot_mark_nonexistent_permission_as_system() {
     run_database_test_with_default(|c| async move {
         let nonexistent_id = Uuid::new_v4();
-        let result = c.permission_repository.mark_as_system(&nonexistent_id).await;
+        let result = c
+            .permission_repository
+            .mark_as_system(&nonexistent_id)
+            .await;
 
         assert!(result.is_err());
         match result {

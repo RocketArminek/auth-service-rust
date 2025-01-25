@@ -1,5 +1,5 @@
 use auth_service::application::configuration::app::AppConfigurationBuilder;
-use auth_service::application::configuration::configuration::ConfigurationBuilder;
+use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::message_publisher::MessagePublisherConfigurationBuilder;
 

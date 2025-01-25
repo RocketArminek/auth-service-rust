@@ -6,6 +6,7 @@ use crate::domain::repository::{SessionRepository, UserRepository};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use std::fmt::Display;
 use std::ops::Add;
 use std::sync::Arc;
 
@@ -130,11 +131,11 @@ pub enum AuthStrategy {
     Stateful,
 }
 
-impl AuthStrategy {
-    pub fn to_string(&self) -> String {
+impl Display for AuthStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AuthStrategy::Stateless => "stateless".to_string(),
-            AuthStrategy::Stateful => "stateful".to_string(),
+            AuthStrategy::Stateless => write!(f, "stateless"),
+            AuthStrategy::Stateful => write!(f, "stateful"),
         }
     }
 }

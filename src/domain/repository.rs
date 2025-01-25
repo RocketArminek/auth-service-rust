@@ -1,3 +1,4 @@
+use crate::domain::permission::Permission;
 use crate::domain::role::Role;
 use crate::domain::session::Session;
 use crate::domain::user::User;
@@ -6,7 +7,6 @@ use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
 use uuid::Uuid;
-use crate::domain::permission::Permission;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
@@ -26,10 +26,21 @@ pub trait RoleRepository: Send + Sync {
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
     async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
-    async fn add_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
-    async fn remove_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError>;
+    async fn add_permission(
+        &self,
+        role_id: &Uuid,
+        permission_id: &Uuid,
+    ) -> Result<(), RepositoryError>;
+    async fn remove_permission(
+        &self,
+        role_id: &Uuid,
+        permission_id: &Uuid,
+    ) -> Result<(), RepositoryError>;
     async fn get_permissions(&self, role_id: &Uuid) -> Result<Vec<Permission>, RepositoryError>;
-    async fn get_permissions_for_roles(&self, role_ids: &[Uuid]) -> Result<Vec<Permission>, RepositoryError>;
+    async fn get_permissions_for_roles(
+        &self,
+        role_ids: &[Uuid],
+    ) -> Result<Vec<Permission>, RepositoryError>;
 }
 
 #[async_trait]
@@ -48,7 +59,11 @@ pub trait SessionRepository: Send + Sync {
 pub trait PermissionRepository: Send + Sync {
     async fn save(&self, permission: &Permission) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: &Uuid) -> Result<Permission, RepositoryError>;
-    async fn get_by_name(&self, name: &str, group_name: &str) -> Result<Permission, RepositoryError>;
+    async fn get_by_name(
+        &self,
+        name: &str,
+        group_name: &str,
+    ) -> Result<Permission, RepositoryError>;
     async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError>;
     async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;

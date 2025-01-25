@@ -1,4 +1,7 @@
-use crate::api::dto::{AssignRoleRequest, CreateUserRequest, CreatedResponse, MessageResponse, Pagination, RemoveRoleRequest, UpdateUserRequest, UserListResponse};
+use crate::api::dto::{
+    AssignRoleRequest, CreateUserRequest, CreatedResponse, MessageResponse, Pagination,
+    RemoveRoleRequest, UpdateUserRequest, UserListResponse,
+};
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;

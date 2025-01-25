@@ -5,6 +5,7 @@ use sqlx::mysql::MySqlPoolOptions;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::sqlx_macros::migrate;
 use sqlx::{Error, MySql, Pool, Sqlite};
+use std::fmt::Display;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Default)]
@@ -72,11 +73,11 @@ impl From<DatabasePool> for Pool<Sqlite> {
     }
 }
 
-impl DatabaseEngine {
-    pub fn to_string(&self) -> String {
+impl Display for DatabaseEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DatabaseEngine::Sqlite => "sqlite".to_string(),
-            DatabaseEngine::Mysql => "mysql".to_string(),
+            DatabaseEngine::Sqlite => write!(f, "sqlite"),
+            DatabaseEngine::Mysql => write!(f, "mysql"),
         }
     }
 }

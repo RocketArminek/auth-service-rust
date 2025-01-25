@@ -1,6 +1,5 @@
 use crate::api::dto::{
-    CreateRoleRequest, CreatedResponse, MessageResponse, Pagination,
-    RoleListResponse, RoleResponse,
+    CreateRoleRequest, CreatedResponse, MessageResponse, Pagination, RoleListResponse, RoleResponse,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::role::Role;

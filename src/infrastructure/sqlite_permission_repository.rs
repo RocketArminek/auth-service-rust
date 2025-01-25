@@ -1,6 +1,6 @@
-use crate::domain::repository::RepositoryError;
-use crate::domain::repository::PermissionRepository;
 use crate::domain::permission::Permission;
+use crate::domain::repository::PermissionRepository;
+use crate::domain::repository::RepositoryError;
 use async_trait::async_trait;
 use sqlx::{query_as, Pool, Sqlite};
 use uuid::Uuid;
@@ -21,12 +21,11 @@ impl PermissionRepository for SqlitePermissionRepository {
     async fn save(&self, permission: &Permission) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let existing_permission = sqlx::query_as::<_, Permission>(
-            "SELECT * FROM permissions WHERE id = ?"
-        )
-        .bind(permission.id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let existing_permission =
+            sqlx::query_as::<_, Permission>("SELECT * FROM permissions WHERE id = ?")
+                .bind(permission.id)
+                .fetch_optional(&mut *tx)
+                .await?;
 
         match existing_permission {
             Some(_) => {
@@ -70,9 +69,13 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(permission)
     }
 
-    async fn get_by_name(&self, name: &str, group_name: &str) -> Result<Permission, RepositoryError> {
+    async fn get_by_name(
+        &self,
+        name: &str,
+        group_name: &str,
+    ) -> Result<Permission, RepositoryError> {
         let permission = query_as::<_, Permission>(
-            "SELECT * FROM permissions WHERE name = ? AND group_name = ?"
+            "SELECT * FROM permissions WHERE name = ? AND group_name = ?",
         )
         .bind(name)
         .bind(group_name)
@@ -84,7 +87,7 @@ impl PermissionRepository for SqlitePermissionRepository {
 
     async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError> {
         let permissions = query_as::<_, Permission>(
-            "SELECT * FROM permissions ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            "SELECT * FROM permissions ORDER BY created_at DESC LIMIT ? OFFSET ?",
         )
         .bind(limit)
         .bind(offset)
@@ -96,7 +99,7 @@ impl PermissionRepository for SqlitePermissionRepository {
 
     async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError> {
         let permissions = query_as::<_, Permission>(
-            "SELECT * FROM permissions WHERE group_name = ? ORDER BY created_at DESC"
+            "SELECT * FROM permissions WHERE group_name = ? ORDER BY created_at DESC",
         )
         .bind(group_name)
         .fetch_all(&self.pool)
@@ -108,12 +111,11 @@ impl PermissionRepository for SqlitePermissionRepository {
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let is_system = sqlx::query_scalar::<_, bool>(
-            "SELECT is_system FROM permissions WHERE id = ?"
-        )
-        .bind(id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let is_system =
+            sqlx::query_scalar::<_, bool>("SELECT is_system FROM permissions WHERE id = ?")
+                .bind(id)
+                .fetch_optional(&mut *tx)
+                .await?;
 
         match is_system {
             None => {

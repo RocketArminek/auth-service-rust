@@ -24,13 +24,11 @@ pub async fn restrict_methods(req: Request, next: Next) -> Response {
         Method::GET | Method::POST | Method::PUT | Method::PATCH | Method::DELETE => {
             next.run(req).await
         }
-        Method::OPTIONS => {
-            Response::builder()
-                .status(StatusCode::OK)
-                .header("Allow", "GET, POST, PUT, PATCH")
-                .body(axum::body::Body::empty())
-                .unwrap()
-        }
+        Method::OPTIONS => Response::builder()
+            .status(StatusCode::OK)
+            .header("Allow", "GET, POST, PUT, PATCH")
+            .body(axum::body::Body::empty())
+            .unwrap(),
         _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
     }
 }

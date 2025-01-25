@@ -34,9 +34,7 @@ impl User {
 
         Self::validate_password(&not_hashed_password)?;
 
-        if email.is_empty() {
-            Err(UserError::InvalidEmail { email })
-        } else if !email_regex.is_match(&email) {
+        if email.is_empty() || !email_regex.is_match(&email) {
             Err(UserError::InvalidEmail { email })
         } else {
             Ok(User {

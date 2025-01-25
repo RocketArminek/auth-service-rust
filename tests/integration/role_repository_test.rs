@@ -1,7 +1,7 @@
 use crate::utils::runners::run_database_test_with_default;
+use auth_service::domain::permission::Permission;
 use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
-use auth_service::domain::permission::Permission;
 use uuid::Uuid;
 
 #[tokio::test]
@@ -126,18 +126,25 @@ async fn it_can_manage_role_permissions() {
             "test_permission".to_string(),
             "test_group".to_string(),
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         c.role_repository.save(&role).await.unwrap();
         c.permission_repository.save(&permission).await.unwrap();
 
-        c.role_repository.add_permission(&role.id, &permission.id).await.unwrap();
+        c.role_repository
+            .add_permission(&role.id, &permission.id)
+            .await
+            .unwrap();
 
         let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
         assert_eq!(permissions.len(), 1);
         assert_eq!(permissions[0].id, permission.id);
 
-        c.role_repository.remove_permission(&role.id, &permission.id).await.unwrap();
+        c.role_repository
+            .remove_permission(&role.id, &permission.id)
+            .await
+            .unwrap();
 
         let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
         assert_eq!(permissions.len(), 0);
@@ -152,7 +159,10 @@ async fn it_handles_invalid_permission_assignments() {
         c.role_repository.save(&role).await.unwrap();
 
         let invalid_permission_id = Uuid::new_v4();
-        let result = c.role_repository.add_permission(&role.id, &invalid_permission_id).await;
+        let result = c
+            .role_repository
+            .add_permission(&role.id, &invalid_permission_id)
+            .await;
 
         assert!(result.is_err());
         match result {
@@ -173,44 +183,53 @@ async fn it_can_get_permissions_for_multiple_roles() {
         c.role_repository.save(&role1).await.unwrap();
         c.role_repository.save(&role2).await.unwrap();
 
-        let permission1 = Permission::now(
-            "permission1".to_string(),
-            "test_group".to_string(),
-            None,
-        ).unwrap();
-        let permission2 = Permission::now(
-            "permission2".to_string(),
-            "test_group".to_string(),
-            None,
-        ).unwrap();
-        let permission3 = Permission::now(
-            "permission3".to_string(),
-            "test_group".to_string(),
-            None,
-        ).unwrap();
+        let permission1 =
+            Permission::now("permission1".to_string(), "test_group".to_string(), None).unwrap();
+        let permission2 =
+            Permission::now("permission2".to_string(), "test_group".to_string(), None).unwrap();
+        let permission3 =
+            Permission::now("permission3".to_string(), "test_group".to_string(), None).unwrap();
 
         c.permission_repository.save(&permission1).await.unwrap();
         c.permission_repository.save(&permission2).await.unwrap();
         c.permission_repository.save(&permission3).await.unwrap();
 
-        c.role_repository.add_permission(&role1.id, &permission1.id).await.unwrap();
-        c.role_repository.add_permission(&role1.id, &permission2.id).await.unwrap();
-        c.role_repository.add_permission(&role2.id, &permission2.id).await.unwrap();
-        c.role_repository.add_permission(&role2.id, &permission3.id).await.unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &permission2.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &permission2.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &permission3.id)
+            .await
+            .unwrap();
 
-        let permissions = c.role_repository.get_permissions_for_roles(&[role1.id, role2.id]).await.unwrap();
-        
+        let permissions = c
+            .role_repository
+            .get_permissions_for_roles(&[role1.id, role2.id])
+            .await
+            .unwrap();
+
         assert_eq!(permissions.len(), 3);
-        
-        let permission_names: Vec<String> = permissions.iter()
-            .map(|p| p.name.clone())
-            .collect();
-        
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+
         assert!(permission_names.contains(&"permission1".to_string()));
         assert!(permission_names.contains(&"permission2".to_string()));
         assert!(permission_names.contains(&"permission3".to_string()));
 
-        let empty_permissions = c.role_repository.get_permissions_for_roles(&[]).await.unwrap();
+        let empty_permissions = c
+            .role_repository
+            .get_permissions_for_roles(&[])
+            .await
+            .unwrap();
         assert!(empty_permissions.is_empty());
     })
     .await;

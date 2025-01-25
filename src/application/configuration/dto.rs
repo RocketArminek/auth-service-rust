@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 use std::num::ParseIntError;
 
 #[derive(Clone, Serialize)]
@@ -55,36 +55,5 @@ impl TryFrom<String> for DurationInSeconds {
     type Error = ParseIntError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Ok(DurationInSeconds::from(value.parse::<u64>()?))
-    }
-}
-
-#[derive(Clone, Serialize)]
-pub struct HiddenString(pub String);
-
-impl HiddenString {
-    pub fn to_string(self) -> String {
-        self.0
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Display for HiddenString {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "*".repeat(self.0.len()))
-    }
-}
-
-impl Debug for HiddenString {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "*".repeat(self.0.len()))
-    }
-}
-
-impl From<String> for HiddenString {
-    fn from(value: String) -> Self {
-        HiddenString(value)
     }
 }

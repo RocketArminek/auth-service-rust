@@ -1,15 +1,15 @@
 use crate::domain::repository::{
-    RepositoryError, RoleRepository, SessionRepository, UserRepository, PermissionRepository,
+    PermissionRepository, RepositoryError, RoleRepository, SessionRepository, UserRepository,
 };
 use crate::infrastructure::database::DatabasePool;
+use crate::infrastructure::mysql_permission_repository::MysqlPermissionRepository;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;
 use crate::infrastructure::mysql_session_repository::MysqlSessionRepository;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
+use crate::infrastructure::sqlite_permission_repository::SqlitePermissionRepository;
 use crate::infrastructure::sqlite_role_repository::SqliteRoleRepository;
 use crate::infrastructure::sqlite_session_repository::SqliteSessionRepository;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
-use crate::infrastructure::mysql_permission_repository::MysqlPermissionRepository;
-use crate::infrastructure::sqlite_permission_repository::SqlitePermissionRepository;
 use sqlx::Error as SqlxError;
 use std::sync::Arc;
 

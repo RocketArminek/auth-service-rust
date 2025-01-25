@@ -1,6 +1,6 @@
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use auth_service::api::dto::{LoginResponse, MessageResponse};
-use auth_service::application::configuration::dto::{DurationInSeconds, HiddenString};
+use auth_service::application::configuration::dto::DurationInSeconds;
 use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
@@ -152,7 +152,7 @@ async fn it_issues_refresh_token() {
     run_integration_test(
         |c| {
             c.app.rt_duration_in_seconds(DurationInSeconds(rt_duration));
-            c.app.secret(HiddenString(secret.to_string()));
+            c.app.secret(secret.to_string());
         },
         |c| async move {
             let email = String::from("jon@snow.test");
@@ -451,7 +451,7 @@ async fn it_refreshes_token() {
     let at_duration = 60;
     run_integration_test(
         |c| {
-            c.app.secret(HiddenString(secret.to_string()));
+            c.app.secret(secret.to_string());
             c.app.at_duration_in_seconds(DurationInSeconds(at_duration));
         },
         |c| async move {
@@ -634,7 +634,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
     let secret = "secret";
     run_integration_test(
         |c| {
-            c.app.secret(HiddenString(secret.to_string()));
+            c.app.secret(secret.to_string());
         },
         |c| async move {
             let email = String::from("jon@snow.test");
@@ -766,7 +766,7 @@ async fn it_returns_unauthorized_on_logout_with_expired_token() {
     run_integration_test(
         |c| {
             c.app.auth_strategy(AuthStrategy::Stateful);
-            c.app.secret(HiddenString(secret.to_string()));
+            c.app.secret(secret.to_string());
         },
         |c| async move {
             let email = String::from("jon@snow.test");

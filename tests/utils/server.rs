@@ -1,6 +1,6 @@
 use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
-use auth_service::application::configuration::configuration::Configuration;
+use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::service::auth_service::AuthService;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::repository::{RoleRepository, SessionRepository, UserRepository};

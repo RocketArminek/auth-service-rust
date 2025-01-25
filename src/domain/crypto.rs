@@ -4,6 +4,7 @@ use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use bcrypt::DEFAULT_COST;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::sync::OnceLock;
 
 pub trait Hasher {
@@ -25,20 +26,22 @@ pub enum HashingScheme {
 }
 
 impl HashingScheme {
-    pub fn to_string(&self) -> String {
-        match self {
-            HashingScheme::Argon2 => "argon2".to_string(),
-            HashingScheme::Bcrypt => "bcrypt".to_string(),
-            HashingScheme::BcryptLow => "bcrypt_low".to_string(),
-        }
-    }
-
     pub fn from_string(scheme: String) -> Result<Self, UserError> {
         match scheme.as_str() {
             "argon2" => Ok(HashingScheme::Argon2),
             "bcrypt" => Ok(HashingScheme::Bcrypt),
             "bcrypt_low" => Ok(HashingScheme::BcryptLow),
             _ => Err(UserError::SchemeNotSupported),
+        }
+    }
+}
+
+impl Display for HashingScheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HashingScheme::Argon2 => write!(f, "argon2"),
+            HashingScheme::Bcrypt => write!(f, "bcrypt"),
+            HashingScheme::BcryptLow => write!(f, "bcrypt_low"),
         }
     }
 }
@@ -116,11 +119,7 @@ impl Hasher for SchemeAwareHasher {
         match hasher {
             Some(hasher) => {
                 let hashed_password = hasher.hash_password(password)?;
-                Ok(format!(
-                    "{}.{}",
-                    self.current_scheme.to_string(),
-                    hashed_password
-                ))
+                Ok(format!("{}.{}", self.current_scheme, hashed_password))
             }
             None => Err(UserError::EncryptionFailed),
         }

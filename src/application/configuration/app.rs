@@ -1,4 +1,4 @@
-use crate::application::configuration::dto::{DurationInSeconds, HiddenString};
+use crate::application::configuration::dto::DurationInSeconds;
 use crate::application::service::auth_service::AuthStrategy;
 use crate::domain::crypto::HashingScheme;
 use lazy_regex::Regex;
@@ -8,9 +8,9 @@ use std::str::FromStr;
 use tracing::Level;
 
 pub struct AppConfigurationBuilder {
-    pub secret: Option<HiddenString>,
+    pub secret: Option<String>,
     pub super_admin_email: Option<String>,
-    pub super_admin_password: Option<HiddenString>,
+    pub super_admin_password: Option<String>,
     pub regular_role_name: Option<String>,
     pub restricted_role_name: Option<String>,
     pub restricted_role_pattern: Option<Regex>,
@@ -55,7 +55,7 @@ impl AppConfigurationBuilder {
         self
     }
 
-    pub fn super_admin_password(&mut self, value: HiddenString) -> &mut Self {
+    pub fn super_admin_password(&mut self, value: String) -> &mut Self {
         self.super_admin_password = Some(value);
         self
     }
@@ -107,7 +107,7 @@ impl AppConfigurationBuilder {
         self
     }
 
-    pub fn secret(&mut self, value: HiddenString) -> &mut Self {
+    pub fn secret(&mut self, value: String) -> &mut Self {
         self.secret = Some(value);
         self
     }
@@ -134,12 +134,12 @@ impl AppConfigurationBuilder {
 
     pub fn load_env(&mut self) -> &mut Self {
         self.super_admin_email = env::var(EnvNames::ADMIN_EMAIL).ok();
-        self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD)
-            .map(HiddenString)
-            .ok();
+        self.super_admin_password = env::var(EnvNames::ADMIN_PASSWORD).ok();
         self.regular_role_name = env::var(EnvNames::REGULAR_ROLE_NAME).ok();
         self.restricted_role_name = env::var(EnvNames::RESTRICTED_ROLE_NAME).ok();
-        self.restricted_role_pattern = self.restricted_role_name.as_ref()
+        self.restricted_role_pattern = self
+            .restricted_role_name
+            .as_ref()
             .map(|name| Regex::new(format!("(?i)^{}.*", name).as_str()).unwrap());
         self.password_hashing_scheme = env::var(EnvNames::PASSWORD_HASHING_SCHEME)
             .map(|v| HashingScheme::from_string(v).unwrap())
@@ -163,9 +163,7 @@ impl AppConfigurationBuilder {
         self.cleanup_interval_in_minutes = env::var(EnvNames::CLEANUP_INTERVAL_IN_MINUTES)
             .map(|v| v.parse::<u64>().unwrap())
             .ok();
-        self.secret = env::var(EnvNames::SECRET)
-            .map(HiddenString)
-            .ok();
+        self.secret = env::var(EnvNames::SECRET).ok();
         self.port = env::var(EnvNames::PORT).ok();
         self.host = env::var(EnvNames::HOST).ok();
         self.log_level = env::var(EnvNames::LOG_LEVEL)
@@ -179,42 +177,62 @@ impl AppConfigurationBuilder {
     }
 
     pub fn build(&self) -> AppConfiguration {
-        AppConfiguration::new(
-            self.super_admin_email
-                .clone()
-                .unwrap_or("admin@example.com".to_string()),
-            self.super_admin_password
-                .clone()
-                .unwrap_or("Admin#123*".to_string().into()),
-            self.regular_role_name.clone().unwrap_or("USER".to_string()),
-            self.restricted_role_name
-                .clone()
-                .unwrap_or("ADMIN".to_string()),
-            self.restricted_role_pattern
-                .clone()
-                .unwrap_or(Regex::new(format!("(?i)^{}.*", "ADMIN").as_str()).unwrap()),
-            self.password_hashing_scheme
+        let auth_config = AuthConfig {
+            password_hashing_scheme: self
+                .password_hashing_scheme
                 .unwrap_or(HashingScheme::BcryptLow),
-            self.at_duration_in_seconds
+            at_duration_in_seconds: self
+                .at_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(300)),
-            self.rt_duration_in_seconds
+            rt_duration_in_seconds: self
+                .rt_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
-            self.verification_required.unwrap_or(true),
-            self.vr_duration_in_seconds
+            verification_required: self.verification_required.unwrap_or(true),
+            vr_duration_in_seconds: self
+                .vr_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
-            self.rp_duration_in_seconds
+            rp_duration_in_seconds: self
+                .rp_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
-            self.cleanup_interval_in_minutes.unwrap_or(5),
-            self.secret.clone().unwrap_or("secret".to_string().into()),
-            self.port.clone().unwrap_or("8080".to_string()),
-            self.host.clone().unwrap_or("0.0.0.0".to_string()),
-            self.log_level.unwrap_or(Level::INFO),
-            self.auth_strategy.clone().unwrap_or_default(),
-        )
+            auth_strategy: self.auth_strategy.clone().unwrap_or_default(),
+        };
+
+        let admin_config = AdminConfig {
+            email: self
+                .super_admin_email
+                .clone()
+                .unwrap_or("admin@example.com".to_string()),
+            password: self
+                .super_admin_password
+                .clone()
+                .unwrap_or("Admin#123*".to_string()),
+        };
+
+        let role_config = RoleConfig {
+            regular_role_name: self.regular_role_name.clone().unwrap_or("USER".to_string()),
+            restricted_role_name: self
+                .restricted_role_name
+                .clone()
+                .unwrap_or("ADMIN".to_string()),
+            restricted_role_pattern: self
+                .restricted_role_pattern
+                .clone()
+                .unwrap_or(Regex::new(format!("(?i)^{}.*", "ADMIN").as_str()).unwrap()),
+        };
+
+        let server_config = ServerConfig {
+            secret: self.secret.clone().unwrap_or("secret".to_string()),
+            port: self.port.clone().unwrap_or("8080".to_string()),
+            host: self.host.clone().unwrap_or("0.0.0.0".to_string()),
+            log_level: self.log_level.unwrap_or(Level::INFO),
+            cleanup_interval_in_minutes: self.cleanup_interval_in_minutes.unwrap_or(5),
+        };
+
+        AppConfiguration::new(auth_config, admin_config, role_config, server_config)
     }
 }
 
@@ -227,7 +245,7 @@ impl Default for AppConfigurationBuilder {
 #[derive(Debug, Clone)]
 pub struct AppConfiguration {
     super_admin_email: String,
-    super_admin_password: HiddenString,
+    super_admin_password: String,
     regular_role_name: String,
     restricted_role_name: String,
     restricted_role_pattern: Regex,
@@ -238,7 +256,7 @@ pub struct AppConfiguration {
     vr_duration_in_seconds: DurationInSeconds,
     rp_duration_in_seconds: DurationInSeconds,
     cleanup_interval_in_minutes: u64,
-    secret: HiddenString,
+    secret: String,
     port: String,
     host: String,
     log_level: Level,
@@ -247,42 +265,29 @@ pub struct AppConfiguration {
 
 impl AppConfiguration {
     pub fn new(
-        super_admin_email: String,
-        super_admin_password: HiddenString,
-        regular_role_name: String,
-        restricted_role_name: String,
-        restricted_role_pattern: Regex,
-        password_hashing_scheme: HashingScheme,
-        at_duration_in_seconds: DurationInSeconds,
-        rt_duration_in_seconds: DurationInSeconds,
-        verification_required: bool,
-        vr_duration_in_seconds: DurationInSeconds,
-        rp_duration_in_seconds: DurationInSeconds,
-        cleanup_interval_in_minutes: u64,
-        secret: HiddenString,
-        port: String,
-        host: String,
-        log_level: Level,
-        auth_strategy: AuthStrategy,
+        auth: AuthConfig,
+        admin: AdminConfig,
+        role: RoleConfig,
+        server: ServerConfig,
     ) -> Self {
         AppConfiguration {
-            super_admin_email,
-            super_admin_password,
-            regular_role_name,
-            restricted_role_name,
-            restricted_role_pattern,
-            password_hashing_scheme,
-            at_duration_in_seconds,
-            rt_duration_in_seconds,
-            verification_required,
-            vr_duration_in_seconds,
-            rp_duration_in_seconds,
-            cleanup_interval_in_minutes,
-            secret,
-            port,
-            host,
-            log_level,
-            auth_strategy,
+            super_admin_email: admin.email,
+            super_admin_password: admin.password,
+            regular_role_name: role.regular_role_name,
+            restricted_role_name: role.restricted_role_name,
+            restricted_role_pattern: role.restricted_role_pattern,
+            password_hashing_scheme: auth.password_hashing_scheme,
+            at_duration_in_seconds: auth.at_duration_in_seconds,
+            rt_duration_in_seconds: auth.rt_duration_in_seconds,
+            verification_required: auth.verification_required,
+            vr_duration_in_seconds: auth.vr_duration_in_seconds,
+            rp_duration_in_seconds: auth.rp_duration_in_seconds,
+            cleanup_interval_in_minutes: server.cleanup_interval_in_minutes,
+            secret: server.secret,
+            port: server.port,
+            host: server.host,
+            log_level: server.log_level,
+            auth_strategy: auth.auth_strategy,
         }
     }
 
@@ -290,7 +295,7 @@ impl AppConfiguration {
         &self.super_admin_email
     }
 
-    pub fn super_admin_password(&self) -> HiddenString {
+    pub fn super_admin_password(&self) -> String {
         self.super_admin_password.clone()
     }
 
@@ -326,7 +331,7 @@ impl AppConfiguration {
         self.cleanup_interval_in_minutes
     }
 
-    pub fn secret(&self) -> HiddenString {
+    pub fn secret(&self) -> String {
         self.secret.clone()
     }
 
@@ -363,7 +368,7 @@ impl AppConfiguration {
         );
         envs.insert(
             EnvNames::ADMIN_PASSWORD.to_owned(),
-            self.super_admin_password.0.clone(),
+            self.super_admin_password.clone(),
         );
         envs.insert(
             EnvNames::REGULAR_ROLE_NAME.to_owned(),
@@ -401,7 +406,7 @@ impl AppConfiguration {
             EnvNames::CLEANUP_INTERVAL_IN_MINUTES.to_owned(),
             self.cleanup_interval_in_minutes.to_string(),
         );
-        envs.insert(EnvNames::SECRET.to_owned(), self.secret.0.clone());
+        envs.insert(EnvNames::SECRET.to_owned(), self.secret.clone());
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
         envs.insert(EnvNames::LOG_LEVEL.to_owned(), self.log_level.to_string());
@@ -433,4 +438,33 @@ impl EnvNames {
     pub const HOST: &'static str = "HOST";
     pub const LOG_LEVEL: &'static str = "LOG_LEVEL";
     pub const AUTH_STRATEGY: &'static str = "AUTH_STRATEGY";
+}
+
+pub struct AuthConfig {
+    pub password_hashing_scheme: HashingScheme,
+    pub at_duration_in_seconds: DurationInSeconds,
+    pub rt_duration_in_seconds: DurationInSeconds,
+    pub verification_required: bool,
+    pub vr_duration_in_seconds: DurationInSeconds,
+    pub rp_duration_in_seconds: DurationInSeconds,
+    pub auth_strategy: AuthStrategy,
+}
+
+pub struct AdminConfig {
+    pub email: String,
+    pub password: String,
+}
+
+pub struct RoleConfig {
+    pub regular_role_name: String,
+    pub restricted_role_name: String,
+    pub restricted_role_pattern: Regex,
+}
+
+pub struct ServerConfig {
+    pub secret: String,
+    pub port: String,
+    pub host: String,
+    pub log_level: Level,
+    pub cleanup_interval_in_minutes: u64,
 }

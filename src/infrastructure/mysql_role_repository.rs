@@ -1,10 +1,10 @@
+use crate::domain::permission::Permission;
 use crate::domain::repository::RepositoryError;
 use crate::domain::repository::RoleRepository;
 use crate::domain::role::Role;
 use async_trait::async_trait;
 use sqlx::{query_as, MySql, Pool};
 use uuid::Uuid;
-use crate::domain::permission::Permission;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {
@@ -149,7 +149,11 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(())
     }
 
-    async fn add_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError> {
+    async fn add_permission(
+        &self,
+        role_id: &Uuid,
+        permission_id: &Uuid,
+    ) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let role = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
@@ -161,22 +165,25 @@ impl RoleRepository for MysqlRoleRepository {
             return Err(RepositoryError::NotFound("Role not found".to_string()));
         }
 
-        let permission_exists = sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM permissions WHERE id = ?)")
-            .bind(permission_id)
-            .fetch_one(&mut *tx)
-            .await?;
+        let permission_exists =
+            sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM permissions WHERE id = ?)")
+                .bind(permission_id)
+                .fetch_one(&mut *tx)
+                .await?;
 
         if !permission_exists {
-            return Err(RepositoryError::NotFound("Permission not found".to_string()));
+            return Err(RepositoryError::NotFound(
+                "Permission not found".to_string(),
+            ));
         }
 
         let exists = sqlx::query_scalar::<_, bool>(
-            "SELECT EXISTS(SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?)"
+            "SELECT EXISTS(SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?)",
         )
-            .bind(role_id)
-            .bind(permission_id)
-            .fetch_one(&mut *tx)
-            .await?;
+        .bind(role_id)
+        .bind(permission_id)
+        .fetch_one(&mut *tx)
+        .await?;
 
         if !exists {
             sqlx::query("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)")
@@ -190,19 +197,24 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(())
     }
 
-    async fn remove_permission(&self, role_id: &Uuid, permission_id: &Uuid) -> Result<(), RepositoryError> {
+    async fn remove_permission(
+        &self,
+        role_id: &Uuid,
+        permission_id: &Uuid,
+    ) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let result = sqlx::query(
-            "DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?"
-        )
-            .bind(role_id)
-            .bind(permission_id)
-            .execute(&mut *tx)
-            .await?;
+        let result =
+            sqlx::query("DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?")
+                .bind(role_id)
+                .bind(permission_id)
+                .execute(&mut *tx)
+                .await?;
 
         if result.rows_affected() == 0 {
-            return Err(RepositoryError::NotFound("Role-Permission relationship not found".to_string()));
+            return Err(RepositoryError::NotFound(
+                "Role-Permission relationship not found".to_string(),
+            ));
         }
 
         tx.commit().await?;
@@ -213,16 +225,19 @@ impl RoleRepository for MysqlRoleRepository {
         let permissions = sqlx::query_as::<_, Permission>(
             "SELECT p.* FROM permissions p
              INNER JOIN role_permissions rp ON p.id = rp.permission_id
-             WHERE rp.role_id = ?"
+             WHERE rp.role_id = ?",
         )
-            .bind(role_id)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(role_id)
+        .fetch_all(&self.pool)
+        .await?;
 
         Ok(permissions)
     }
 
-    async fn get_permissions_for_roles(&self, role_ids: &[Uuid]) -> Result<Vec<Permission>, RepositoryError> {
+    async fn get_permissions_for_roles(
+        &self,
+        role_ids: &[Uuid],
+    ) -> Result<Vec<Permission>, RepositoryError> {
         if role_ids.is_empty() {
             return Ok(Vec::new());
         }

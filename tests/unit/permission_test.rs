@@ -1,7 +1,7 @@
-use auth_service::domain::permission::{Permission};
+use auth_service::domain::error::PermissionError;
+use auth_service::domain::permission::Permission;
 use chrono::Utc;
 use uuid::Uuid;
-use auth_service::domain::error::PermissionError;
 
 #[test]
 fn it_can_be_created() {

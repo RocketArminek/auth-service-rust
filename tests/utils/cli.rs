@@ -1,5 +1,5 @@
 use assert_cmd::cargo::{CargoError, CommandCargoExt};
-use auth_service::application::configuration::configuration::Configuration;
+use auth_service::application::configuration::composed::Configuration;
 use std::collections::HashMap;
 use std::process::Command;
 
