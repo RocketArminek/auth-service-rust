@@ -315,7 +315,7 @@ pub async fn update_user(
 }
 
 #[utoipa::path(patch, path = "/v1/restricted/users/{id}/roles",
-    tag="roles-management",
+    tag="users-management",
     request_body = AssignRoleRequest,
     params(
         ("id" = String, Path, description = "User ID")
@@ -372,7 +372,7 @@ pub async fn assign_role_to_user(
 }
 
 #[utoipa::path(delete, path = "/v1/restricted/users/{id}/roles",
-    tag="roles-management",
+    tag="users-management",
     request_body = RemoveRoleRequest,
     params(
         ("id" = String, Path, description = "User ID")
@@ -429,7 +429,7 @@ pub async fn remove_role_from_user(
 }
 
 #[utoipa::path(delete, path = "/v1/restricted/users/{user_id}/sessions",
-    tag="sessions-management",
+    tag="users-management",
     params(
         ("user_id" = String, Path, description = "User ID")
     ),

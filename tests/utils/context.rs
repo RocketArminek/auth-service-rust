@@ -60,6 +60,7 @@ pub struct AcceptanceTestContext {
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
     pub session_repository: Arc<dyn SessionRepository>,
+    pub permission_repository: Arc<dyn PermissionRepository>,
     pub server: TestServer,
     pub consumer: Consumer,
 }
@@ -69,6 +70,7 @@ impl AcceptanceTestContext {
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
         session_repository: Arc<dyn SessionRepository>,
+        permission_repository: Arc<dyn PermissionRepository>,
         server: TestServer,
         consumer: Consumer,
     ) -> Self {
@@ -76,6 +78,7 @@ impl AcceptanceTestContext {
             user_repository,
             role_repository,
             session_repository,
+            permission_repository,
             server,
             consumer,
         }

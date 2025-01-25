@@ -15,9 +15,7 @@ use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
-use auth_service::infrastructure::repository::{
-    create_role_repository, create_session_repository, create_user_repository,
-};
+use auth_service::infrastructure::repository::{create_permission_repository, create_role_repository, create_session_repository, create_user_repository};
 use chrono::Duration;
 use clap::{Parser, Subcommand};
 use futures_lite::StreamExt;
@@ -104,6 +102,9 @@ async fn main() {
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
     let session_repository = create_session_repository(db_pool.clone());
+    let permission_repository = create_permission_repository(
+        db_pool.clone()
+    );
 
     let message_publisher = create_message_publisher(config.publisher()).await;
 
@@ -136,6 +137,7 @@ async fn main() {
                 user_repository,
                 role_repository,
                 session_repository,
+                permission_repository,
                 message_publisher,
                 auth_service,
             );

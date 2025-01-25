@@ -2,6 +2,7 @@ use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateUserRequest {
     pub email: String,
@@ -120,4 +121,26 @@ pub struct AssignRoleRequest {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RemoveRoleRequest {
     pub role: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CreatePermissionRequest {
+    pub name: String,
+    pub group_name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PermissionResponse {
+    pub id: String,
+    pub name: String,
+    pub group_name: String,
+    pub description: Option<String>,
+    pub is_system: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PermissionListResponse {
+    pub permissions: Vec<PermissionResponse>,
 }

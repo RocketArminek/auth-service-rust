@@ -116,6 +116,7 @@ where
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
     let session_repository = create_session_repository(pool.clone());
+    let permission_repository = create_permission_repository(pool.clone());
 
     let message_publisher = create_message_publisher(config.publisher()).await;
     let (_, consumer, _) = setup_test_consumer(config.publisher()).await;
@@ -131,6 +132,7 @@ where
         user_repository.clone(),
         role_repository.clone(),
         session_repository.clone(),
+        permission_repository.clone(),
         message_publisher,
         auth_service,
     )
@@ -140,6 +142,7 @@ where
         user_repository,
         role_repository,
         session_repository,
+        permission_repository,
         server,
         consumer,
     ))

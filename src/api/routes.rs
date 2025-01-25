@@ -1,3 +1,4 @@
+use crate::api::controller::admin_permissions_controller::*;
 use crate::api::controller::admin_roles_controller::*;
 use crate::api::controller::admin_session_controller::*;
 use crate::api::controller::admin_users_controller::*;
@@ -68,6 +69,11 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/users/{id}/roles",
                     patch(assign_role_to_user).delete(remove_role_from_user),
                 )
+                .route("/v1/restricted/permissions", get(list_permissions).post(create_permission))
+                .route(
+                    "/v1/restricted/permissions/{id}",
+                    get(get_permission).delete(delete_permission),
+                )
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(
@@ -81,6 +87,16 @@ pub fn routes(state: ServerState) -> Router {
         .layer(middleware::from_fn(security_headers))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+#[utoipa::path(get, path = "/",
+    tag="utils",
+    responses(
+        (status = 200, description = "Open api schema", content_type = "application/json"),
+    )
+)]
+pub async fn open_api_docs() {
+    panic!("This is only for documentation")
 }
 
 #[derive(OpenApi)]
@@ -116,6 +132,10 @@ pub fn routes(state: ServerState) -> Router {
         delete_role,
         assign_role_to_user,
         remove_role_from_user,
+        list_permissions,
+        get_permission,
+        create_permission,
+        delete_permission,
     ),
     components(
         schemas(
@@ -139,17 +159,10 @@ pub fn routes(state: ServerState) -> Router {
             RoleListResponse,
             AssignRoleRequest,
             RemoveRoleRequest,
+            PermissionListResponse,
+            PermissionResponse,
+            CreatePermissionRequest,
         ),
     )
 )]
 pub struct ApiDoc;
-
-#[utoipa::path(get, path = "/",
-    tag="utils",
-    responses(
-        (status = 200, description = "Open api schema", content_type = "application/json"),
-    )
-)]
-pub async fn open_api_docs() {
-    panic!("This is only for documentation")
-}
