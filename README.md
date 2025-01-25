@@ -1,7 +1,7 @@
 # Auth Service
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 ![Rust Version](https://img.shields.io/badge/rust-1.84.0%2B-orange.svg)
-[![CI/CD](https://github.com/RocketArminek/auth-service-rust/actions/workflows/cd.yml/badge.svg)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/cd.yml)
+[![CI](https://github.com/RocketArminek/auth-service-rust/actions/workflows/ci.yml/badge.svg)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/ci.yml)
 
 A high-performance, event-driven authentication and authorization service written in Rust. This service provides robust user management and secure authentication flows.
 
