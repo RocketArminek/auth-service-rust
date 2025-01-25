@@ -36,9 +36,9 @@ impl PermissionRepository for MysqlPermissionRepository {
                 .bind(&permission.name)
                 .bind(&permission.group_name)
                 .bind(&permission.description)
-                .bind(&permission.is_system)
-                .bind(&permission.created_at)
-                .bind(&permission.id)
+                .bind(permission.is_system)
+                .bind(permission.created_at)
+                .bind(permission.id)
                 .execute(&mut *tx)
                 .await?;
             }
@@ -46,12 +46,12 @@ impl PermissionRepository for MysqlPermissionRepository {
                 sqlx::query(
                     "INSERT INTO permissions (id, name, group_name, description, is_system, created_at) VALUES (?, ?, ?, ?, ?, ?)"
                 )
-                .bind(&permission.id)
+                .bind(permission.id)
                 .bind(&permission.name)
                 .bind(&permission.group_name)
                 .bind(&permission.description)
-                .bind(&permission.is_system)
-                .bind(&permission.created_at)
+                .bind(permission.is_system)
+                .bind(permission.created_at)
                 .execute(&mut *tx)
                 .await?;
             }

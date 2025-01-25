@@ -64,7 +64,7 @@ impl MessagePublisherConfigurationBuilder {
         self.rabbitmq_url = env::var(EnvNames::RABBITMQ_URL).ok();
         self.rabbitmq_exchange_name = env::var(EnvNames::RABBITMQ_EXCHANGE_NAME).ok();
         self.rabbitmq_exchange_kind = env::var(EnvNames::RABBITMQ_EXCHANGE_KIND)
-            .map(|v| Self::exchange_kind_from_string(v))
+            .map(Self::exchange_kind_from_string)
             .ok();
         self.rabbitmq_exchange_durable = env::var(EnvNames::RABBITMQ_EXCHANGE_DURABLE)
             .map(|v| v.parse::<bool>().unwrap())

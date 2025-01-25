@@ -167,7 +167,7 @@ async fn it_returns_not_found_for_nonexistent_permission() {
 async fn it_return_not_found_for_nonexistent_permission_by_name_and_group() {
     run_database_test_with_default(|c| async move {
         let result = c.permission_repository
-            .get_by_name(&"nonexistent".to_string(), &"nonexistent".to_string())
+            .get_by_name("nonexistent", "nonexistent")
             .await;
 
         assert!(result.is_err());

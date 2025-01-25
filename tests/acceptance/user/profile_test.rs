@@ -139,7 +139,7 @@ async fn it_verifies_user_account() {
 
         let body = response.json::<UserDTO>();
 
-        assert_eq!(body.is_verified, true);
+        assert!(body.is_verified);
         assert_eq!(body.email, email);
         assert_eq!(body.roles, vec!["user".to_string()]);
 
@@ -219,7 +219,7 @@ async fn it_can_request_for_resend_verification_message() {
 
         let body = response.json::<UserDTO>();
 
-        assert_eq!(body.is_verified, true);
+        assert!(body.is_verified);
         assert_eq!(body.email, email);
         assert_eq!(body.roles, vec!["NIGHT_WATCH".to_string()]);
 

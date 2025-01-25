@@ -40,7 +40,7 @@ async fn it_creates_new_user() {
                 assert_eq!(user.last_name, None);
                 assert_eq!(user.avatar_path, None);
                 assert_eq!(user.roles, vec!["user".to_string()]);
-                assert_eq!(user.is_verified, true);
+                assert!(user.is_verified);
             }
         },
     )
@@ -78,7 +78,7 @@ async fn it_creates_not_verified_user() {
             assert_eq!(user.last_name, None);
             assert_eq!(user.avatar_path, None);
             assert_eq!(user.roles, vec!["user".to_string()]);
-            assert_eq!(user.is_verified, false);
+            assert!(!user.is_verified);
         }
 
         let event = c
@@ -95,8 +95,8 @@ async fn it_creates_not_verified_user() {
             assert_eq!(user.last_name, None);
             assert_eq!(user.avatar_path, None);
             assert_eq!(user.roles, vec!["user".to_string()]);
-            assert_eq!(user.is_verified, false);
-            assert_eq!(token.is_empty(), false);
+            assert!(!user.is_verified);
+            assert!(!token.is_empty());
         }
     })
     .await

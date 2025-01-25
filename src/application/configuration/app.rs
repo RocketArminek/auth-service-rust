@@ -201,7 +201,7 @@ impl AppConfigurationBuilder {
             self.rt_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
-            self.verification_required.clone().unwrap_or(true),
+            self.verification_required.unwrap_or(true),
             self.vr_duration_in_seconds
                 .clone()
                 .unwrap_or(DurationInSeconds(2592000)),
@@ -303,7 +303,7 @@ impl AppConfiguration {
     }
 
     pub fn password_hashing_scheme(&self) -> HashingScheme {
-        self.password_hashing_scheme.clone()
+        self.password_hashing_scheme
     }
 
     pub fn at_duration_in_seconds(&self) -> DurationInSeconds {
@@ -315,7 +315,7 @@ impl AppConfiguration {
     }
 
     pub fn verification_required(&self) -> bool {
-        self.verification_required.clone()
+        self.verification_required
     }
 
     pub fn vr_duration_in_seconds(&self) -> DurationInSeconds {

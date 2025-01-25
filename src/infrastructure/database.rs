@@ -138,7 +138,7 @@ pub async fn create_sqlite_pool(
             SqlitePoolOptions::new()
                 .max_connections(max_connections)
                 .acquire_timeout(Duration::from_millis(timeout_ms))
-                .connect(&database_url)
+                .connect(database_url)
                 .await
         },
         "Sqlite",
@@ -167,7 +167,7 @@ pub async fn create_mysql_pool(
             MySqlPoolOptions::new()
                 .max_connections(max_connections)
                 .acquire_timeout(Duration::from_millis(timeout_ms))
-                .connect(&database_url)
+                .connect(database_url)
                 .await
         },
         "MySql",

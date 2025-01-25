@@ -266,7 +266,7 @@ async fn main() {
 
                     match r {
                         Err(e) => {
-                            println!("{}", e.to_string());
+                            println!("{}", e);
                         }
                         Ok(role) => {
                             user.add_role(role.clone());
@@ -444,10 +444,10 @@ async fn load_fixtures(
     user_repository: &Arc<dyn UserRepository>,
     role_repository: &Arc<dyn RoleRepository>,
 ) {
-    init_role(config.regular_role_name(), &role_repository)
+    init_role(config.regular_role_name(), role_repository)
         .await
         .unwrap();
-    let restricted_role = init_role(config.restricted_role_name(), &role_repository)
+    let restricted_role = init_role(config.restricted_role_name(), role_repository)
         .await
         .unwrap();
     let mark = role_repository.mark_as_system(&restricted_role.id).await;
@@ -459,7 +459,7 @@ async fn load_fixtures(
         ),
         Err(e) => tracing::error!("{}", e),
     }
-    init_user(config, &user_repository, restricted_role)
+    init_user(config, user_repository, restricted_role)
         .await
         .unwrap();
 }

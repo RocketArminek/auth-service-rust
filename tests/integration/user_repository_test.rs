@@ -207,7 +207,7 @@ async fn it_can_handle_multiple_roles_removal() {
         user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
         c.user_repository.save(&user).await.unwrap();
 
-        user.remove_roles(&vec![role2]);
+        user.remove_roles(&[role2]);
         user.remove_role(&role3);
         user.remove_role(&role1);
         c.user_repository.save(&user).await.unwrap();

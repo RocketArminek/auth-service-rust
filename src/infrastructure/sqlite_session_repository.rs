@@ -26,7 +26,7 @@ impl SessionRepository for SqliteSessionRepository {
         let mut tx = self.pool.begin().await?;
 
         let existing_session = sqlx::query("SELECT id FROM sessions WHERE id = ?")
-            .bind(&session.id)
+            .bind(session.id)
             .fetch_optional(&mut *tx)
             .await?;
 
@@ -39,10 +39,10 @@ impl SessionRepository for SqliteSessionRepository {
                     WHERE id = ?
                     "#,
                 )
-                .bind(&session.user_id)
-                .bind(&session.created_at)
-                .bind(&session.expires_at)
-                .bind(&session.id)
+                .bind(session.user_id)
+                .bind(session.created_at)
+                .bind(session.expires_at)
+                .bind(session.id)
                 .execute(&mut *tx)
                 .await?;
             }
@@ -53,10 +53,10 @@ impl SessionRepository for SqliteSessionRepository {
                     VALUES (?, ?, ?, ?)
                     "#,
                 )
-                .bind(&session.id)
-                .bind(&session.user_id)
-                .bind(&session.created_at)
-                .bind(&session.expires_at)
+                .bind(session.id)
+                .bind(session.user_id)
+                .bind(session.created_at)
+                .bind(session.expires_at)
                 .execute(&mut *tx)
                 .await?;
             }

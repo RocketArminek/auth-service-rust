@@ -7,10 +7,10 @@ pub struct DurationInSeconds(pub u64);
 
 impl DurationInSeconds {
     pub fn to_unsigned(self) -> u64 {
-        self.0.clone()
+        self.0
     }
     pub fn to_signed(self) -> i64 {
-        self.0.clone() as i64
+        self.0 as i64
     }
 }
 
@@ -19,7 +19,7 @@ impl Debug for DurationInSeconds {
         write!(
             f,
             "{}s ({}m/{}h/{}d)",
-            self.0.to_string(),
+            self.0,
             self.0 / 60,
             self.0 / 60 / 60,
             self.0 / 60 / 60 / 24,

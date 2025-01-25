@@ -8,7 +8,7 @@ fn it_can_hash_password_using_argon2() {
     let hash = argon_hasher.hash_password("password").unwrap();
     let is_ok = argon_hasher.verify_password("password", &hash);
 
-    assert_eq!(is_ok, true);
+    assert!(is_ok);
 }
 
 #[test]
@@ -17,7 +17,7 @@ fn it_can_hash_password_using_bcrypt() {
     let hash = bcrypt_hasher.hash_password("password").unwrap();
     let is_ok = bcrypt_hasher.verify_password("password", &hash);
 
-    assert_eq!(is_ok, true);
+    assert!(is_ok);
 }
 
 #[test]
@@ -29,8 +29,8 @@ fn it_can_hash_based_on_password_scheme() {
     expected_scheme.push('.');
     let contains_scheme = hash.contains(&expected_scheme);
 
-    assert_eq!(is_ok, true);
-    assert_eq!(contains_scheme, true);
+    assert!(is_ok);
+    assert!(contains_scheme);
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn it_can_verify_password_using_previous_scheme() {
     let hash = scheme_01.hash_password("password").unwrap();
     let is_ok = scheme_02.verify_password("password", &hash);
 
-    assert_eq!(is_ok, true);
+    assert!(is_ok);
 }
 
 #[test]
@@ -53,8 +53,8 @@ fn it_can_check_if_hash_needs_rehash() {
     let needs_rehash_01 = scheme_01.is_password_outdated(&hash);
     let needs_rehash_02 = scheme_02.is_password_outdated(&hash);
 
-    assert_eq!(needs_rehash_01, false);
-    assert_eq!(needs_rehash_02, true);
+    assert!(!needs_rehash_01);
+    assert!(needs_rehash_02);
 }
 
 #[test]
@@ -63,5 +63,5 @@ fn it_can_create_low_cost_bcrypt() {
     let hash = bcrypt_hasher.hash_password("password").unwrap();
     let is_ok = bcrypt_hasher.verify_password("password", &hash);
 
-    assert_eq!(is_ok, true);
+    assert!(is_ok);
 }

@@ -7,7 +7,7 @@ fn it_can_be_created() {
     let role = Role::new(Uuid::new_v4(), "SUPER_ADMIN".to_string(), Utc::now()).unwrap();
 
     assert_eq!(role.name, "SUPER_ADMIN".to_string());
-    assert_eq!(role.id.is_nil(), false);
+    assert!(!role.id.is_nil());
 }
 
 #[test]
@@ -23,5 +23,5 @@ fn it_can_be_created_now() {
     let role = Role::now("SUPER_ADMIN".to_string()).unwrap();
 
     assert_eq!(role.name, "SUPER_ADMIN".to_string());
-    assert_eq!(role.id.is_nil(), false);
+    assert!(!role.id.is_nil());
 }

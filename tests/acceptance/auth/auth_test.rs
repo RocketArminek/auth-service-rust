@@ -86,7 +86,7 @@ async fn it_issues_access_token() {
 
         let body = response.json::<LoginResponse>();
 
-        assert_eq!(body.user.is_verified, false);
+        assert!(!body.user.is_verified);
     })
     .await;
 }
@@ -128,7 +128,7 @@ async fn it_issues_access_token_for_not_verified_user() {
             assert_eq!(body.user.id, user.id);
             assert_eq!(body.user.email, user.email);
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
-            assert!(body.access_token.value.len() > 0);
+            assert!(!body.access_token.value.is_empty());
 
             let token = decode::<Claims>(
                 &body.access_token.value,
@@ -184,7 +184,7 @@ async fn it_issues_refresh_token() {
             assert_eq!(body.user.id, user.id);
             assert_eq!(body.user.email, user.email);
             assert_eq!(body.refresh_token.expires_at, exp.timestamp() as usize);
-            assert!(body.refresh_token.value.len() > 0);
+            assert!(!body.refresh_token.value.is_empty());
 
             let token = decode::<Claims>(
                 &body.refresh_token.value,
@@ -497,7 +497,7 @@ async fn it_refreshes_token() {
             assert_eq!(body.user.id, user.id);
             assert_eq!(body.user.email, user.email);
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
-            assert!(body.access_token.value.len() > 0);
+            assert!(!body.access_token.value.is_empty());
 
             let token = decode::<Claims>(
                 &body.access_token.value,

@@ -111,7 +111,7 @@ impl User {
         new_password: &str,
         hasher: &impl Hasher,
     ) -> Result<(), UserError> {
-        Self::validate_password(&new_password)?;
+        Self::validate_password(new_password)?;
         self.password = hasher.hash_password(new_password)?;
 
         Ok(())

@@ -31,16 +31,16 @@ impl RoleRepository for MysqlRoleRepository {
             Some(_) => {
                 sqlx::query("UPDATE roles SET name = ?, created_at = ? WHERE id = ?")
                     .bind(&role.name)
-                    .bind(&role.created_at)
-                    .bind(&role.id)
+                    .bind(role.created_at)
+                    .bind(role.id)
                     .execute(&mut *tx)
                     .await?;
             }
             None => {
                 sqlx::query("INSERT INTO roles (id, name, created_at) VALUES (?, ?, ?)")
-                    .bind(&role.id)
+                    .bind(role.id)
                     .bind(&role.name)
-                    .bind(&role.created_at)
+                    .bind(role.created_at)
                     .execute(&mut *tx)
                     .await?;
             }

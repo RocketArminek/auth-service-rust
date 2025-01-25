@@ -41,7 +41,7 @@ async fn it_creates_restricted_user() {
             assert_eq!(user.email, email);
             assert_eq!(user.avatar_path, None);
             assert_eq!(user.roles, vec!["ADMIN_USER".to_string()]);
-            assert_eq!(user.is_verified, true);
+            assert!(user.is_verified);
         }
     })
     .await;
@@ -122,7 +122,7 @@ async fn it_can_list_all_user_with_roles() {
 
         assert_eq!(body.items.len(), 1);
         assert_eq!(body.items[0].email, "admin@test.com");
-        assert_eq!(body.items[0].roles.is_empty(), false);
+        assert!(!body.items[0].roles.is_empty());
         assert_eq!(body.limit, 10);
         assert_eq!(body.page, 1);
         assert_eq!(body.total, 1);
@@ -202,7 +202,7 @@ async fn it_can_delete_user() {
             assert_eq!(user.first_name.unwrap(), "Jon".to_string());
             assert_eq!(user.last_name.unwrap(), "Snow".to_string());
             assert_eq!(user.avatar_path, None);
-            assert_eq!(user.roles.is_empty(), true);
+            assert!(user.roles.is_empty());
         }
     })
     .await;
@@ -274,7 +274,7 @@ async fn it_updates_other_user_information() {
             assert_eq!(old_user.first_name, Some("Jon".to_string()));
             assert_eq!(old_user.last_name, Some("Snow".to_string()));
             assert_eq!(old_user.avatar_path, None);
-            assert_eq!(old_user.roles.is_empty(), true);
+            assert!(old_user.roles.is_empty());
 
             assert_eq!(new_user.email, "user@test.com".to_string());
             assert_eq!(new_user.first_name.unwrap(), "Jon".to_string());
@@ -283,7 +283,7 @@ async fn it_updates_other_user_information() {
                 new_user.avatar_path,
                 Some("https://somepath.com/123.jpg".to_string())
             );
-            assert_eq!(new_user.roles.is_empty(), true);
+            assert!(new_user.roles.is_empty());
         }
     })
     .await;

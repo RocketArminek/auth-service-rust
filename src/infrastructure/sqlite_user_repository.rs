@@ -67,7 +67,7 @@ impl UserRepository for SqliteUserRepository {
         let mut tx = self.pool.begin().await?;
 
         let existing_user = sqlx::query("SELECT id FROM users WHERE id = ?")
-            .bind(&user.id)
+            .bind(user.id)
             .fetch_optional(&mut *tx)
             .await?;
 
@@ -88,12 +88,12 @@ impl UserRepository for SqliteUserRepository {
                 )
                 .bind(&user.email)
                 .bind(&user.password)
-                .bind(&user.created_at)
+                .bind(user.created_at)
                 .bind(&user.first_name)
                 .bind(&user.last_name)
                 .bind(&user.avatar_path)
-                .bind(&user.is_verified)
-                .bind(&user.id)
+                .bind(user.is_verified)
+                .bind(user.id)
                 .execute(&mut *tx)
                 .await?;
             }
@@ -107,21 +107,21 @@ impl UserRepository for SqliteUserRepository {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     "#,
                 )
-                .bind(&user.id)
+                .bind(user.id)
                 .bind(&user.email)
                 .bind(&user.password)
-                .bind(&user.created_at)
+                .bind(user.created_at)
                 .bind(&user.first_name)
                 .bind(&user.last_name)
                 .bind(&user.avatar_path)
-                .bind(&user.is_verified)
+                .bind(user.is_verified)
                 .execute(&mut *tx)
                 .await?;
             }
         }
 
         sqlx::query("DELETE FROM user_roles WHERE user_id = ?")
-            .bind(&user.id)
+            .bind(user.id)
             .execute(&mut *tx)
             .await?;
 
@@ -153,8 +153,8 @@ impl UserRepository for SqliteUserRepository {
                 VALUES (?, ?)
                 "#,
                 )
-                .bind(&user.id)
-                .bind(&role.id)
+                .bind(user.id)
+                .bind(role.id)
                 .execute(&mut *tx)
                 .await?;
             }

@@ -19,7 +19,7 @@ fn it_can_be_created() {
     .unwrap();
 
     assert_eq!(user.email, String::from("test@test.com"));
-    assert_eq!(user.id.is_nil(), false);
+    assert!(!user.id.is_nil());
 }
 
 #[test]
@@ -32,13 +32,13 @@ fn it_can_be_created_with_roles() {
         String::from("Iknow#othing1"),
         Some(String::from("Jon")),
         Some(String::from("Snow")),
-        now.clone(),
+        now,
         Some(true),
     )
     .unwrap()
     .with_roles(vec![role.clone()]);
 
-    assert_eq!(user.id.is_nil(), false);
+    assert!(!user.id.is_nil());
     assert_eq!(user.email, String::from("test@test.com"));
     assert_eq!(user.first_name, Some(String::from("Jon")));
     assert_eq!(user.last_name, Some(String::from("Snow")));
@@ -276,7 +276,7 @@ fn it_can_verify_password_using_hasher() {
     let hasher = SchemeAwareHasher::default();
     user.hash_password(&hasher).unwrap();
 
-    assert_eq!(user.verify_password(&hasher, "Iknow#othing1"), true);
+    assert!(user.verify_password(&hasher, "Iknow#othing1"));
 }
 
 #[test]
@@ -343,7 +343,7 @@ fn it_is_not_verified_by_default() {
     .unwrap();
 
     assert_eq!(user.email, String::from("test@test.com"));
-    assert_eq!(user.is_verified, false);
+    assert!(!user.is_verified);
 }
 
 #[test]

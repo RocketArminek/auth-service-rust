@@ -139,9 +139,9 @@ impl AuthStrategy {
     }
 }
 
-impl Into<String> for AuthStrategy {
-    fn into(self) -> String {
-        self.to_string()
+impl From<AuthStrategy> for String {
+    fn from(val: AuthStrategy) -> Self {
+        val.to_string()
     }
 }
 

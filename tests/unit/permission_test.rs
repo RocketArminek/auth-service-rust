@@ -21,8 +21,8 @@ fn it_can_be_created() {
         permission.description,
         Some("Allows creating new users".to_string())
     );
-    assert_eq!(permission.is_system, false);
-    assert_eq!(permission.id.is_nil(), false);
+    assert!(!permission.is_system);
+    assert!(!permission.id.is_nil());
 }
 
 #[test]
@@ -40,8 +40,8 @@ fn it_can_be_created_now() {
         permission.description,
         Some("Allows deleting users".to_string())
     );
-    assert_eq!(permission.is_system, false);
-    assert_eq!(permission.id.is_nil(), false);
+    assert!(!permission.is_system);
+    assert!(!permission.id.is_nil());
 }
 
 #[test]
