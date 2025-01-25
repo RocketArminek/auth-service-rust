@@ -238,16 +238,13 @@ pub async fn delete_user(
                 )
                     .into_response()
             }
-            Err(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(MessageResponse {
-                    message: "Failed to delete user".to_string(),
-                }),
-            )
-                .into_response(),
+            Err(e) => {
+                tracing::error!("Failed to delete user {:?}", e);
+                e.into_response()
+            }
         },
         Err(e) => {
-            tracing::error!("Failed to delete user");
+            tracing::error!("Failed to delete user {:?}", e);
             e.into_response()
         }
     }
@@ -311,7 +308,7 @@ pub async fn update_user(
             }
         }
         Err(e) => {
-            tracing::error!("Failed to update user");
+            tracing::error!("Failed to update user: {:?}", e);
             e.into_response()
         }
     }
