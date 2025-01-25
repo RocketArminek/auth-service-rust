@@ -9,6 +9,14 @@ services:
       context: .
       dockerfile: Dockerfile
       target: server
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.2'
     environment:
       DATABASE_URL: mysql://root:toor@mysql:3306/nebula_dev
       PASSWORD_HASHING_SCHEME: 'bcrypt_low'
@@ -25,6 +33,14 @@ services:
 
   mysql:
     image: mysql:8.4
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
     environment:
       MYSQL_ROOT_PASSWORD: toor
     ports:
@@ -38,6 +54,14 @@ services:
 
   rabbit:
     image: rabbitmq:4-management
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
     ports:
       - "5672:5672"
       - "15672:15672"
