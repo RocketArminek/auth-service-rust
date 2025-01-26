@@ -7,13 +7,13 @@ use std::fmt::Debug;
 use std::time::Duration;
 use tokio::time::sleep;
 
-pub async fn wait_for_event<T: Debug>(
+pub async fn wait_for_event<T>(
     mut consumer: Consumer,
     timeout_secs: u64,
     predicate: impl Fn(&T) -> bool,
 ) -> Option<T>
 where
-    T: serde::de::DeserializeOwned,
+    T: serde::de::DeserializeOwned + Debug,
 {
     let timeout = sleep(Duration::from_secs(timeout_secs));
     tokio::pin!(timeout);
