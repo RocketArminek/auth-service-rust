@@ -21,11 +21,21 @@ pub trait UserRepository: Send + Sync {
 pub trait RoleRepository: Send + Sync {
     async fn save(&self, role: &Role) -> Result<(), RepositoryError>;
     async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError>;
-    async fn get_by_id_with_permissions(&self, role_id: &Uuid) -> Result<(Role, Vec<Permission>), RepositoryError>;
+    async fn get_by_id_with_permissions(
+        &self,
+        role_id: &Uuid,
+    ) -> Result<(Role, Vec<Permission>), RepositoryError>;
     async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError>;
-    async fn get_by_name_with_permissions(&self, name: &str) -> Result<(Role, Vec<Permission>), RepositoryError>;
-    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Role>, RepositoryError>;
-    async fn get_all_with_permissions(&self, offset: i32, limit: i32) -> Result<Vec<(Role, Vec<Permission>)>, RepositoryError>;
+    async fn get_by_name_with_permissions(
+        &self,
+        name: &str,
+    ) -> Result<(Role, Vec<Permission>), RepositoryError>;
+    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError>;
+    async fn get_all_with_permissions(
+        &self,
+        page: i32,
+        limit: i32,
+    ) -> Result<Vec<(Role, Vec<Permission>)>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
     async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
@@ -67,7 +77,7 @@ pub trait PermissionRepository: Send + Sync {
         name: &str,
         group_name: &str,
     ) -> Result<Permission, RepositoryError>;
-    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError>;
+    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError>;
     async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError>;
     async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
     async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;

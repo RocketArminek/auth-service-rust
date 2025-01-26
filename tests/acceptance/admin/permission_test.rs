@@ -15,7 +15,7 @@ async fn it_can_create_permission() {
             .post("/v1/restricted/permissions")
             .json(&json!({
                 "name": "create_user",
-                "group_name": "user_management",
+                "groupName": "user_management",
                 "description": "Allows creating new users"
             }))
             .add_header(
@@ -60,7 +60,7 @@ async fn it_cannot_create_duplicate_permission() {
             .post("/v1/restricted/permissions")
             .json(&json!({
                 "name": "create_user",
-                "group_name": "user_management",
+                "groupName": "user_management",
                 "description": "Allows creating new users"
             }))
             .add_header(
@@ -137,7 +137,10 @@ async fn it_can_get_single_permission() {
         let body = response.json::<PermissionResponse>();
         assert_eq!(body.name, "create_user");
         assert_eq!(body.group_name, "user_management");
-        assert_eq!(body.description, Some("Allows creating new users".to_string()));
+        assert_eq!(
+            body.description,
+            Some("Allows creating new users".to_string())
+        );
     })
     .await;
 }
@@ -147,12 +150,8 @@ async fn it_can_delete_permission() {
     run_integration_test_with_default(|c| async move {
         let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
 
-        let permission = Permission::now(
-            "delete_me".to_string(),
-            "test_group".to_string(),
-            None,
-        )
-        .unwrap();
+        let permission =
+            Permission::now("delete_me".to_string(), "test_group".to_string(), None).unwrap();
         c.permission_repository.save(&permission).await.unwrap();
 
         let response = c
@@ -177,12 +176,8 @@ async fn it_cannot_delete_system_permission() {
     run_integration_test_with_default(|c| async move {
         let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
 
-        let permission = Permission::now(
-            "system_permission".to_string(),
-            "system".to_string(),
-            None,
-        )
-        .unwrap();
+        let permission =
+            Permission::now("system_permission".to_string(), "system".to_string(), None).unwrap();
         c.permission_repository.save(&permission).await.unwrap();
         c.permission_repository
             .mark_as_system(&permission.id)

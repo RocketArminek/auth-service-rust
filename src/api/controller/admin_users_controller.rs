@@ -139,7 +139,7 @@ pub async fn create_restricted_user(
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
-pub async fn get_all_users(
+pub async fn list_users(
     State(state): State<ServerState>,
     Query(pagination): Query<Pagination>,
 ) -> impl IntoResponse {

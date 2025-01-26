@@ -1,4 +1,6 @@
 use crate::domain::jwt::UserDTO;
+use crate::domain::permission::Permission;
+use crate::domain::role::Role;
 use crate::domain::session::Session;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -105,12 +107,18 @@ pub struct CreateRoleRequest {
 pub struct RoleResponse {
     pub id: String,
     pub name: String,
+    #[serde(rename = "createdAt")]
     pub created_at: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RoleListResponse {
     pub roles: Vec<RoleResponse>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RoleWithPermissionsListResponse {
+    pub roles: Vec<RoleWithPermissionsResponse>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -126,6 +134,7 @@ pub struct RemoveRoleRequest {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreatePermissionRequest {
     pub name: String,
+    #[serde(rename = "groupName")]
     pub group_name: String,
     pub description: Option<String>,
 }
@@ -134,6 +143,7 @@ pub struct CreatePermissionRequest {
 pub struct PermissionResponse {
     pub id: String,
     pub name: String,
+    #[serde(rename = "groupName")]
     pub group_name: String,
     pub description: Option<String>,
     pub is_system: bool,
@@ -147,12 +157,50 @@ pub struct PermissionListResponse {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct AssignPermissionRequest {
-    pub permission_name: String,
-    pub permission_group: String,
+    pub name: String,
+    #[serde(rename = "groupName")]
+    pub group_name: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RemovePermissionRequest {
-    pub permission_name: String,
-    pub permission_group: String,
+    pub name: String,
+    #[serde(rename = "groupName")]
+    pub group_name: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct RoleWithPermissionsResponse {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    pub permissions: Vec<PermissionResponse>,
+}
+
+impl RoleWithPermissionsResponse {
+    pub fn from_domain(role: Role, permissions: Vec<Permission>) -> Self {
+        Self {
+            id: role.id.to_string(),
+            name: role.name,
+            created_at: role.created_at.to_rfc3339(),
+            permissions: permissions
+                .into_iter()
+                .map(PermissionResponse::from_domain)
+                .collect(),
+        }
+    }
+}
+
+impl PermissionResponse {
+    pub fn from_domain(permission: Permission) -> Self {
+        Self {
+            id: permission.id.to_string(),
+            name: permission.name,
+            group_name: permission.group_name,
+            description: permission.description,
+            is_system: permission.is_system,
+            created_at: permission.created_at.to_rfc3339(),
+        }
+    }
 }

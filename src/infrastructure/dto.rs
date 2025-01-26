@@ -1,6 +1,6 @@
-use crate::domain::user::User;
-use crate::domain::role::Role;
 use crate::domain::permission::Permission;
+use crate::domain::role::Role;
+use crate::domain::user::User;
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -90,7 +90,7 @@ pub struct RoleWithPermissionsRow {
     pub permission_group_name: Option<String>,
     pub permission_description: Option<String>,
     pub permission_is_system: Option<bool>,
-    pub permission_created_at: Option<DateTime<Utc>>
+    pub permission_created_at: Option<DateTime<Utc>>,
 }
 
 impl RoleWithPermissionsRow {
@@ -98,25 +98,28 @@ impl RoleWithPermissionsRow {
         let role = Role {
             id: self.id,
             name: self.name,
-            created_at: self.created_at
+            created_at: self.created_at,
         };
 
         let permission =
-            if let (Some(id), Some(name), Some(group_name), Some(is_system), Some(created_at)) =
-                (self.permission_id, self.permission_name, self.permission_group_name, self.permission_is_system, self.permission_created_at) {
-            Some(
-                Permission {
+            if let (Some(id), Some(name), Some(group_name), Some(is_system), Some(created_at)) = (
+                self.permission_id,
+                self.permission_name,
+                self.permission_group_name,
+                self.permission_is_system,
+                self.permission_created_at,
+            ) {
+                Some(Permission {
                     id,
                     name,
                     group_name,
                     description: self.permission_description,
                     is_system,
-                    created_at
-                }
-            )
-        } else {
-            None
-        };
+                    created_at,
+                })
+            } else {
+                None
+            };
 
         (role, permission)
     }

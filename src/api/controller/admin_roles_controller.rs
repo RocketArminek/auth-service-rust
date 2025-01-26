@@ -1,6 +1,7 @@
 use crate::api::dto::{
-    CreateRoleRequest, CreatedResponse, MessageResponse, Pagination, RoleListResponse, RoleResponse,
-    AssignPermissionRequest, RemovePermissionRequest,
+    AssignPermissionRequest, CreateRoleRequest, CreatedResponse, MessageResponse, Pagination,
+    RemovePermissionRequest, RoleResponse, RoleWithPermissionsListResponse,
+    RoleWithPermissionsResponse,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::role::Role;
@@ -56,39 +57,49 @@ pub async fn create_role(
     }
 }
 
-#[utoipa::path(get, path = "/v1/restricted/roles",
-    tag="roles-management",
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/roles",
+    tag = "roles-management",
     params(
-        ("page" = Option<i32>, Query, description = "Page number default 1"),
-        ("limit" = Option<i32>, Query, description = "Number of items per page default 10"),
+        ("page" = Option<i32>, Query, description = "Page number"),
+        ("limit" = Option<i32>, Query, description = "Items per page")
     ),
     responses(
-        (status = 200, description = "List of roles", content_type = "application/json", body = RoleListResponse),
-        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
+        (status = 200, description = "List of roles with permissions", body = RoleWithPermissionsListResponse),
+        (status = 403, description = "Forbidden", body = MessageResponse),
+        (status = 401, description = "Unauthorized", body = MessageResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn list_roles(
     State(state): State<ServerState>,
-    Query(pagination): Query<Pagination>,
+    Query(params): Query<Pagination>,
 ) -> impl IntoResponse {
-    let page = pagination.page.unwrap_or(1);
-    let limit = pagination.limit.unwrap_or(10);
-    let offset = (page - 1) * limit;
+    let page = params.page.unwrap_or(0);
+    let limit = params.limit.unwrap_or(10);
 
-    match state.role_repository.get_all(offset, limit).await {
+    let roles_with_permissions = state
+        .role_repository
+        .get_all_with_permissions(page, limit)
+        .await;
+
+    match roles_with_permissions {
         Ok(roles) => {
-            let response = RoleListResponse {
-                roles: roles
-                    .into_iter()
-                    .map(|role| RoleResponse {
-                        id: role.id.to_string(),
-                        name: role.name,
-                        created_at: role.created_at.to_rfc3339(),
-                    })
-                    .collect(),
-            };
-            (StatusCode::OK, Json(response)).into_response()
+            let response: Vec<RoleWithPermissionsResponse> = roles
+                .into_iter()
+                .map(|(role, permissions)| {
+                    RoleWithPermissionsResponse::from_domain(role, permissions)
+                })
+                .collect();
+
+            (
+                StatusCode::OK,
+                Json(RoleWithPermissionsListResponse { roles: response }),
+            )
+                .into_response()
         }
         Err(e) => e.into_response(),
     }
@@ -161,14 +172,18 @@ pub async fn assign_permission_to_role(
 
     let permission = match state
         .permission_repository
-        .get_by_name(&request.permission_name, &request.permission_group)
+        .get_by_name(&request.name, &request.group_name)
         .await
     {
         Ok(permission) => permission,
         Err(e) => return e.into_response(),
     };
 
-    match state.role_repository.add_permission(&role.id, &permission.id).await {
+    match state
+        .role_repository
+        .add_permission(&role.id, &permission.id)
+        .await
+    {
         Ok(_) => (
             StatusCode::OK,
             Json(MessageResponse {
@@ -208,7 +223,7 @@ pub async fn remove_permission_from_role(
 
     let permission = match state
         .permission_repository
-        .get_by_name(&request.permission_name, &request.permission_group)
+        .get_by_name(&request.name, &request.group_name)
         .await
     {
         Ok(permission) => permission,

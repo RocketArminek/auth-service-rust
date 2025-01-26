@@ -96,7 +96,7 @@ async fn it_can_get_all_permissions() {
         c.permission_repository.save(&permission1).await.unwrap();
         c.permission_repository.save(&permission2).await.unwrap();
 
-        let permissions = c.permission_repository.get_all(0, 10).await.unwrap();
+        let permissions = c.permission_repository.get_all(1, 10).await.unwrap();
 
         assert_eq!(permissions.len(), 2);
         assert!(permissions.iter().any(|p| p.id == permission1.id));
@@ -144,9 +144,9 @@ async fn it_can_paginate_permissions() {
             c.permission_repository.save(&permission).await.unwrap();
         }
 
-        let page1 = c.permission_repository.get_all(0, 2).await.unwrap();
+        let page1 = c.permission_repository.get_all(1, 2).await.unwrap();
         let page2 = c.permission_repository.get_all(2, 2).await.unwrap();
-        let page3 = c.permission_repository.get_all(4, 2).await.unwrap();
+        let page3 = c.permission_repository.get_all(3, 2).await.unwrap();
 
         assert_eq!(page1.len(), 2);
         assert_eq!(page2.len(), 2);

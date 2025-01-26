@@ -85,7 +85,9 @@ impl PermissionRepository for MysqlPermissionRepository {
         Ok(permission)
     }
 
-    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError> {
+    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError> {
+        let offset = (page - 1) * limit;
+
         let permissions = query_as::<_, Permission>(
             "SELECT * FROM permissions ORDER BY created_at DESC LIMIT ? OFFSET ?",
         )

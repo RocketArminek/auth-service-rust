@@ -1,14 +1,16 @@
 use crate::acceptance::utils;
 use crate::utils::runners::run_integration_test_with_default;
-use auth_service::api::dto::{CreatedResponse, LoginResponse, RoleListResponse, RoleResponse};
+use auth_service::api::dto::{
+    CreatedResponse, LoginResponse, RoleResponse, RoleWithPermissionsListResponse,
+};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
+use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use serde_json::json;
 use uuid::Uuid;
-use auth_service::domain::permission::Permission;
 
 #[tokio::test]
 async fn it_can_create_role() {
@@ -81,7 +83,7 @@ async fn it_can_list_roles_with_pagination() {
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
-        let body = response.json::<RoleListResponse>();
+        let body = response.json::<RoleWithPermissionsListResponse>();
         assert_eq!(body.roles.len(), 10);
 
         let response = c
@@ -94,7 +96,7 @@ async fn it_can_list_roles_with_pagination() {
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
-        let body = response.json::<RoleListResponse>();
+        let body = response.json::<RoleWithPermissionsListResponse>();
         assert_eq!(body.roles.len(), 6);
     })
     .await;
@@ -330,8 +332,8 @@ async fn it_can_manage_role_permissions() {
             .server
             .patch(&format!("/v1/restricted/roles/{}/permissions", role.id))
             .json(&json!({
-                "permission_name": "test_permission",
-                "permission_group": "test_group"
+                "name": "test_permission",
+                "groupName": "test_group"
             }))
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),
@@ -349,8 +351,8 @@ async fn it_can_manage_role_permissions() {
             .server
             .delete(&format!("/v1/restricted/roles/{}/permissions", role.id))
             .json(&json!({
-                "permission_name": "test_permission",
-                "permission_group": "test_group"
+                "name": "test_permission",
+                "groupName": "test_group"
             }))
             .add_header(
                 HeaderName::try_from("Authorization").unwrap(),

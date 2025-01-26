@@ -45,7 +45,7 @@ async fn it_can_get_all_roles() {
     run_database_test_with_default(|c| async move {
         let role = Role::now("ROLE".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
-        let rows = c.role_repository.get_all(0, 10).await.unwrap();
+        let rows = c.role_repository.get_all(1, 10).await.unwrap();
 
         assert_eq!(rows.len(), 1);
     })
@@ -438,7 +438,11 @@ async fn it_can_get_all_roles_with_permissions() {
             .await
             .unwrap();
 
-        let roles_with_permissions = c.role_repository.get_all_with_permissions(0, 10).await.unwrap();
+        let roles_with_permissions = c
+            .role_repository
+            .get_all_with_permissions(1, 10)
+            .await
+            .unwrap();
 
         assert_eq!(roles_with_permissions.len(), 2);
 
@@ -454,11 +458,13 @@ async fn it_can_get_all_roles_with_permissions() {
         assert_eq!(role1_result.1.len(), 2);
         assert_eq!(role2_result.1.len(), 1);
 
-        let role1_permission_names: Vec<String> = role1_result.1.iter().map(|p| p.name.clone()).collect();
+        let role1_permission_names: Vec<String> =
+            role1_result.1.iter().map(|p| p.name.clone()).collect();
         assert!(role1_permission_names.contains(&"permission1".to_string()));
         assert!(role1_permission_names.contains(&"permission2".to_string()));
 
-        let role2_permission_names: Vec<String> = role2_result.1.iter().map(|p| p.name.clone()).collect();
+        let role2_permission_names: Vec<String> =
+            role2_result.1.iter().map(|p| p.name.clone()).collect();
         assert!(role2_permission_names.contains(&"permission2".to_string()));
     })
     .await;
@@ -471,12 +477,9 @@ async fn it_can_paginate_roles_with_permissions() {
             let role = Role::now(format!("ROLE_{}", i)).unwrap();
             c.role_repository.save(&role).await.unwrap();
 
-            let permission = Permission::now(
-                format!("permission_{}", i),
-                "test_group".to_string(),
-                None,
-            )
-            .unwrap();
+            let permission =
+                Permission::now(format!("permission_{}", i), "test_group".to_string(), None)
+                    .unwrap();
             c.permission_repository.save(&permission).await.unwrap();
             c.role_repository
                 .add_permission(&role.id, &permission.id)
@@ -484,9 +487,21 @@ async fn it_can_paginate_roles_with_permissions() {
                 .unwrap();
         }
 
-        let page1 = c.role_repository.get_all_with_permissions(0, 2).await.unwrap();
-        let page2 = c.role_repository.get_all_with_permissions(2, 2).await.unwrap();
-        let page3 = c.role_repository.get_all_with_permissions(4, 2).await.unwrap();
+        let page1 = c
+            .role_repository
+            .get_all_with_permissions(1, 2)
+            .await
+            .unwrap();
+        let page2 = c
+            .role_repository
+            .get_all_with_permissions(2, 2)
+            .await
+            .unwrap();
+        let page3 = c
+            .role_repository
+            .get_all_with_permissions(3, 2)
+            .await
+            .unwrap();
 
         assert_eq!(page1.len(), 2);
         assert_eq!(page2.len(), 2);

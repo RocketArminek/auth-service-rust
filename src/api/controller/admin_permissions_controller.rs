@@ -78,9 +78,8 @@ pub async fn list_permissions(
 ) -> impl IntoResponse {
     let page = pagination.page.unwrap_or(1);
     let limit = pagination.limit.unwrap_or(10);
-    let offset = (page - 1) * limit;
 
-    match state.permission_repository.get_all(offset, limit).await {
+    match state.permission_repository.get_all(page, limit).await {
         Ok(permissions) => {
             let response = PermissionListResponse {
                 permissions: permissions

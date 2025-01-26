@@ -2,11 +2,11 @@ use crate::domain::permission::Permission;
 use crate::domain::repository::RepositoryError;
 use crate::domain::repository::RoleRepository;
 use crate::domain::role::Role;
+use crate::infrastructure::dto::RoleWithPermissionsRow;
 use async_trait::async_trait;
 use sqlx::{query_as, MySql, Pool};
-use uuid::Uuid;
-use crate::infrastructure::dto::RoleWithPermissionsRow;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {
@@ -120,7 +120,9 @@ impl RoleRepository for MysqlRoleRepository {
         Ok(())
     }
 
-    async fn get_all(&self, offset: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {
+    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {
+        let offset = (page - 1) * limit;
+
         let roles =
             query_as::<_, Role>("SELECT * FROM roles ORDER BY created_at DESC LIMIT ? OFFSET ?")
                 .bind(limit)
@@ -292,7 +294,7 @@ impl RoleRepository for MysqlRoleRepository {
         }
 
         let first_row = &rows[0];
-        let role = Role{
+        let role = Role {
             id: first_row.id,
             name: first_row.name.clone(),
             created_at: first_row.created_at,
@@ -360,9 +362,11 @@ impl RoleRepository for MysqlRoleRepository {
 
     async fn get_all_with_permissions(
         &self,
-        offset: i32,
+        page: i32,
         limit: i32,
     ) -> Result<Vec<(Role, Vec<Permission>)>, RepositoryError> {
+        let offset = (page - 1) * limit;
+
         let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
             r#"
             SELECT 

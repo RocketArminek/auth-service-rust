@@ -45,7 +45,7 @@ pub fn routes(state: ServerState) -> Router {
             Router::new()
                 .route(
                     "/v1/restricted/users",
-                    post(create_restricted_user).get(get_all_users),
+                    post(create_restricted_user).get(list_users),
                 )
                 .route(
                     "/v1/restricted/users/{id}",
@@ -73,7 +73,10 @@ pub fn routes(state: ServerState) -> Router {
                     "/v1/restricted/roles/{id}/permissions",
                     patch(assign_permission_to_role).delete(remove_permission_from_role),
                 )
-                .route("/v1/restricted/permissions", get(list_permissions).post(create_permission))
+                .route(
+                    "/v1/restricted/permissions",
+                    get(list_permissions).post(create_permission),
+                )
                 .route(
                     "/v1/restricted/permissions/{id}",
                     get(get_permission).delete(delete_permission),
@@ -113,7 +116,7 @@ pub async fn open_api_docs() {
         health_action,
         register,
         create_restricted_user,
-        get_all_users,
+        list_users,
         get_user,
         delete_user,
         login,
@@ -170,6 +173,8 @@ pub async fn open_api_docs() {
             CreatePermissionRequest,
             AssignPermissionRequest,
             RemovePermissionRequest,
+            RoleWithPermissionsResponse,
+            RoleWithPermissionsListResponse,
         ),
     )
 )]
