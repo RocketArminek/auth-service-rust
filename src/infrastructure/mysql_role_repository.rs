@@ -5,6 +5,8 @@ use crate::domain::role::Role;
 use async_trait::async_trait;
 use sqlx::{query_as, MySql, Pool};
 use uuid::Uuid;
+use crate::infrastructure::dto::RoleWithPermissionsRow;
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct MysqlRoleRepository {
@@ -256,5 +258,152 @@ impl RoleRepository for MysqlRoleRepository {
 
         let permissions = q.fetch_all(&self.pool).await?;
         Ok(permissions)
+    }
+
+    async fn get_by_id_with_permissions(
+        &self,
+        role_id: &Uuid,
+    ) -> Result<(Role, Vec<Permission>), RepositoryError> {
+        let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
+            r#"
+            SELECT 
+                r.id, r.name, r.created_at, r.is_system,
+                p.id as permission_id, 
+                p.name as permission_name,
+                p.group_name as permission_group_name,
+                p.description as permission_description,
+                p.is_system as permission_is_system,
+                p.created_at as permission_created_at
+            FROM roles r
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE r.id = ?
+            "#,
+        )
+        .bind(role_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        if rows.is_empty() {
+            return Err(RepositoryError::NotFound(format!(
+                "Role with id {} not found",
+                role_id
+            )));
+        }
+
+        let first_row = &rows[0];
+        let role = Role{
+            id: first_row.id,
+            name: first_row.name.clone(),
+            created_at: first_row.created_at,
+        };
+
+        let permissions: Vec<Permission> = rows
+            .into_iter()
+            .filter_map(|row| {
+                let (_, permission) = row.into_role_and_permission();
+                permission
+            })
+            .collect();
+
+        Ok((role, permissions))
+    }
+
+    async fn get_by_name_with_permissions(
+        &self,
+        name: &str,
+    ) -> Result<(Role, Vec<Permission>), RepositoryError> {
+        let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
+            r#"
+            SELECT 
+                r.id, r.name, r.created_at, r.is_system,
+                p.id as permission_id, 
+                p.name as permission_name,
+                p.group_name as permission_group_name,
+                p.description as permission_description,
+                p.is_system as permission_is_system,
+                p.created_at as permission_created_at
+            FROM roles r
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE r.name = ?
+            "#,
+        )
+        .bind(name)
+        .fetch_all(&self.pool)
+        .await?;
+
+        if rows.is_empty() {
+            return Err(RepositoryError::NotFound(format!(
+                "Role with name {} not found",
+                name
+            )));
+        }
+
+        let first_row = &rows[0];
+        let role = Role {
+            id: first_row.id,
+            name: first_row.name.clone(),
+            created_at: first_row.created_at,
+        };
+
+        let permissions: Vec<Permission> = rows
+            .into_iter()
+            .filter_map(|row| {
+                let (_, permission) = row.into_role_and_permission();
+                permission
+            })
+            .collect();
+
+        Ok((role, permissions))
+    }
+
+    async fn get_all_with_permissions(
+        &self,
+        offset: i32,
+        limit: i32,
+    ) -> Result<Vec<(Role, Vec<Permission>)>, RepositoryError> {
+        let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
+            r#"
+            SELECT 
+                r.id, r.name, r.created_at, r.is_system,
+                p.id as permission_id, 
+                p.name as permission_name,
+                p.group_name as permission_group_name,
+                p.description as permission_description,
+                p.is_system as permission_is_system,
+                p.created_at as permission_created_at
+            FROM roles r
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            ORDER BY r.name
+            LIMIT ? OFFSET ?
+            "#,
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut role_map: HashMap<Uuid, (Role, Vec<Permission>)> = HashMap::new();
+
+        for row in rows {
+            let role_entry = role_map.entry(row.id).or_insert_with(|| {
+                let role = Role {
+                    id: row.id,
+                    name: row.name.clone(),
+                    created_at: row.created_at,
+                };
+                (role, Vec::new())
+            });
+
+            let (_, permission) = row.into_role_and_permission();
+
+            if permission.is_some() {
+                role_entry.1.push(permission.unwrap());
+            }
+        }
+
+        Ok(role_map.into_values().collect())
     }
 }

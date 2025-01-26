@@ -1,4 +1,6 @@
 use crate::domain::user::User;
+use crate::domain::role::Role;
+use crate::domain::permission::Permission;
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -74,5 +76,48 @@ impl From<UserRow> for User {
             avatar_path: row.avatar_path,
             is_verified: row.is_verified,
         }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+pub struct RoleWithPermissionsRow {
+    pub id: Uuid,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub is_system: bool,
+    pub permission_id: Option<Uuid>,
+    pub permission_name: Option<String>,
+    pub permission_group_name: Option<String>,
+    pub permission_description: Option<String>,
+    pub permission_is_system: Option<bool>,
+    pub permission_created_at: Option<DateTime<Utc>>
+}
+
+impl RoleWithPermissionsRow {
+    pub fn into_role_and_permission(self) -> (Role, Option<Permission>) {
+        let role = Role {
+            id: self.id,
+            name: self.name,
+            created_at: self.created_at
+        };
+
+        let permission =
+            if let (Some(id), Some(name), Some(group_name), Some(is_system), Some(created_at)) =
+                (self.permission_id, self.permission_name, self.permission_group_name, self.permission_is_system, self.permission_created_at) {
+            Some(
+                Permission {
+                    id,
+                    name,
+                    group_name,
+                    description: self.permission_description,
+                    is_system,
+                    created_at
+                }
+            )
+        } else {
+            None
+        };
+
+        (role, permission)
     }
 }

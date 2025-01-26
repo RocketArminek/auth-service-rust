@@ -234,3 +234,270 @@ async fn it_can_get_permissions_for_multiple_roles() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_get_role_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        let permission1 = Permission::now(
+            "permission1".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 1".to_string()),
+        )
+        .unwrap();
+        let permission2 = Permission::now(
+            "permission2".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 2".to_string()),
+        )
+        .unwrap();
+
+        c.role_repository.save(&role).await.unwrap();
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+
+        c.role_repository
+            .add_permission(&role.id, &permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role.id, &permission2.id)
+            .await
+            .unwrap();
+
+        let (fetched_role, permissions) = c
+            .role_repository
+            .get_by_id_with_permissions(&role.id)
+            .await
+            .unwrap();
+
+        assert_eq!(fetched_role.id, role.id);
+        assert_eq!(fetched_role.name, role.name);
+        assert_eq!(permissions.len(), 2);
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+        assert!(permission_names.contains(&"permission1".to_string()));
+        assert!(permission_names.contains(&"permission2".to_string()));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_role_without_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let (fetched_role, permissions) = c
+            .role_repository
+            .get_by_id_with_permissions(&role.id)
+            .await
+            .unwrap();
+
+        assert_eq!(fetched_role.id, role.id);
+        assert_eq!(fetched_role.name, role.name);
+        assert_eq!(permissions.len(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_for_nonexistent_role_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        let result = c
+            .role_repository
+            .get_by_id_with_permissions(&Uuid::new_v4())
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_role_by_name_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        let permission1 = Permission::now(
+            "permission1".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 1".to_string()),
+        )
+        .unwrap();
+        let permission2 = Permission::now(
+            "permission2".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 2".to_string()),
+        )
+        .unwrap();
+
+        c.role_repository.save(&role).await.unwrap();
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+
+        c.role_repository
+            .add_permission(&role.id, &permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role.id, &permission2.id)
+            .await
+            .unwrap();
+
+        let (fetched_role, permissions) = c
+            .role_repository
+            .get_by_name_with_permissions(&role.name)
+            .await
+            .unwrap();
+
+        assert_eq!(fetched_role.id, role.id);
+        assert_eq!(fetched_role.name, role.name);
+        assert_eq!(permissions.len(), 2);
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+        assert!(permission_names.contains(&"permission1".to_string()));
+        assert!(permission_names.contains(&"permission2".to_string()));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_role_by_name_without_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let (fetched_role, permissions) = c
+            .role_repository
+            .get_by_name_with_permissions(&role.name)
+            .await
+            .unwrap();
+
+        assert_eq!(fetched_role.id, role.id);
+        assert_eq!(fetched_role.name, role.name);
+        assert_eq!(permissions.len(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_for_nonexistent_role_name_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        let result = c
+            .role_repository
+            .get_by_name_with_permissions("NONEXISTENT_ROLE")
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_all_roles_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("ROLE_1".to_string()).unwrap();
+        let role2 = Role::now("ROLE_2".to_string()).unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+
+        let permission1 = Permission::now(
+            "permission1".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 1".to_string()),
+        )
+        .unwrap();
+        let permission2 = Permission::now(
+            "permission2".to_string(),
+            "test_group".to_string(),
+            Some("Test permission 2".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+
+        c.role_repository
+            .add_permission(&role1.id, &permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &permission2.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &permission2.id)
+            .await
+            .unwrap();
+
+        let roles_with_permissions = c.role_repository.get_all_with_permissions(0, 10).await.unwrap();
+
+        assert_eq!(roles_with_permissions.len(), 2);
+
+        let role1_result = roles_with_permissions
+            .iter()
+            .find(|(r, _)| r.id == role1.id)
+            .unwrap();
+        let role2_result = roles_with_permissions
+            .iter()
+            .find(|(r, _)| r.id == role2.id)
+            .unwrap();
+
+        assert_eq!(role1_result.1.len(), 2);
+        assert_eq!(role2_result.1.len(), 1);
+
+        let role1_permission_names: Vec<String> = role1_result.1.iter().map(|p| p.name.clone()).collect();
+        assert!(role1_permission_names.contains(&"permission1".to_string()));
+        assert!(role1_permission_names.contains(&"permission2".to_string()));
+
+        let role2_permission_names: Vec<String> = role2_result.1.iter().map(|p| p.name.clone()).collect();
+        assert!(role2_permission_names.contains(&"permission2".to_string()));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_paginate_roles_with_permissions() {
+    run_database_test_with_default(|c| async move {
+        for i in 1..=5 {
+            let role = Role::now(format!("ROLE_{}", i)).unwrap();
+            c.role_repository.save(&role).await.unwrap();
+
+            let permission = Permission::now(
+                format!("permission_{}", i),
+                "test_group".to_string(),
+                None,
+            )
+            .unwrap();
+            c.permission_repository.save(&permission).await.unwrap();
+            c.role_repository
+                .add_permission(&role.id, &permission.id)
+                .await
+                .unwrap();
+        }
+
+        let page1 = c.role_repository.get_all_with_permissions(0, 2).await.unwrap();
+        let page2 = c.role_repository.get_all_with_permissions(2, 2).await.unwrap();
+        let page3 = c.role_repository.get_all_with_permissions(4, 2).await.unwrap();
+
+        assert_eq!(page1.len(), 2);
+        assert_eq!(page2.len(), 2);
+        assert_eq!(page3.len(), 1);
+
+        for (role, permissions) in page1.iter().chain(page2.iter()).chain(page3.iter()) {
+            assert_eq!(permissions.len(), 1);
+            let role_number = role.name.split('_').last().unwrap();
+            let permission = &permissions[0];
+            assert_eq!(permission.name, format!("permission_{}", role_number));
+        }
+    })
+    .await;
+}
