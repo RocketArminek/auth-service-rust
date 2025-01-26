@@ -59,7 +59,7 @@ pub async fn create_role(
 
 #[utoipa::path(
     get,
-    path = "/api/v1/admin/roles",
+    path = "/v1/restricted/roles",
     tag = "roles-management",
     params(
         ("page" = Option<i32>, Query, description = "Page number"),
