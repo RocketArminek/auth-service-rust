@@ -281,5 +281,4 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 - Message queue support via [Lapin](https://github.com/CleverCloud/lapin)
 
 ## Support
-
 For support, please open an issue in the GitHub repository.
