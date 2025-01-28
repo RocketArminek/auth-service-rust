@@ -1076,3 +1076,81 @@ async fn it_includes_permissions_in_authenticate_endpoint() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_includes_permissions_in_headers() {
+    run_integration_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let permission1 = Permission::now(
+            "test_permission1".to_string(),
+            "test_group1".to_string(),
+            Some("Test permission 1".to_string()),
+        )
+        .unwrap();
+        let permission2 = Permission::now(
+            "test_permission2".to_string(),
+            "test_group1".to_string(),
+            Some("Test permission 2".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+        
+        c.role_repository
+            .add_permission(&role.id, &permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role.id, &permission2.id)
+            .await
+            .unwrap();
+
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Test#pass123".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user.hash_password(&SchemeAwareHasher::default()).unwrap();
+        user.add_role(role);
+        c.user_repository.save(&user).await.unwrap();
+
+        let login_response = c
+            .server
+            .post("/v1/login")
+            .json(&json!({
+                "email": "test@test.com",
+                "password": "Test#pass123",
+            }))
+            .await;
+
+        let login_body = login_response.json::<LoginResponse>();
+
+        let auth_response = c
+            .server
+            .get("/v1/authenticate")
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", login_body.access_token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(auth_response.status_code(), StatusCode::OK);
+
+        let permissions_header = auth_response
+            .headers()
+            .get("X-User-Permissions")
+            .unwrap()
+            .to_str()
+            .unwrap();
+
+        let expected_permissions = "test_group1:test_permission1,test_group1:test_permission2";
+        assert_eq!(permissions_header, expected_permissions);
+    })
+    .await;
+}
