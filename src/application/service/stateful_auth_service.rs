@@ -55,13 +55,13 @@ impl StatefulAuthService {
     }
 
     async fn validate_session(&self, session_id: &Uuid) -> Result<(Session, UserDTO), AuthError> {
-        let (session, user) = self
+        let (session, user, permissions) = self
             .session_repository
-            .get_session_with_user(session_id)
+            .get_session_with_user_and_permissions(session_id)
             .await
             .map_err(|_| AuthError::SessionNotFound)?;
 
-        Ok((session, UserDTO::from(user)))
+        Ok((session, UserDTO::from((user, permissions))))
     }
 }
 
@@ -72,9 +72,9 @@ impl AuthService for StatefulAuthService {
         email: String,
         password: String,
     ) -> Result<(TokenPair, UserDTO), AuthError> {
-        let mut user = self
+        let (mut user, permissions) = self
             .user_repository
-            .get_by_email(&email)
+            .get_by_email_with_permissions(&email)
             .await
             .map_err(|_| AuthError::UserNotFound)?;
 
@@ -106,7 +106,7 @@ impl AuthService for StatefulAuthService {
         let session = self
             .create_session(user.id, self.refresh_token_duration)
             .await?;
-        let user_dto = UserDTO::from(user);
+        let user_dto = UserDTO::from((user, permissions));
 
         let token_pair = self.generate_token_pair(
             user_dto.clone(),

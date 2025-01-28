@@ -4,6 +4,7 @@ use auth_service::application::configuration::dto::DurationInSeconds;
 use auth_service::application::service::auth_service::AuthStrategy;
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
+use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{header, HeaderName, HeaderValue, StatusCode};
@@ -916,5 +917,162 @@ async fn it_does_not_work_for_stateless_auth_strategy() {
             assert_eq!(auth_response.status_code(), StatusCode::OK);
         },
     )
+    .await;
+}
+
+#[tokio::test]
+async fn it_includes_permissions_in_jwt_token() {
+    let secret = "secret";
+    run_integration_test(
+        |c| {
+            c.app.secret(secret.to_string());
+        },
+        |c| async move {
+            let role = Role::now("TEST_ROLE".to_string()).unwrap();
+            c.role_repository.save(&role).await.unwrap();
+
+            let permission1 = Permission::now(
+                "test_permission1".to_string(),
+                "test_group1".to_string(),
+                Some("Test permission 1".to_string()),
+            )
+            .unwrap();
+            let permission2 = Permission::now(
+                "test_permission2".to_string(),
+                "test_group1".to_string(),
+                Some("Test permission 2".to_string()),
+            )
+            .unwrap();
+            let permission3 = Permission::now(
+                "test_permission3".to_string(),
+                "test_group2".to_string(),
+                Some("Test permission 3".to_string()),
+            )
+            .unwrap();
+
+            c.permission_repository.save(&permission1).await.unwrap();
+            c.permission_repository.save(&permission2).await.unwrap();
+            c.permission_repository.save(&permission3).await.unwrap();
+
+            c.role_repository
+                .add_permission(&role.id, &permission1.id)
+                .await
+                .unwrap();
+            c.role_repository
+                .add_permission(&role.id, &permission2.id)
+                .await
+                .unwrap();
+            c.role_repository
+                .add_permission(&role.id, &permission3.id)
+                .await
+                .unwrap();
+
+            let mut user = User::now_with_email_and_password(
+                "test@test.com".to_string(),
+                "Test#pass123".to_string(),
+                Some("Test".to_string()),
+                Some("User".to_string()),
+                Some(true),
+            )
+            .unwrap();
+            user.hash_password(&SchemeAwareHasher::default()).unwrap();
+            user.add_role(role);
+            c.user_repository.save(&user).await.unwrap();
+
+            let response = c
+                .server
+                .post("/v1/login")
+                .json(&json!({
+                    "email": "test@test.com",
+                    "password": "Test#pass123",
+                }))
+                .await;
+
+            assert_eq!(response.status_code(), StatusCode::OK);
+            let body = response.json::<LoginResponse>();
+
+            let token = decode::<Claims>(
+                &body.access_token.value,
+                &DecodingKey::from_secret(secret.as_ref()),
+                &Validation::default(),
+            )
+            .unwrap();
+
+            let permissions = &token.claims.user.permissions;
+            assert_eq!(permissions.len(), 2);
+
+            let group1_permissions = permissions.get("test_group1").unwrap();
+            assert_eq!(group1_permissions.len(), 2);
+            assert!(group1_permissions.contains(&"test_permission1".to_string()));
+            assert!(group1_permissions.contains(&"test_permission2".to_string()));
+
+            let group2_permissions = permissions.get("test_group2").unwrap();
+            assert_eq!(group2_permissions.len(), 1);
+            assert!(group2_permissions.contains(&"test_permission3".to_string()));
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn it_includes_permissions_in_authenticate_endpoint() {
+    run_integration_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+
+        let permission = Permission::now(
+            "test_permission".to_string(),
+            "test_group".to_string(),
+            Some("Test permission".to_string()),
+        )
+        .unwrap();
+        c.permission_repository.save(&permission).await.unwrap();
+        c.role_repository
+            .add_permission(&role.id, &permission.id)
+            .await
+            .unwrap();
+
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Test#pass123".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user.hash_password(&SchemeAwareHasher::default()).unwrap();
+        user.add_role(role);
+        c.user_repository.save(&user).await.unwrap();
+
+        let login_response = c
+            .server
+            .post("/v1/login")
+            .json(&json!({
+                "email": "test@test.com",
+                "password": "Test#pass123",
+            }))
+            .await;
+
+        let login_body = login_response.json::<LoginResponse>();
+
+        let auth_response = c
+            .server
+            .get("/v1/authenticate")
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", login_body.access_token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(auth_response.status_code(), StatusCode::OK);
+        let auth_body = auth_response.json::<UserDTO>();
+
+        let permissions = &auth_body.permissions;
+        assert_eq!(permissions.len(), 1);
+
+        let group_permissions = permissions.get("test_group").unwrap();
+        assert_eq!(group_permissions.len(), 1);
+        assert!(group_permissions.contains(&"test_permission".to_string()));
+    })
     .await;
 }

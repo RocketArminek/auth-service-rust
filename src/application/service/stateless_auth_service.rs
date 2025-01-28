@@ -40,9 +40,9 @@ impl AuthService for StatelessAuthService {
         email: String,
         password: String,
     ) -> Result<(TokenPair, UserDTO), AuthError> {
-        let mut user = self
+        let (mut user, permissions) = self
             .user_repository
-            .get_by_email(&email)
+            .get_by_email_with_permissions(&email)
             .await
             .map_err(|_| AuthError::UserNotFound)?;
 
@@ -71,7 +71,7 @@ impl AuthService for StatelessAuthService {
             }
         }
 
-        let user_dto = UserDTO::from(user);
+        let user_dto = UserDTO::from((user, permissions));
 
         Ok((
             self.generate_token_pair(

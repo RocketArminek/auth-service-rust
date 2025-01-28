@@ -1,5 +1,7 @@
+use crate::domain::permission::Permission;
 use crate::domain::user::User;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -41,6 +43,7 @@ pub struct UserDTO {
     #[serde(rename = "avatarPath")]
     pub avatar_path: Option<String>,
     pub roles: Vec<String>,
+    pub permissions: HashMap<String, Vec<String>>,
     #[serde(rename = "isVerified")]
     pub is_verified: bool,
 }
@@ -54,6 +57,31 @@ impl From<User> for UserDTO {
             last_name: user.last_name,
             avatar_path: user.avatar_path,
             roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+            permissions: HashMap::new(),
+            is_verified: user.is_verified,
+        }
+    }
+}
+
+impl From<(User, Vec<Permission>)> for UserDTO {
+    fn from((user, permissions): (User, Vec<Permission>)) -> Self {
+        let mut permissions_map: HashMap<String, Vec<String>> = HashMap::new();
+
+        for permission in permissions {
+            permissions_map
+                .entry(permission.group_name)
+                .or_default()
+                .push(permission.name);
+        }
+
+        UserDTO {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            avatar_path: user.avatar_path,
+            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+            permissions: permissions_map,
             is_verified: user.is_verified,
         }
     }
