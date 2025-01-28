@@ -27,7 +27,7 @@ chrono = { version = "0.4.39", features = ["serde"] }
 uuid = { version = "1.12.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
 dotenvy = "0.15.7"
-serde_json = "1.0.137"
+serde_json = "1.0.138"
 tower-http = { version = "0.6.2", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
 tracing = "0.1.41"
@@ -42,5 +42,5 @@ async-trait = "0.1.85"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
-axum-test = "17.1.0"
+axum-test = "17.2.0"
 predicates = "3.1.3"
