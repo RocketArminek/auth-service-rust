@@ -516,3 +516,48 @@ async fn it_can_paginate_roles_with_permissions() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_delete_role_by_name() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        c.role_repository.delete_by_name(&role.name).await.unwrap();
+
+        let result = c.role_repository.get_by_name(&role.name).await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Entity not found"));
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_cannot_delete_system_role_by_name() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("TEST_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        c.role_repository.mark_as_system(&role.id).await.unwrap();
+
+        let result = c.role_repository.delete_by_name(&role.name).await;
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Cannot delete system role"));
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_when_deleting_nonexistent_role_by_name() {
+    run_database_test_with_default(|c| async move {
+        let result = c.role_repository.delete_by_name("NONEXISTENT_ROLE").await;
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}

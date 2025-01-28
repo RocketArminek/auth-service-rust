@@ -1,5 +1,6 @@
 use crate::utils::runners::run_database_test_with_default;
 use auth_service::domain::permission::Permission;
+use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::User;
@@ -313,6 +314,111 @@ async fn it_can_get_session_with_user_and_permissions() {
 
         let unique_permission_names: HashSet<_> = permission_names.iter().collect();
         assert_eq!(permission_names.len(), unique_permission_names.len());
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_for_nonexistent_session_with_user() {
+    run_database_test_with_default(|c| async move {
+        let non_existent_id = Uuid::new_v4();
+        let result = c
+            .session_repository
+            .get_session_with_user(&non_existent_id)
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(msg)) => {
+                assert_eq!(
+                    msg,
+                    format!("Session not found with id: {}", non_existent_id)
+                );
+            }
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_update_existing_session() {
+    run_database_test_with_default(|c| async move {
+        let user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Password123!".to_string(),
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+        c.user_repository.save(&user).await.unwrap();
+
+        let mut session = Session::now(user.id, Utc::now() + Duration::hours(1));
+        c.session_repository.save(&session).await.unwrap();
+
+        let new_expiry = Utc::now() + Duration::hours(2);
+        session.expires_at = new_expiry;
+
+        c.session_repository.save(&session).await.unwrap();
+
+        let updated_session = c.session_repository.get_by_id(&session.id).await.unwrap();
+
+        assert_eq!(updated_session.id, session.id);
+        assert_eq!(updated_session.user_id, user.id);
+        assert!(
+            (updated_session.expires_at - new_expiry)
+                .num_milliseconds()
+                .abs()
+                < 1000,
+            "Expiry time should be within 1 second tolerance"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_when_getting_nonexistent_session_with_user() {
+    run_database_test_with_default(|c| async move {
+        let non_existent_id = Uuid::new_v4();
+        let result = c
+            .session_repository
+            .get_session_with_user(&non_existent_id)
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(msg)) => {
+                assert_eq!(
+                    msg,
+                    format!("Session not found with id: {}", non_existent_id)
+                );
+            }
+            _ => panic!("Expected NotFound error"),
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_returns_not_found_when_getting_nonexistent_session_with_user_and_permissions() {
+    run_database_test_with_default(|c| async move {
+        let non_existent_id = Uuid::new_v4();
+        let result = c
+            .session_repository
+            .get_session_with_user_and_permissions(&non_existent_id)
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(RepositoryError::NotFound(msg)) => {
+                assert_eq!(
+                    msg,
+                    format!("Session not found with id: {}", non_existent_id)
+                );
+            }
+            _ => panic!("Expected NotFound error"),
+        }
     })
     .await;
 }

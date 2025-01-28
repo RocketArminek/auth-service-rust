@@ -101,23 +101,33 @@ impl RoleRepository for MysqlRoleRepository {
         let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE name = ?")
             .bind(name)
             .fetch_optional(&mut *tx)
-            .await?
-            .unwrap_or(false);
-
-        if is_system {
-            tx.rollback().await?;
-            return Err(RepositoryError::Conflict(
-                "Cannot delete system role".to_string(),
-            ));
-        }
-
-        sqlx::query("DELETE FROM roles WHERE name = ?")
-            .bind(name)
-            .execute(&mut *tx)
             .await?;
 
-        tx.commit().await?;
-        Ok(())
+        match is_system {
+            None => {
+                tx.rollback().await?;
+                Err(RepositoryError::NotFound(format!(
+                    "Role with name {} not found",
+                    name
+                )))
+            }
+            Some(is_system) => {
+                if is_system {
+                    tx.rollback().await?;
+                    return Err(RepositoryError::Conflict(
+                        "Cannot delete system role".to_string(),
+                    ));
+                }
+
+                sqlx::query("DELETE FROM roles WHERE name = ?")
+                    .bind(name)
+                    .execute(&mut *tx)
+                    .await?;
+
+                tx.commit().await?;
+                Ok(())
+            }
+        }
     }
 
     async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {

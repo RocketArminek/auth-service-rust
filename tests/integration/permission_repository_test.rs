@@ -299,3 +299,59 @@ async fn it_cannot_delete_nonexistent_permission() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_can_get_permissions_by_group() {
+    run_database_test_with_default(|c| async move {
+        let permission1 = Permission::now(
+            "manage_users".to_string(),
+            "user_management".to_string(),
+            Some("Manage users permission".to_string()),
+        )
+        .unwrap();
+        let permission2 = Permission::now(
+            "view_users".to_string(),
+            "user_management".to_string(),
+            Some("View users permission".to_string()),
+        )
+        .unwrap();
+        let permission3 = Permission::now(
+            "manage_roles".to_string(),
+            "role_management".to_string(),
+            Some("Manage roles permission".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository.save(&permission1).await.unwrap();
+        c.permission_repository.save(&permission2).await.unwrap();
+        c.permission_repository.save(&permission3).await.unwrap();
+
+        let user_management_permissions = c
+            .permission_repository
+            .get_by_group("user_management")
+            .await
+            .unwrap();
+
+        assert_eq!(user_management_permissions.len(), 2);
+
+        let permission_names: Vec<String> = user_management_permissions
+            .iter()
+            .map(|p| p.name.clone())
+            .collect();
+        assert!(permission_names.contains(&"manage_users".to_string()));
+        assert!(permission_names.contains(&"view_users".to_string()));
+        assert!(!permission_names.contains(&"manage_roles".to_string()));
+
+        assert!(user_management_permissions
+            .iter()
+            .all(|p| p.group_name == "user_management"));
+
+        let non_existent_group_permissions = c
+            .permission_repository
+            .get_by_group("non_existent_group")
+            .await
+            .unwrap();
+        assert!(non_existent_group_permissions.is_empty());
+    })
+    .await;
+}

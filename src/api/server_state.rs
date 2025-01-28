@@ -44,10 +44,6 @@ pub trait SecretAware {
     fn get_secret(&self) -> String;
 }
 
-pub trait VerificationRequired {
-    fn get_verification_required(&self) -> bool;
-}
-
 pub trait AuthServiceAware {
     fn get_auth_service(&self) -> Arc<dyn AuthService>;
 }
@@ -55,12 +51,6 @@ pub trait AuthServiceAware {
 impl SecretAware for ServerState {
     fn get_secret(&self) -> String {
         self.config.secret().to_string()
-    }
-}
-
-impl VerificationRequired for ServerState {
-    fn get_verification_required(&self) -> bool {
-        self.config.verification_required()
     }
 }
 
