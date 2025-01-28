@@ -1,8 +1,10 @@
 use crate::utils::runners::run_database_test_with_default;
+use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::session::Session;
 use auth_service::domain::user::User;
 use chrono::{Duration, Timelike, Utc};
+use std::collections::HashSet;
 use uuid::{NoContext, Timestamp, Uuid};
 
 #[tokio::test]
@@ -217,6 +219,100 @@ async fn it_can_delete_expired_sessions() {
         let remaining_sessions = c.session_repository.get_by_user_id(&user.id).await.unwrap();
         assert_eq!(remaining_sessions.len(), 1);
         assert_eq!(remaining_sessions[0].id, valid_session.id);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_session_with_user_and_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("role1".to_string()).unwrap();
+        let role2 = Role::now("role2".to_string()).unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+
+        let shared_permission = Permission::now(
+            "shared_permission".to_string(),
+            "test_group".to_string(),
+            Some("Shared between roles".to_string()),
+        )
+        .unwrap();
+        let unique_permission1 = Permission::now(
+            "unique_permission1".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role1".to_string()),
+        )
+        .unwrap();
+        let unique_permission2 = Permission::now(
+            "unique_permission2".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role2".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository
+            .save(&shared_permission)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission1)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission2)
+            .await
+            .unwrap();
+
+        c.role_repository
+            .add_permission(&role1.id, &shared_permission.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &unique_permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &shared_permission.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &unique_permission2.id)
+            .await
+            .unwrap();
+
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Password123!".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user.add_roles(vec![role1.clone(), role2.clone()]);
+        c.user_repository.save(&user).await.unwrap();
+
+        let session = Session::now(user.id, Utc::now() + Duration::hours(1));
+        c.session_repository.save(&session).await.unwrap();
+
+        let (saved_session, saved_user, permissions) = c
+            .session_repository
+            .get_session_with_user_and_permissions(&session.id)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_session.id, session.id);
+        assert_eq!(saved_session.user_id, user.id);
+        assert_eq!(saved_user.id, user.id);
+        assert_eq!(saved_user.email, user.email);
+        assert_eq!(permissions.len(), 3);
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+        assert!(permission_names.contains(&"shared_permission".to_string()));
+        assert!(permission_names.contains(&"unique_permission1".to_string()));
+        assert!(permission_names.contains(&"unique_permission2".to_string()));
+
+        let unique_permission_names: HashSet<_> = permission_names.iter().collect();
+        assert_eq!(permission_names.len(), unique_permission_names.len());
     })
     .await;
 }

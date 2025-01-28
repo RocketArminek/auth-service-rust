@@ -32,33 +32,21 @@ pub struct UserWithRoleRow {
     pub role_created_at: Option<DateTime<Utc>>,
 }
 
-#[derive(FromRow, Debug, Clone)]
+#[derive(sqlx::FromRow)]
 pub struct SessionWithUserRow {
     pub id: Uuid,
     pub user_id: Uuid,
-    pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
-    #[sqlx(rename = "user.id")]
-    pub user_id_alias: Uuid,
-    #[sqlx(rename = "user.email")]
+    pub created_at: DateTime<Utc>,
     pub user_email: String,
-    #[sqlx(rename = "user.password")]
     pub user_password: String,
-    #[sqlx(rename = "user.created_at")]
     pub user_created_at: DateTime<Utc>,
-    #[sqlx(rename = "user.first_name")]
     pub user_first_name: Option<String>,
-    #[sqlx(rename = "user.last_name")]
     pub user_last_name: Option<String>,
-    #[sqlx(rename = "user.avatar_path")]
     pub user_avatar_path: Option<String>,
-    #[sqlx(rename = "user.is_verified")]
     pub user_is_verified: bool,
-    #[sqlx(rename = "role.id")]
     pub role_id: Option<Uuid>,
-    #[sqlx(rename = "role.name")]
     pub role_name: Option<String>,
-    #[sqlx(rename = "role.created_at")]
     pub role_created_at: Option<DateTime<Utc>>,
 }
 
@@ -135,6 +123,30 @@ pub struct UserWithPermissionsRow {
     pub last_name: Option<String>,
     pub avatar_path: Option<String>,
     pub is_verified: bool,
+    pub role_id: Option<Uuid>,
+    pub role_name: Option<String>,
+    pub role_created_at: Option<DateTime<Utc>>,
+    pub permission_id: Option<Uuid>,
+    pub permission_name: Option<String>,
+    pub permission_group_name: Option<String>,
+    pub permission_description: Option<String>,
+    pub permission_is_system: Option<bool>,
+    pub permission_created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct SessionWithUserAndPermissionsRow {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub user_email: String,
+    pub user_password: String,
+    pub user_created_at: DateTime<Utc>,
+    pub user_first_name: Option<String>,
+    pub user_last_name: Option<String>,
+    pub user_avatar_path: Option<String>,
+    pub user_is_verified: bool,
     pub role_id: Option<Uuid>,
     pub role_name: Option<String>,
     pub role_created_at: Option<DateTime<Utc>>,

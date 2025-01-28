@@ -1,3 +1,4 @@
+use crate::domain::permission::Permission;
 use crate::domain::repository::RepositoryError;
 use crate::domain::repository::UserRepository;
 use crate::domain::role::Role;
@@ -5,9 +6,8 @@ use crate::domain::user::User;
 use crate::infrastructure::dto::{UserWithPermissionsRow, UserWithRoleRow};
 use async_trait::async_trait;
 use sqlx::{query, Error, MySql, Pool};
-use uuid::Uuid;
-use crate::domain::permission::Permission;
 use std::collections::HashSet;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct MysqlUserRepository {
@@ -346,7 +346,10 @@ impl UserRepository for MysqlUserRepository {
         Ok((users, total.0))
     }
 
-    async fn get_by_id_with_permissions(&self, id: &Uuid) -> Result<(User, Vec<Permission>), RepositoryError> {
+    async fn get_by_id_with_permissions(
+        &self,
+        id: &Uuid,
+    ) -> Result<(User, Vec<Permission>), RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithPermissionsRow>(
             r#"
             SELECT 
@@ -438,7 +441,10 @@ impl UserRepository for MysqlUserRepository {
         Ok((user, permissions))
     }
 
-    async fn get_by_email_with_permissions(&self, email: &str) -> Result<(User, Vec<Permission>), RepositoryError> {
+    async fn get_by_email_with_permissions(
+        &self,
+        email: &str,
+    ) -> Result<(User, Vec<Permission>), RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithPermissionsRow>(
             r#"
             SELECT 

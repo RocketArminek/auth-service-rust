@@ -1,3 +1,4 @@
+use crate::domain::permission::Permission;
 use crate::domain::repository::RepositoryError;
 use crate::domain::repository::UserRepository;
 use crate::domain::role::Role;
@@ -7,7 +8,6 @@ use async_trait::async_trait;
 use sqlx::{query, Error, Pool, Sqlite};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use crate::domain::permission::Permission;
 
 #[derive(Clone)]
 pub struct SqliteUserRepository {
@@ -349,7 +349,10 @@ impl UserRepository for SqliteUserRepository {
         Ok((users, total.0))
     }
 
-    async fn get_by_id_with_permissions(&self, id: &Uuid) -> Result<(User, Vec<Permission>), RepositoryError> {
+    async fn get_by_id_with_permissions(
+        &self,
+        id: &Uuid,
+    ) -> Result<(User, Vec<Permission>), RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithPermissionsRow>(
             r#"
             SELECT
@@ -378,15 +381,15 @@ impl UserRepository for SqliteUserRepository {
             WHERE u.id = ?
             "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -441,7 +444,10 @@ impl UserRepository for SqliteUserRepository {
         Ok((user, permissions))
     }
 
-    async fn get_by_email_with_permissions(&self, email: &str) -> Result<(User, Vec<Permission>), RepositoryError> {
+    async fn get_by_email_with_permissions(
+        &self,
+        email: &str,
+    ) -> Result<(User, Vec<Permission>), RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithPermissionsRow>(
             r#"
             SELECT
@@ -470,15 +476,15 @@ impl UserRepository for SqliteUserRepository {
             WHERE u.email = ?
             "#,
         )
-            .bind(email)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with email: {}", email))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(

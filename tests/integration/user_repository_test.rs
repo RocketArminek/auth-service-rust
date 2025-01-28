@@ -1,8 +1,8 @@
 use crate::utils::runners::run_database_test_with_default;
+use auth_service::domain::permission::Permission;
 use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
-use auth_service::domain::permission::Permission;
 use std::collections::HashSet;
 
 #[tokio::test]
@@ -409,9 +409,18 @@ async fn it_can_get_user_with_overlapping_permissions_from_different_roles() {
         )
         .unwrap();
 
-        c.permission_repository.save(&shared_permission).await.unwrap();
-        c.permission_repository.save(&unique_permission1).await.unwrap();
-        c.permission_repository.save(&unique_permission2).await.unwrap();
+        c.permission_repository
+            .save(&shared_permission)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission1)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission2)
+            .await
+            .unwrap();
 
         c.role_repository
             .add_permission(&role1.id, &shared_permission.id)
@@ -455,7 +464,8 @@ async fn it_can_get_user_with_overlapping_permissions_from_different_roles() {
         assert!(permission_names.contains(&"unique_permission1".to_string()));
         assert!(permission_names.contains(&"unique_permission2".to_string()));
 
-        let unique_permission_names: std::collections::HashSet<_> = permission_names.iter().collect();
+        let unique_permission_names: std::collections::HashSet<_> =
+            permission_names.iter().collect();
         assert_eq!(permission_names.len(), unique_permission_names.len());
     })
     .await;
@@ -488,9 +498,18 @@ async fn it_can_get_user_with_permissions_by_email() {
         )
         .unwrap();
 
-        c.permission_repository.save(&shared_permission).await.unwrap();
-        c.permission_repository.save(&unique_permission1).await.unwrap();
-        c.permission_repository.save(&unique_permission2).await.unwrap();
+        c.permission_repository
+            .save(&shared_permission)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission1)
+            .await
+            .unwrap();
+        c.permission_repository
+            .save(&unique_permission2)
+            .await
+            .unwrap();
 
         c.role_repository
             .add_permission(&role1.id, &shared_permission.id)
@@ -655,7 +674,8 @@ async fn it_can_get_user_with_complex_overlapping_permissions() {
         assert!(permission_names.contains(&"unique_to_1".to_string()));
         assert!(permission_names.contains(&"unique_to_3".to_string()));
 
-        let unique_permission_names: std::collections::HashSet<_> = permission_names.iter().collect();
+        let unique_permission_names: std::collections::HashSet<_> =
+            permission_names.iter().collect();
         assert_eq!(permission_names.len(), unique_permission_names.len());
 
         let (saved_user_by_email, permissions_by_email) = c
@@ -666,8 +686,11 @@ async fn it_can_get_user_with_complex_overlapping_permissions() {
 
         assert_eq!(saved_user_by_email.id, saved_user.id);
         assert_eq!(permissions_by_email.len(), permissions.len());
-        
-        let permission_names_by_email: Vec<String> = permissions_by_email.iter().map(|p| p.name.clone()).collect();
+
+        let permission_names_by_email: Vec<String> = permissions_by_email
+            .iter()
+            .map(|p| p.name.clone())
+            .collect();
         assert_eq!(
             permission_names_by_email.iter().collect::<HashSet<_>>(),
             permission_names.iter().collect::<HashSet<_>>()

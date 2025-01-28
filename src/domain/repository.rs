@@ -15,9 +15,14 @@ pub trait UserRepository: Send + Sync {
     async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError>;
     async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError>;
     async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError>;
-    async fn get_by_id_with_permissions(&self, id: &Uuid)
-        -> Result<(User, Vec<Permission>), RepositoryError>;
-    async fn get_by_email_with_permissions(&self, email: &str) -> Result<(User, Vec<Permission>), RepositoryError>;
+    async fn get_by_id_with_permissions(
+        &self,
+        id: &Uuid,
+    ) -> Result<(User, Vec<Permission>), RepositoryError>;
+    async fn get_by_email_with_permissions(
+        &self,
+        email: &str,
+    ) -> Result<(User, Vec<Permission>), RepositoryError>;
 }
 
 #[async_trait]
@@ -69,6 +74,10 @@ pub trait SessionRepository: Send + Sync {
     async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
     async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError>;
     async fn delete_expired(&self) -> Result<(), RepositoryError>;
+    async fn get_session_with_user_and_permissions(
+        &self,
+        id: &Uuid,
+    ) -> Result<(Session, User, Vec<Permission>), RepositoryError>;
 }
 
 #[async_trait]
