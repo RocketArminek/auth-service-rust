@@ -15,6 +15,8 @@ pub trait UserRepository: Send + Sync {
     async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError>;
     async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError>;
     async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError>;
+    async fn get_by_id_with_permissions(&self, id: &Uuid)
+        -> Result<(User, Vec<Permission>), RepositoryError>;
 }
 
 #[async_trait]
