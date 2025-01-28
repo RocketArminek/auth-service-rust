@@ -3,6 +3,7 @@ use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
 use auth_service::domain::permission::Permission;
+use std::collections::HashSet;
 
 #[tokio::test]
 async fn it_can_add_user() {
@@ -456,6 +457,221 @@ async fn it_can_get_user_with_overlapping_permissions_from_different_roles() {
 
         let unique_permission_names: std::collections::HashSet<_> = permission_names.iter().collect();
         assert_eq!(permission_names.len(), unique_permission_names.len());
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_user_with_permissions_by_email() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("role1".to_string()).unwrap();
+        let role2 = Role::now("role2".to_string()).unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+
+        let shared_permission = Permission::now(
+            "shared_permission".to_string(),
+            "test_group".to_string(),
+            Some("Shared between roles".to_string()),
+        )
+        .unwrap();
+        let unique_permission1 = Permission::now(
+            "unique_permission1".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role1".to_string()),
+        )
+        .unwrap();
+        let unique_permission2 = Permission::now(
+            "unique_permission2".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role2".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository.save(&shared_permission).await.unwrap();
+        c.permission_repository.save(&unique_permission1).await.unwrap();
+        c.permission_repository.save(&unique_permission2).await.unwrap();
+
+        c.role_repository
+            .add_permission(&role1.id, &shared_permission.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &unique_permission1.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &shared_permission.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &unique_permission2.id)
+            .await
+            .unwrap();
+
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Test#pass123".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user.add_roles(vec![role1.clone(), role2.clone()]);
+        c.user_repository.save(&user).await.unwrap();
+
+        let (saved_user, permissions) = c
+            .user_repository
+            .get_by_email_with_permissions(&user.email)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_user.id, user.id);
+        assert_eq!(saved_user.email, user.email);
+        assert_eq!(permissions.len(), 3);
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+        assert!(permission_names.contains(&"shared_permission".to_string()));
+        assert!(permission_names.contains(&"unique_permission1".to_string()));
+        assert!(permission_names.contains(&"unique_permission2".to_string()));
+
+        let unique_permission_names: HashSet<_> = permission_names.iter().collect();
+        assert_eq!(permission_names.len(), unique_permission_names.len());
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_can_get_user_with_complex_overlapping_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role1 = Role::now("role1".to_string()).unwrap();
+        let role2 = Role::now("role2".to_string()).unwrap();
+        let role3 = Role::now("role3".to_string()).unwrap();
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+        c.role_repository.save(&role3).await.unwrap();
+
+        let shared_by_all = Permission::now(
+            "shared_by_all".to_string(),
+            "test_group".to_string(),
+            Some("Shared by all roles".to_string()),
+        )
+        .unwrap();
+        let shared_by_1_2 = Permission::now(
+            "shared_by_1_2".to_string(),
+            "test_group".to_string(),
+            Some("Shared by roles 1 and 2".to_string()),
+        )
+        .unwrap();
+        let shared_by_2_3 = Permission::now(
+            "shared_by_2_3".to_string(),
+            "test_group".to_string(),
+            Some("Shared by roles 2 and 3".to_string()),
+        )
+        .unwrap();
+        let unique_to_1 = Permission::now(
+            "unique_to_1".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role 1".to_string()),
+        )
+        .unwrap();
+        let unique_to_3 = Permission::now(
+            "unique_to_3".to_string(),
+            "test_group".to_string(),
+            Some("Unique to role 3".to_string()),
+        )
+        .unwrap();
+
+        c.permission_repository.save(&shared_by_all).await.unwrap();
+        c.permission_repository.save(&shared_by_1_2).await.unwrap();
+        c.permission_repository.save(&shared_by_2_3).await.unwrap();
+        c.permission_repository.save(&unique_to_1).await.unwrap();
+        c.permission_repository.save(&unique_to_3).await.unwrap();
+
+        c.role_repository
+            .add_permission(&role1.id, &shared_by_all.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &shared_by_1_2.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role1.id, &unique_to_1.id)
+            .await
+            .unwrap();
+
+        c.role_repository
+            .add_permission(&role2.id, &shared_by_all.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &shared_by_1_2.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role2.id, &shared_by_2_3.id)
+            .await
+            .unwrap();
+
+        c.role_repository
+            .add_permission(&role3.id, &shared_by_all.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role3.id, &shared_by_2_3.id)
+            .await
+            .unwrap();
+        c.role_repository
+            .add_permission(&role3.id, &unique_to_3.id)
+            .await
+            .unwrap();
+
+        let mut user = User::now_with_email_and_password(
+            "test@test.com".to_string(),
+            "Test#pass123".to_string(),
+            Some("Test".to_string()),
+            Some("User".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user.add_roles(vec![role1.clone(), role2.clone(), role3.clone()]);
+        c.user_repository.save(&user).await.unwrap();
+
+        let (saved_user, permissions) = c
+            .user_repository
+            .get_by_id_with_permissions(&user.id)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_user.id, user.id);
+        assert_eq!(permissions.len(), 5);
+
+        let permission_names: Vec<String> = permissions.iter().map(|p| p.name.clone()).collect();
+
+        assert!(permission_names.contains(&"shared_by_all".to_string()));
+        assert!(permission_names.contains(&"shared_by_1_2".to_string()));
+        assert!(permission_names.contains(&"shared_by_2_3".to_string()));
+        assert!(permission_names.contains(&"unique_to_1".to_string()));
+        assert!(permission_names.contains(&"unique_to_3".to_string()));
+
+        let unique_permission_names: std::collections::HashSet<_> = permission_names.iter().collect();
+        assert_eq!(permission_names.len(), unique_permission_names.len());
+
+        let (saved_user_by_email, permissions_by_email) = c
+            .user_repository
+            .get_by_email_with_permissions(&user.email)
+            .await
+            .unwrap();
+
+        assert_eq!(saved_user_by_email.id, saved_user.id);
+        assert_eq!(permissions_by_email.len(), permissions.len());
+        
+        let permission_names_by_email: Vec<String> = permissions_by_email.iter().map(|p| p.name.clone()).collect();
+        assert_eq!(
+            permission_names_by_email.iter().collect::<HashSet<_>>(),
+            permission_names.iter().collect::<HashSet<_>>()
+        );
     })
     .await;
 }

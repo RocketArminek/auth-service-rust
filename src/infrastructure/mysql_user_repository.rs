@@ -437,4 +437,96 @@ impl UserRepository for MysqlUserRepository {
 
         Ok((user, permissions))
     }
+
+    async fn get_by_email_with_permissions(&self, email: &str) -> Result<(User, Vec<Permission>), RepositoryError> {
+        let rows = sqlx::query_as::<_, UserWithPermissionsRow>(
+            r#"
+            SELECT 
+                u.id,
+                u.email,
+                u.password,
+                u.created_at,
+                u.first_name,
+                u.last_name,
+                u.avatar_path,
+                u.is_verified,
+                r.id as role_id,
+                r.name as role_name,
+                r.created_at as role_created_at,
+                p.id as permission_id,
+                p.name as permission_name,
+                p.group_name as permission_group_name,
+                p.description as permission_description,
+                p.is_system as permission_is_system,
+                p.created_at as permission_created_at
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE u.email = ?
+            "#,
+        )
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
+
+        if rows.is_empty() {
+            return Err(RepositoryError::NotFound(format!(
+                "User not found with email: {}",
+                email
+            )));
+        }
+
+        let first_row = &rows[0];
+        let mut user = User {
+            id: first_row.id,
+            email: first_row.email.clone(),
+            not_hashed_password: "".to_string(),
+            password: first_row.password.clone(),
+            first_name: first_row.first_name.clone(),
+            last_name: first_row.last_name.clone(),
+            created_at: first_row.created_at,
+            avatar_path: first_row.avatar_path.clone(),
+            is_verified: first_row.is_verified,
+            roles: Vec::new(),
+        };
+
+        let roles = rows
+            .iter()
+            .filter_map(|row| {
+                row.role_id.map(|role_id| Role {
+                    id: role_id,
+                    name: row.role_name.clone().unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                })
+            })
+            .collect();
+
+        user.roles = roles;
+
+        let permissions = rows
+            .iter()
+            .filter_map(|row| {
+                row.permission_id.map(|permission_id| Permission {
+                    id: permission_id,
+                    name: row.permission_name.clone().unwrap_or_default(),
+                    group_name: row.permission_group_name.clone().unwrap_or_default(),
+                    description: row.permission_description.clone(),
+                    created_at: row.permission_created_at.unwrap_or(row.created_at),
+                    is_system: row.permission_is_system.unwrap_or(false),
+                })
+            })
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        Ok((user, permissions))
+    }
 }
