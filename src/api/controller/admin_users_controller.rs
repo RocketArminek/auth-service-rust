@@ -428,7 +428,7 @@ pub async fn remove_role_from_user(
     }
 }
 
-#[utoipa::path(delete, path = "/v1/restricted/users/{user_id}/sessions",
+#[utoipa::path(delete, path = "/v1/restricted/users/{id}/sessions",
     tag="users-management",
     params(
         ("user_id" = String, Path, description = "User ID")
