@@ -1098,7 +1098,7 @@ async fn it_includes_permissions_in_headers() {
 
         c.permission_repository.save(&permission1).await.unwrap();
         c.permission_repository.save(&permission2).await.unwrap();
-        
+
         c.role_repository
             .add_permission(&role.id, &permission1.id)
             .await

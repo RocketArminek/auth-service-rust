@@ -40,7 +40,7 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
     let mut headers = HeaderMap::new();
     let user_id = user.id;
     let user_roles = user.roles.join(",");
-    
+
     headers.insert(
         "X-User-Id",
         HeaderValue::from_str(&user_id.to_string()).unwrap_or(HeaderValue::from_static("")),
@@ -53,9 +53,7 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
     let mut permission_strings: Vec<String> = user
         .permissions
         .iter()
-        .flat_map(|(group, perms)| {
-            perms.iter().map(move |p| format!("{}:{}", group, p))
-        })
+        .flat_map(|(group, perms)| perms.iter().map(move |p| format!("{}:{}", group, p)))
         .collect();
 
     if !permission_strings.is_empty() {
