@@ -1,6 +1,6 @@
 use crate::api::dto::{
     AssignRoleRequest, CreateUserRequest, CreatedResponse, MessageResponse, Pagination,
-    RemoveRoleRequest, UpdateUserRequest, UserListResponse,
+    RemoveRoleRequest, UpdateUserRequest, UserListResponse, UserResponse,
 };
 use crate::api::server_state::ServerState;
 use crate::domain::crypto::SchemeAwareHasher;
@@ -148,7 +148,8 @@ pub async fn list_users(
 
     match state.user_repository.find_all(page, limit).await {
         Ok((users, total)) => {
-            let user_responses: Vec<UserDTO> = users.into_iter().map(UserDTO::from).collect();
+            let user_responses: Vec<UserResponse> =
+                users.into_iter().map(UserResponse::from).collect();
             (
                 StatusCode::OK,
                 Json(UserListResponse {

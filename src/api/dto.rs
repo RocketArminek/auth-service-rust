@@ -2,6 +2,7 @@ use crate::domain::jwt::UserDTO;
 use crate::domain::permission::Permission;
 use crate::domain::role::Role;
 use crate::domain::session::Session;
+use crate::domain::user::User;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -76,7 +77,7 @@ pub struct CreatedResponse {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UserListResponse {
-    pub items: Vec<UserDTO>,
+    pub items: Vec<UserResponse>,
     pub page: i32,
     pub limit: i32,
     pub total: i32,
@@ -178,6 +179,21 @@ pub struct RoleWithPermissionsResponse {
     pub permissions: Vec<PermissionResponse>,
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct UserResponse {
+    pub id: String,
+    pub email: String,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+    #[serde(rename = "avatarPath")]
+    pub avatar_path: Option<String>,
+    pub roles: Vec<String>,
+    #[serde(rename = "isVerified")]
+    pub is_verified: bool,
+}
+
 impl RoleWithPermissionsResponse {
     pub fn from_domain(role: Role, permissions: Vec<Permission>) -> Self {
         Self {
@@ -201,6 +217,34 @@ impl PermissionResponse {
             description: permission.description,
             is_system: permission.is_system,
             created_at: permission.created_at.to_rfc3339(),
+        }
+    }
+}
+
+impl From<User> for UserResponse {
+    fn from(user: User) -> Self {
+        UserResponse {
+            id: user.id.to_string(),
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            avatar_path: user.avatar_path,
+            roles: user.roles.iter().map(|role| role.name.clone()).collect(),
+            is_verified: user.is_verified,
+        }
+    }
+}
+
+impl From<UserDTO> for UserResponse {
+    fn from(user: UserDTO) -> Self {
+        UserResponse {
+            id: user.id.to_string(),
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            avatar_path: user.avatar_path,
+            roles: user.roles,
+            is_verified: user.is_verified,
         }
     }
 }
