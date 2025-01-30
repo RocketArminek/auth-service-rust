@@ -1,15 +1,13 @@
 use crate::acceptance::utils;
 use crate::utils::runners::run_integration_test_with_default;
-use auth_service::api::dto::{
-    CreatedResponse, LoginResponse, RoleResponse, RoleWithPermissionsListResponse,
-};
+use auth_service::api::dto::{CreatedResponse, LoginResponse, MessageResponse, RoleResponse, RoleWithPermissionsListResponse};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::json;
+use serde_json::{json};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -364,6 +362,63 @@ async fn it_can_manage_role_permissions() {
 
         let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
         assert_eq!(permissions.len(), 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn it_prevents_modifying_system_role_permissions_via_api() {
+    run_integration_test_with_default(|c| async move {
+        let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
+
+        let role = Role::now("SYSTEM_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        c.role_repository.mark_as_system(&role.id).await.unwrap();
+
+        let permission = Permission::now(
+            "test_permission".to_string(),
+            "test_group".to_string(),
+            Some("Test permission".to_string()),
+        )
+        .unwrap();
+        c.permission_repository.save(&permission).await.unwrap();
+
+        let response = c
+            .server
+            .patch(&format!("/v1/restricted/roles/{}/permissions", role.id))
+            .json(&json!({
+                "name": "test_permission",
+                "groupName": "test_group"
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::CONFLICT);
+        let error = response.json::<MessageResponse>();
+        assert!(error.message.contains("Cannot modify permissions for system role"));
+
+        let response = c
+            .server
+            .delete(&format!("/v1/restricted/roles/{}/permissions", role.id))
+            .json(&json!({
+                "name": "test_permission",
+                "groupName": "test_group"
+            }))
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::CONFLICT);
+        let error = response.json::<MessageResponse>();
+        assert!(error.message.contains("Cannot modify permissions for system role"));
+
+        let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
+        assert!(permissions.is_empty());
     })
     .await;
 }

@@ -561,3 +561,29 @@ async fn it_returns_not_found_when_deleting_nonexistent_role_by_name() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_prevents_modifying_system_role_permissions() {
+    run_database_test_with_default(|c| async move {
+        let role = Role::now("SYSTEM_ROLE".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        c.role_repository.mark_as_system(&role.id).await.unwrap();
+
+        let permission = Permission::now("TEST_PERM".to_string(), "test".to_string(), None)
+            .unwrap();
+        c.permission_repository.save(&permission).await.unwrap();
+
+        let add_result = c.role_repository
+            .add_permission(&role.id, &permission.id)
+            .await;
+        assert!(add_result.is_err());
+        assert!(add_result.unwrap_err().to_string().contains("Cannot modify permissions"));
+
+        let remove_result = c.role_repository
+            .remove_permission(&role.id, &permission.id)
+            .await;
+        assert!(remove_result.is_err());
+        assert!(remove_result.unwrap_err().to_string().contains("Cannot modify permissions"));
+    })
+    .await;
+}

@@ -170,13 +170,25 @@ impl RoleRepository for MysqlRoleRepository {
     ) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
-        let role = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
+        let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
             .bind(role_id)
             .fetch_optional(&mut *tx)
             .await?;
 
-        if role.is_none() {
-            return Err(RepositoryError::NotFound("Role not found".to_string()));
+        match is_system {
+            None => {
+                return Err(RepositoryError::NotFound(format!(
+                    "Role with id {} not found",
+                    role_id
+                )));
+            }
+            Some(is_system) => {
+                if is_system {
+                    return Err(RepositoryError::Conflict(
+                        "Cannot modify permissions for system role".to_string(),
+                    ));
+                }
+            }
         }
 
         let permission_exists =
@@ -199,13 +211,15 @@ impl RoleRepository for MysqlRoleRepository {
         .fetch_one(&mut *tx)
         .await?;
 
-        if !exists {
-            sqlx::query("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)")
-                .bind(role_id)
-                .bind(permission_id)
-                .execute(&mut *tx)
-                .await?;
+        if exists {
+            return Ok(());
         }
+
+        sqlx::query("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)")
+            .bind(role_id)
+            .bind(permission_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         Ok(())
@@ -217,6 +231,27 @@ impl RoleRepository for MysqlRoleRepository {
         permission_id: &Uuid,
     ) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
+
+        let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
+            .bind(role_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+        match is_system {
+            None => {
+                return Err(RepositoryError::NotFound(format!(
+                    "Role with id {} not found",
+                    role_id
+                )));
+            }
+            Some(is_system) => {
+                if is_system {
+                    return Err(RepositoryError::Conflict(
+                        "Cannot modify permissions for system role".to_string(),
+                    ));
+                }
+            }
+        }
 
         let result =
             sqlx::query("DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?")
