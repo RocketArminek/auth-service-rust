@@ -1,13 +1,15 @@
 use crate::acceptance::utils;
 use crate::utils::runners::run_integration_test_with_default;
-use auth_service::api::dto::{CreatedResponse, LoginResponse, MessageResponse, RoleResponse, RoleWithPermissionsListResponse};
+use auth_service::api::dto::{
+    CreatedResponse, LoginResponse, MessageResponse, RoleResponse, RoleWithPermissionsListResponse,
+};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
-use serde_json::{json};
+use serde_json::json;
 use uuid::Uuid;
 
 #[tokio::test]
@@ -398,7 +400,9 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
 
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
-        assert!(error.message.contains("Cannot modify permissions for system role"));
+        assert!(error
+            .message
+            .contains("Cannot modify permissions for system role"));
 
         let response = c
             .server
@@ -415,7 +419,9 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
 
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
-        assert!(error.message.contains("Cannot modify permissions for system role"));
+        assert!(error
+            .message
+            .contains("Cannot modify permissions for system role"));
 
         let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
         assert!(permissions.is_empty());
