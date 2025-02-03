@@ -184,7 +184,7 @@ impl RoleRepository for MysqlRoleRepository {
             }
             Some(is_system) => {
                 if is_system {
-                    return Err(RepositoryError::Conflict(
+                    return Err(RepositoryError::ValidationError(
                         "Cannot modify permissions for system role".to_string(),
                     ));
                 }
@@ -246,7 +246,7 @@ impl RoleRepository for MysqlRoleRepository {
             }
             Some(is_system) => {
                 if is_system {
-                    return Err(RepositoryError::Conflict(
+                    return Err(RepositoryError::ValidationError(
                         "Cannot modify permissions for system role".to_string(),
                     ));
                 }

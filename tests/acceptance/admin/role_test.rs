@@ -396,7 +396,7 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
             )
             .await;
 
-        assert_eq!(response.status_code(), StatusCode::CONFLICT);
+        assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
         assert!(error.message.contains("Cannot modify permissions for system role"));
 
@@ -413,7 +413,7 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
             )
             .await;
 
-        assert_eq!(response.status_code(), StatusCode::CONFLICT);
+        assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
         assert!(error.message.contains("Cannot modify permissions for system role"));
 
