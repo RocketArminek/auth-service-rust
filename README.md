@@ -49,6 +49,31 @@ The service demonstrates excellent performance characteristics:
 - RabbitMQ 4.x (optional - for event-driven features)
 - Docker & Docker Compose (optional)
 
+## Examples
+
+### Basic Example
+The repository includes a basic example demonstrating integration with a web application using Traefik as a reverse proxy. The example showcases:
+
+- User registration and authentication
+- Role-based access control
+- Forward authentication with Traefik
+- Event-driven architecture with RabbitMQ
+
+To run the basic example:
+
+1. Navigate to the example directory:
+
+```bash
+cd examples/basic
+```
+2. Start the example with Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+Take a look at the [example README](examples/basic/README.md) for more details.
+
 ## Quick Start
 
 1. Clone the repository:
