@@ -3,7 +3,7 @@ use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
 use crate::api::response::auth_response::IntoAuthResponse;
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
-use axum::extract::State;
+use axum::extract::{Request, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -36,10 +36,28 @@ pub async fn login(
         (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
     )
 )]
-pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse {
+pub async fn authenticate(LoggedInUser(user): LoggedInUser, request: Request) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     let user_id = user.id;
     let user_roles = user.roles.join(",");
+
+    let original_host = request
+        .headers()
+        .get("X-Forwarded-Host")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("UNKNOWN");
+
+    let original_method = request
+        .headers()
+        .get("X-Forwarded-Method")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("UNKNOWN");
+
+    let original_uri = request
+        .headers()
+        .get("X-Forwarded-Uri")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("UNKNOWN");
 
     headers.insert(
         "X-User-Id",
@@ -65,6 +83,16 @@ pub async fn authenticate(LoggedInUser(user): LoggedInUser) -> impl IntoResponse
                 .unwrap_or(HeaderValue::from_static("")),
         );
     }
+
+    tracing::info!(
+        "Authenticating request: host={} method={}, uri={}, user_id={}, roles={}, permissions={}",
+        original_host,
+        original_method,
+        original_uri,
+        user_id,
+        user_roles,
+        permission_strings.join(",")
+    );
 
     (StatusCode::OK, headers, Json(user)).into_response()
 }

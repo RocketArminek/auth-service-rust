@@ -43,7 +43,6 @@ pub async fn verified_acl(
     next: Next,
 ) -> impl IntoResponse {
     tracing::debug!("Verified acl mw user: {:?}", user);
-    tracing::debug!("Verified acl mw config: {:?}", state.config);
 
     if state.config.verification_required() && !user.is_verified {
         return (

@@ -1,0 +1,81 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.app.middlewares=auth-forward"
+      - "traefik.http.middlewares.auth-forward.forwardauth.address=http://auth:8080/v1/authenticate"
+      - "traefik.http.middlewares.auth-forward.forwardauth.authResponseHeaders=X-User-Id,X-User-Roles,X-User-Permissions"
+      - "traefik.http.middlewares.auth-forward.forwardauth.authRequestHeaders=X-Forwarded-Method,X-Forwarded-Uri,X-Forwarded-Host,Authorization"
+    ports:
+      - "8081:8081"
+  lb:
+    image: traefik:v3
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  auth:
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: server
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '1'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
+    environment:
+      DATABASE_URL: mysql://root:toor@mysql:3306/nebula_dev
+      PASSWORD_HASHING_SCHEME: 'bcrypt_low'
+      SECRET: "secret"
+      RABBITMQ_URL: amqp://rabbit:5672
+      VERIFICATION_REQUIRED: false
+      EVENT_DRIVEN: true
+      AUTH_STRATEGY: stateful
+      LOG_LEVEL: info
+      CLEANUP_INTERVAL_IN_MINUTES: 1
+      RABBITMQ_EXCHANGE_NAME: nebula.auth.dev
+    ports:
+      - "8082:8080"
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: nebula_dev
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  rabbit:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
