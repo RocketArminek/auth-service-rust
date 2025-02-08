@@ -19,11 +19,10 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: examples/basic/app
+          workspaces: app
 
       - name: Start services
-        run:
-          ls
+        run: docker compose up -d --build
 
       - name: Wait for services to be ready
         run: |
@@ -38,7 +37,7 @@ jobs:
 
       - name: Run e2e tests
         run: |
-          cd examples/basic/app
+          cd app
           cargo test --test e2e -- --nocapture
 
       - name: Show logs on failure
