@@ -22,7 +22,9 @@ jobs:
           workspaces: examples/basic/app
 
       - name: Start services
-        run: cd examples/basic && docker compose up -d --build
+        run:
+          ls
+          cd examples/basic && docker compose up -d --build
 
       - name: Wait for services to be ready
         run: |
