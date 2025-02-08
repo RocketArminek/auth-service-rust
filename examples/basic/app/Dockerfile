@@ -1,4 +1,4 @@
-FROM rust:1.84.1 as builder
+FROM rust:1.84.1 AS builder
 
 WORKDIR /usr/src/app
 COPY --link Cargo.toml Cargo.toml
@@ -9,3 +9,4 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 COPY --from=builder /usr/src/app/target/release/example-app /usr/local/bin/
 CMD ["example-app"]
+EXPOSE 8081/tcp

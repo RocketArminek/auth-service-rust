@@ -7,7 +7,8 @@ docker compose up -d --build
 1. Create a test user
 
 ```
-curl -X POST http://localhost:8082/v1/users \
+curl -X POST http://localhost/v1/users \
+  -H "Host: auth.localhost" \
   -H 'Content-Type: application/json' \
   -d '{
     "email": "test@example.com",
@@ -19,7 +20,8 @@ curl -X POST http://localhost:8082/v1/users \
 2. Login
 
 ```
-curl -X POST http://localhost:8082/v1/login \
+curl -X POST http://localhost/v1/login \
+  -H "Host: auth.localhost" \
   -H 'Content-Type: application/json' \
   -d '{
     "email": "test@example.com",

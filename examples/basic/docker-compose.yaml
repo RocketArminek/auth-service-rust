@@ -10,8 +10,6 @@ services:
       - "traefik.http.middlewares.auth-forward.forwardauth.address=http://auth:8080/v1/authenticate"
       - "traefik.http.middlewares.auth-forward.forwardauth.authResponseHeaders=X-User-Id,X-User-Roles,X-User-Permissions"
       - "traefik.http.middlewares.auth-forward.forwardauth.authRequestHeaders=X-Forwarded-Method,X-Forwarded-Uri,X-Forwarded-Host,Authorization"
-    ports:
-      - "8081:8081"
   lb:
     image: traefik:v3
     command:
@@ -30,6 +28,9 @@ services:
         condition: service_healthy
       rabbit:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
     build:
       context: ../../
       dockerfile: Dockerfile
@@ -53,15 +54,11 @@ services:
       LOG_LEVEL: info
       CLEANUP_INTERVAL_IN_MINUTES: 1
       RABBITMQ_EXCHANGE_NAME: nebula.auth.dev
-    ports:
-      - "8082:8080"
   mysql:
     image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: toor
       MYSQL_DATABASE: nebula_dev
-    ports:
-      - "3306:3306"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
       interval: 10s
@@ -70,9 +67,6 @@ services:
       start_period: 30s
   rabbit:
     image: rabbitmq:4-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
       interval: 10s
