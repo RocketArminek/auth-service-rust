@@ -37,6 +37,7 @@ jobs:
 
       - name: Run e2e tests
         run: |
+          cargo vendor
           cargo test --test e2e -- --nocapture
 
       - name: Show logs on failure
