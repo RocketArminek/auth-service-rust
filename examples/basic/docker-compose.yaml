@@ -31,7 +31,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
-    image: ghcr.io/rocketarminek/auth-api-rust:test-latest
+    image: ghcr.io/rocketarminek/auth-api-rust:latest
     deploy:
       resources:
         limits:
