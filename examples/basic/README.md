@@ -1,3 +1,5 @@
+## Check docker compose for usage example
+
 ## How to run the example
 
 ```

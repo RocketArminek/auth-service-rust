@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: ./app
+      context: .
       dockerfile: Dockerfile
     labels:
       - "traefik.enable=true"
@@ -31,10 +31,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.auth.rule=Host(`auth.localhost`)"
-    build:
-      context: ../../
-      dockerfile: Dockerfile
-      target: server
+    image: ghcr.io/rocketarminek/auth-api-rust:test-latest
     deploy:
       resources:
         limits:

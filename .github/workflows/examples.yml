@@ -19,7 +19,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: examples/basic/app
+          workspaces: examples/basic
 
       - name: Start services
         run: docker compose up -d --build
