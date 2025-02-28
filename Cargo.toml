@@ -20,14 +20,14 @@ mysql = []
 axum = "0.8.1"
 tokio = { version = "1.43.0", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = { version = "0.3.19", features = ["json"] }
-serde = { version = "1.0.217", features = ["derive"] }
-clap = { version = "4.5.28", features = ["derive"] }
+serde = { version = "1.0.218", features = ["derive"] }
+clap = { version = "4.5.31", features = ["derive"] }
 utoipa = { version = "5.3.1", features = ["uuid", "chrono"] }
-chrono = { version = "0.4.39", features = ["serde"] }
-uuid = { version = "1.13.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+chrono = { version = "0.4.40", features = ["serde"] }
+uuid = { version = "1.15.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
 dotenvy = "0.15.7"
-serde_json = "1.0.138"
+serde_json = "1.0.139"
 tower-http = { version = "0.6.2", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
 tracing = "0.1.41"
