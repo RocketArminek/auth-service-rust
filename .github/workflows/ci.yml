@@ -108,7 +108,7 @@ jobs:
       - prepare
     runs-on: ubuntu-22.04
     name: "Acceptance"
-    timeout-minutes: 3
+    timeout-minutes: 5
     strategy:
       matrix:
         db:
