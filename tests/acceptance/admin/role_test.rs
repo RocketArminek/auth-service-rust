@@ -400,9 +400,11 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
 
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
-        assert!(error
-            .message
-            .contains("Cannot modify permissions for system role"));
+        assert!(
+            error
+                .message
+                .contains("Cannot modify permissions for system role")
+        );
 
         let response = c
             .server
@@ -419,9 +421,11 @@ async fn it_prevents_modifying_system_role_permissions_via_api() {
 
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
         let error = response.json::<MessageResponse>();
-        assert!(error
-            .message
-            .contains("Cannot modify permissions for system role"));
+        assert!(
+            error
+                .message
+                .contains("Cannot modify permissions for system role")
+        );
 
         let permissions = c.role_repository.get_permissions(&role.id).await.unwrap();
         assert!(permissions.is_empty());

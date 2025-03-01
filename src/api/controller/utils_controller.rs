@@ -1,6 +1,6 @@
 use crate::api::dto::HealthResponse;
-use axum::http::StatusCode;
 use axum::Json;
+use axum::http::StatusCode;
 
 #[utoipa::path(get, path = "/v1/health",
     tag="utils",

@@ -3,10 +3,10 @@ use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
 use crate::api::response::auth_response::IntoAuthResponse;
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
+use axum::Json;
 use axum::extract::{Request, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
-use axum::Json;
 
 #[utoipa::path(post, path = "/v1/login",
     tag="auth",

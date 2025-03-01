@@ -1,8 +1,8 @@
 use crate::api::dto::MessageResponse;
 use crate::domain::repository::RepositoryError;
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 
 impl IntoResponse for RepositoryError {
     fn into_response(self) -> axum::response::Response {

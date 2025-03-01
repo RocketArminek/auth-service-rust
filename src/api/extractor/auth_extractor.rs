@@ -1,7 +1,7 @@
 use crate::api::dto::MessageResponse;
 use crate::api::server_state::{AuthServiceAware, SecretAware};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use axum::{extract::FromRequestParts, http::header, http::request::Parts, http::StatusCode, Json};
+use axum::{Json, extract::FromRequestParts, http::StatusCode, http::header, http::request::Parts};
 use jsonwebtoken::{DecodingKey, Validation};
 
 #[derive(Debug, Clone)]

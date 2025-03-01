@@ -3,10 +3,10 @@ use crate::api::dto::{MessageResponse, SessionListResponse};
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
+use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use uuid::Uuid;
 
 #[utoipa::path(get, path = "/v1/restricted/sessions",

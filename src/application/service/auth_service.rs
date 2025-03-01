@@ -5,7 +5,7 @@ use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repository::{SessionRepository, UserRepository};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::fmt::Display;
 use std::ops::Add;
 use std::sync::Arc;

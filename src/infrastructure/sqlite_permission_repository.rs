@@ -2,7 +2,7 @@ use crate::domain::permission::Permission;
 use crate::domain::repository::PermissionRepository;
 use crate::domain::repository::RepositoryError;
 use async_trait::async_trait;
-use sqlx::{query_as, Pool, Sqlite};
+use sqlx::{Pool, Sqlite, query_as};
 use uuid::Uuid;
 
 #[derive(Clone)]

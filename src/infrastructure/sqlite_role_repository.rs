@@ -4,7 +4,7 @@ use crate::domain::repository::RoleRepository;
 use crate::domain::role::Role;
 use crate::infrastructure::dto::RoleWithPermissionsRow;
 use async_trait::async_trait;
-use sqlx::{query_as, Pool, Sqlite};
+use sqlx::{Pool, Sqlite, query_as};
 use std::collections::HashMap;
 use uuid::Uuid;
 

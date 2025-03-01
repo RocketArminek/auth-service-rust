@@ -1,11 +1,11 @@
 use crate::api::dto::MessageResponse;
 use crate::api::extractor::auth_extractor::LoggedInUser;
 use crate::api::server_state::ServerState;
+use axum::Json;
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
-use axum::Json;
 
 pub async fn restricted_acl(
     LoggedInUser(user): LoggedInUser,

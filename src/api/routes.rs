@@ -13,7 +13,7 @@ use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
 use axum::routing::{delete, patch, post, put};
-use axum::{middleware, routing::get, Router};
+use axum::{Router, middleware, routing::get};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;

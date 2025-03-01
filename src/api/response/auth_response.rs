@@ -1,9 +1,9 @@
 use crate::api::dto::{LoginResponse, MessageResponse, TokenResponse};
 use crate::application::service::auth_service::{AuthError, TokenPair};
 use crate::domain::jwt::UserDTO;
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 
 pub trait IntoAuthResponse {
     fn into_auth_response(self) -> axum::response::Response;

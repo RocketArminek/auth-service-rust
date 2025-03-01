@@ -6,12 +6,12 @@ use crate::domain::event::UserEvents;
 use crate::domain::event::UserEvents::PasswordResetRequested;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::user::{PasswordHandler, User};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use std::ops::Add;
 use std::string::ToString;
 

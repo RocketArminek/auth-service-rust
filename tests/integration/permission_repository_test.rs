@@ -342,9 +342,11 @@ async fn it_can_get_permissions_by_group() {
         assert!(permission_names.contains(&"view_users".to_string()));
         assert!(!permission_names.contains(&"manage_roles".to_string()));
 
-        assert!(user_management_permissions
-            .iter()
-            .all(|p| p.group_name == "user_management"));
+        assert!(
+            user_management_permissions
+                .iter()
+                .all(|p| p.group_name == "user_management")
+        );
 
         let non_existent_group_permissions = c
             .permission_repository

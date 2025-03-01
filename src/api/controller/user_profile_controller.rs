@@ -8,12 +8,12 @@ use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::event::UserEvents::PasswordReset;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, encode};
 use std::ops::Add;
 
 #[utoipa::path(patch, path = "/v1/me/verification",

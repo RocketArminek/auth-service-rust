@@ -1,6 +1,6 @@
 use crate::domain::error::UserError;
-use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use bcrypt::DEFAULT_COST;
 use std::collections::HashMap;

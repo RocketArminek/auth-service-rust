@@ -5,10 +5,10 @@ use crate::api::dto::{
 };
 use crate::api::server_state::ServerState;
 use crate::domain::role::Role;
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use uuid::Uuid;
 
 #[utoipa::path(post, path = "/v1/restricted/roles",

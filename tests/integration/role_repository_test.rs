@@ -578,20 +578,24 @@ async fn it_prevents_modifying_system_role_permissions() {
             .add_permission(&role.id, &permission.id)
             .await;
         assert!(add_result.is_err());
-        assert!(add_result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot modify permissions"));
+        assert!(
+            add_result
+                .unwrap_err()
+                .to_string()
+                .contains("Cannot modify permissions")
+        );
 
         let remove_result = c
             .role_repository
             .remove_permission(&role.id, &permission.id)
             .await;
         assert!(remove_result.is_err());
-        assert!(remove_result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot modify permissions"));
+        assert!(
+            remove_result
+                .unwrap_err()
+                .to_string()
+                .contains("Cannot modify permissions")
+        );
     })
     .await;
 }

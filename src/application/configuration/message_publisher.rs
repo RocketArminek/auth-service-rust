@@ -1,5 +1,5 @@
-use lapin::options::ExchangeDeclareOptions;
 use lapin::ExchangeKind;
+use lapin::options::ExchangeDeclareOptions;
 use std::collections::HashMap;
 use std::env;
 
