@@ -15,6 +15,9 @@ pub async fn security_headers(request: Request, next: Next) -> Response {
         "Strict-Transport-Security",
         "max-age=31536000; includeSubDomains".parse().unwrap(),
     );
+    
+    headers.insert("Cross-Origin-Opener-Policy", "same-origin".parse().unwrap());
+    headers.insert("Cross-Origin-Embedder-Policy", "require-corp".parse().unwrap());
 
     response
 }
