@@ -103,10 +103,10 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
-  performance-and-security-test:
+  performance-test:
     runs-on: ubuntu-22.04
     needs: dist-cache
-    name: "Performance & Security"
+    name: "Performance"
     timeout-minutes: 10
     strategy:
       fail-fast: true
@@ -172,6 +172,73 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - name: Run k6 auth flow test scenario
         run: k6 run tests/performance/scenarios/auth_flow.js --throw --quiet
+
+  zap-scan:
+    runs-on: ubuntu-22.04
+    name: "Security"
+    needs:
+      - dist-cache
+      - performance-test
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        db:
+#          - engine: "sqlite"
+#            url: "sqlite://test.db"
+          - engine: "mysql"
+            url: "mysql://root:toor@mysql:3306/auth_service_test"
+            service: "mysql:8.4"
+        strategy:
+          - "stateful"
+        rabbitmq:
+          - version: "4"
+    services:
+      mysql:
+        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: toor
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=40s
+      rabbit:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
+          --health-start-period=90s
+      app:
+        image: ghcr.io/rocketarminek/auth-api-rust:test-latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 8080:8080
+        env:
+          DATABASE_ENGINE: ${{ matrix.db.engine }}
+          DATABASE_URL: ${{ matrix.db.url }}
+          AUTH_STRATEGY: ${{ matrix.strategy }}
+          PASSWORD_HASHING_SCHEME: bcrypt_low
+          SECRET: secret
+          RABBITMQ_URL: amqp://rabbit:5672
+          VERIFICATION_REQUIRED: false
+          EVENT_DRIVEN: true
+        options: >-
+          --health-cmd="app health-check"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
+    steps:
+      - uses: actions/checkout@v4
       - name: ZAP Scan
         uses: zaproxy/action-full-scan@v0.9.0
         with:
@@ -256,7 +323,8 @@ jobs:
     name: "Publish server production image"
     needs:
       - acceptance-test
-      - performance-and-security-test
+      - performance-test
+      - zap-scan
       - dist-cache
     steps:
       - uses: actions/checkout@v4
