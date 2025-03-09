@@ -251,13 +251,14 @@ jobs:
     strategy:
       matrix:
         db:
-          #          - engine: "sqlite"
-          #            url: "sqlite://test.db"
+          - engine: "sqlite"
+            url: "sqlite://test.db"
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
             service: "mysql:8.4"
         strategy:
           - "stateful"
+          - "stateless"
         rabbitmq:
           - version: "4"
     services:
@@ -314,7 +315,7 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.run_id }}
 
   publish-server-image:
     runs-on: ubuntu-22.04
