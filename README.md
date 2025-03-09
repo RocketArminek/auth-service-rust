@@ -3,15 +3,14 @@
 ![Rust Version](https://img.shields.io/badge/rust-1.84.0%2B-orange.svg)
 [![CI](https://github.com/RocketArminek/auth-service-rust/actions/workflows/ci.yml/badge.svg)](https://github.com/RocketArminek/auth-service-rust/actions/workflows/ci.yml)
 
-A high-performance, event-driven authentication and authorization service written in Rust. This service provides robust user management and secure authentication flows.
+A high-performance, event-driven authentication and authorization middleware for your load balancer written in Rust. This service provides robust user management and secure authentication flows.
 
 ## Important Disclaimers
 
 ⚠️ **Please Read Before Using**
 
-- This project is a validation of an idea for a small, low-footprint authentication service
+- This project was primarily created as a learning exercise
 - The future of this project is uncertain and depends on proving its usefulness in real-world scenarios
-- This project was primarily created as a learning exercise for writing services in Rust
 - **Use at your own risk** - while the code is tested and functional, it hasn't been battle-tested in production environments
 
 ## Features
@@ -41,6 +40,7 @@ The service demonstrates excellent performance characteristics:
 - Handles 150+ requests/second under load
 - Successfully manages spikes up to 100 concurrent users
 - Zero error rate under stress testing
+- ⚠️There are issues with sqlite db engine -> concurrent requests causes deadlocks on sqlite file. (It requires experiments with sqlite configuration)
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ The repository includes a basic example demonstrating integration with a web app
 - User registration and authentication
 - Role-based access control
 - Forward authentication with Traefik
-- Event-driven architecture with RabbitMQ
+- Event-driven architecture
 
 To run the basic example:
 
