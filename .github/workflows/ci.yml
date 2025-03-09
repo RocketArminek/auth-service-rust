@@ -103,6 +103,84 @@ jobs:
             target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'src/**', 'tests/**') }}
 
+  performance-and-security-test:
+    runs-on: ubuntu-22.04
+    needs: dist-cache
+    name: "Performance & Security"
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true
+      matrix:
+        strategy:
+          - "stateful"
+          - "stateless"
+        db:
+          - engine: "sqlite"
+            url: "sqlite://test.db"
+          - engine: "mysql"
+            url: "mysql://root:toor@mysql:3306/auth_service_test"
+            service: "mysql:8.4"
+        rabbitmq:
+          - version: "4"
+    services:
+      mysql:
+        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: toor
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=40s
+      rabbit:
+        image: rabbitmq:${{matrix.rabbitmq.version}}-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
+          --health-start-period=90s
+      app:
+        image: ghcr.io/rocketarminek/auth-api-rust:test-latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 8080:8080
+        env:
+          DATABASE_ENGINE: ${{ matrix.db.engine }}
+          DATABASE_URL: ${{ matrix.db.url }}
+          AUTH_STRATEGY: ${{ matrix.strategy }}
+          PASSWORD_HASHING_SCHEME: bcrypt_low
+          SECRET: secret
+          RABBITMQ_URL: amqp://rabbit:5672
+          VERIFICATION_REQUIRED: false
+          EVENT_DRIVEN: true
+        options: >-
+          --health-cmd="app health-check"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=30s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: Run k6 auth flow test scenario
+        run: k6 run tests/performance/scenarios/auth_flow.js --throw --quiet
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: true
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.run_id }}
+
   acceptance-test:
     needs:
       - prepare
@@ -178,6 +256,7 @@ jobs:
     name: "Publish server production image"
     needs:
       - acceptance-test
+      - performance-and-security-test
       - dist-cache
     steps:
       - uses: actions/checkout@v4
@@ -216,27 +295,22 @@ jobs:
     defaults:
       run:
         working-directory: examples/basic
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: examples/basic
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Start services
         run: docker compose up -d --build
-
       - name: Wait for services to be ready
         run: |
           # Wait for MySQL
@@ -247,94 +321,13 @@ jobs:
           
           # Additional wait to ensure all services are fully initialized
           sleep 10
-
       - name: Run e2e tests
         run: |
           cargo vendor
           cargo test --test e2e -- --nocapture
-
       - name: Show logs on failure
         if: failure()
         run: docker compose logs
-
       - name: Cleanup
         if: always()
         run: docker compose down -v
-
-  performance-and-security-test:
-    runs-on: ubuntu-22.04
-    name: "Performance"
-    timeout-minutes: 10
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        strategy:
-          - "stateful"
-          - "stateless"
-        db:
-          - engine: "sqlite"
-            url: "sqlite://test.db"
-          - engine: "mysql"
-            url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
-        rabbitmq:
-          - version: "4"
-    services:
-      mysql:
-        image: ${{ (matrix.db.service) && matrix.db.service || '' }}
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: toor
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -ptoor"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=40s
-      rabbit:
-        image: rabbitmq:${{matrix.rabbitmq.version}}-management
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd="rabbitmq-diagnostics check_port_connectivity"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
-          --health-start-period=90s
-      app:
-        image: ghcr.io/rocketarminek/auth-api-rust:test-latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 8080:8080
-        env:
-          DATABASE_ENGINE: ${{ matrix.db.engine }}
-          DATABASE_URL: ${{ matrix.db.url }}
-          AUTH_STRATEGY: ${{ matrix.strategy }}
-          PASSWORD_HASHING_SCHEME: bcrypt_low
-          SECRET: secret
-          RABBITMQ_URL: amqp://rabbit:5672
-          VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
-        options: >-
-          --health-cmd="app health-check"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --health-start-period=30s
-    steps:
-      - uses: actions/checkout@v4
-      - uses: grafana/setup-k6-action@v1
-      - name: Run k6 auth flow test scenario
-        run: k6 run tests/performance/scenarios/auth_flow.js --throw --quiet
-      - name: ZAP Scan
-        uses: zaproxy/action-full-scan@v0.9.0
-        with:
-          target: 'http://localhost:8080'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-          allow_issue_writing: true
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.run_id }}
