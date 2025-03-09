@@ -18,6 +18,7 @@ pub async fn security_headers(request: Request, next: Next) -> Response {
     
     headers.insert("Cross-Origin-Opener-Policy", "same-origin".parse().unwrap());
     headers.insert("Cross-Origin-Embedder-Policy", "require-corp".parse().unwrap());
+    headers.insert("Cross-Origin-Resource-Policy", "same-origin".parse().unwrap());
 
     response
 }
@@ -29,7 +30,7 @@ pub async fn restrict_methods(req: Request, next: Next) -> Response {
         }
         Method::OPTIONS => Response::builder()
             .status(StatusCode::OK)
-            .header("Allow", "GET, POST, PUT, PATCH")
+            .header("Allow", "GET, POST, PUT, PATCH, DELETE")
             .body(axum::body::Body::empty())
             .unwrap(),
         _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
