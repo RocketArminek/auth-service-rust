@@ -136,11 +136,21 @@ pub async fn create_sqlite_pool(
                 );
             }
 
-            SqlitePoolOptions::new()
+            let pool = SqlitePoolOptions::new()
                 .max_connections(max_connections)
                 .acquire_timeout(Duration::from_millis(timeout_ms))
-                .connect(&database_url)
-                .await
+                .connect(database_url)
+                .await?;
+
+            sqlx::query("PRAGMA journal_mode=WAL;")
+                .execute(&pool)
+                .await?;
+
+            sqlx::query("PRAGMA synchronous=NORMAL;")
+                .execute(&pool)
+                .await?;
+
+            Ok(pool)
         },
         "Sqlite",
         5,
