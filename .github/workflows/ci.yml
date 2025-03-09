@@ -109,7 +109,7 @@ jobs:
     name: "Performance"
     timeout-minutes: 10
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         strategy:
           - "stateful"
