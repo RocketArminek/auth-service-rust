@@ -115,8 +115,8 @@ jobs:
           - "stateful"
           - "stateless"
         db:
-#          - engine: "sqlite"
-#            url: "sqlite://test.db"
+          - engine: "sqlite"
+            url: "sqlite://test.db"
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
             service: "mysql:8.4"

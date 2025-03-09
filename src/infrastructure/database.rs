@@ -136,10 +136,16 @@ pub async fn create_sqlite_pool(
                 );
             }
 
+            let connection_options = format!(
+                "{}?mode=rwc&cache=shared&journal_mode=WAL&synchronous=NORMAL&foreign_keys=true&busy_timeout={}",
+                database_url,
+                timeout_ms
+            );
+
             SqlitePoolOptions::new()
                 .max_connections(max_connections)
                 .acquire_timeout(Duration::from_millis(timeout_ms))
-                .connect(database_url)
+                .connect(&connection_options)
                 .await
         },
         "Sqlite",
