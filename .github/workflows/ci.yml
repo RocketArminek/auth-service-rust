@@ -394,4 +394,4 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.run_id }}
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}
