@@ -142,14 +142,6 @@ pub async fn create_sqlite_pool(
                 .connect(database_url)
                 .await?;
 
-            sqlx::query("PRAGMA journal_mode=WAL;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA synchronous=NORMAL;")
-                .execute(&pool)
-                .await?;
-
             Ok(pool)
         },
         "Sqlite",
