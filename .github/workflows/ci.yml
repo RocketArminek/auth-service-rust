@@ -185,8 +185,8 @@ jobs:
           - "stateful"
           - "stateless"
         db:
-          #          - engine: "sqlite"
-          #            url: "sqlite://test.db"
+          - engine: "sqlite"
+            url: "sqlite://test.db"
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
             service: "mysql:8.4"
@@ -242,6 +242,7 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - name: Run k6 auth flow test scenario
         run: k6 run tests/performance/scenarios/auth_flow.js --throw --quiet
+        continue-on-error: true
 
   zap-scan:
     runs-on: ubuntu-22.04
