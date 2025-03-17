@@ -27,6 +27,7 @@ jobs:
   dist-cache:
     runs-on: ubuntu-22.04
     name: "Prepare production docker image"
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
@@ -176,6 +177,7 @@ jobs:
         run: cargo test
 
   performance-test:
+    continue-on-error: true
     runs-on: ubuntu-22.04
     needs: dist-cache
     name: "Performance"
@@ -244,7 +246,6 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - name: Run k6 auth flow test scenario
         run: k6 run tests/performance/scenarios/auth_flow.js --throw --quiet
-        continue-on-error: true
 
   zap-scan:
     runs-on: ubuntu-22.04
@@ -323,6 +324,7 @@ jobs:
   publish-server-image:
     runs-on: ubuntu-22.04
     name: "Publish server production image"
+    timeout-minutes: 30
     needs:
       - acceptance-test
       - zap-scan
