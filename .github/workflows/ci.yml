@@ -27,7 +27,7 @@ jobs:
   dist-cache:
     runs-on: ubuntu-22.04
     name: "Prepare production docker image"
-    timeout-minutes: 30
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -340,7 +340,7 @@ jobs:
   publish-server-image:
     runs-on: ubuntu-22.04
     name: "Publish server production image"
-    timeout-minutes: 30
+    timeout-minutes: 120
     needs:
       - acceptance-test
       - zap-scan
