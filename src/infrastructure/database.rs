@@ -150,11 +150,27 @@ pub async fn create_sqlite_pool(
                 .execute(&pool)
                 .await?;
 
+            sqlx::query("PRAGMA busy_timeout = 10000;")
+                .execute(&pool)
+                .await?;
+
+            sqlx::query("PRAGMA cache_size = -2000;")
+                .execute(&pool)
+                .await?;
+
+            sqlx::query("PRAGMA foreign_keys = ON;")
+                .execute(&pool)
+                .await?;
+
+            sqlx::query("PRAGMA mmap_size = 30000000000;")
+                .execute(&pool)
+                .await?;
+
             Ok(pool)
         },
         "Sqlite",
         5,
-        Duration::from_millis(500),
+        Duration::from_millis(1000),
         true,
     )
     .await
