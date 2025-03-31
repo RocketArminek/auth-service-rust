@@ -1,6 +1,6 @@
 [package]
 name = "auth-service"
-version = "0.15.2"
+version = "0.15.3"
 edition = "2024"
 authors = ["Arkadiusz Krakowiak<arkadiusz.k.e@gmail.com>"]
 description = "A high-performance, event-driven authentication & authorization service. This service provides robust user management and secure authentication flows."
@@ -10,18 +10,16 @@ license = "GPL-3"
 name = "app"
 path = "src/bin/app.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 sqlite = []
 mysql = []
 
 [dependencies]
-axum = "0.8.1"
+axum = "0.8.3"
 tokio = { version = "1.44.1", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = { version = "0.3.19", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
-clap = { version = "4.5.32", features = ["derive"] }
+clap = { version = "4.5.34", features = ["derive"] }
 utoipa = { version = "5.3.1", features = ["uuid", "chrono"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 uuid = { version = "1.16.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
@@ -36,11 +34,11 @@ lazy-regex = "3.4.1"
 bcrypt = "0.17.0"
 jsonwebtoken = "9.3.1"
 utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }
-lapin = "2.5.0"
+lapin = "3.0.0-beta.2"
 futures-lite = "2.6.0"
 async-trait = "0.1.88"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
-axum-test = "17.2.0"
+axum-test = "17.3.0"
 predicates = "3.1.3"
