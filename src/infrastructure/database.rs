@@ -139,31 +139,19 @@ pub async fn create_sqlite_pool(
             let pool = SqlitePoolOptions::new()
                 .max_connections(max_connections)
                 .acquire_timeout(Duration::from_millis(timeout_ms))
+                .after_connect(|conn, _| Box::pin(async {
+                    sqlx::query("PRAGMA journal_mode=WAL").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA synchronous=NORMAL").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA busy_timeout=30000").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA cache_size=-8000").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA foreign_keys=ON").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA temp_store=MEMORY").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA mmap_size=30000000000").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA wal_autocheckpoint=1000").execute(&mut *conn).await?;
+                    sqlx::query("PRAGMA page_size=4096").execute(&mut *conn).await?;
+                    Ok(())
+                }))
                 .connect(database_url)
-                .await?;
-
-            sqlx::query("PRAGMA journal_mode=WAL;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA synchronous=NORMAL;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA busy_timeout = 10000;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA cache_size = -2000;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA foreign_keys = ON;")
-                .execute(&pool)
-                .await?;
-
-            sqlx::query("PRAGMA mmap_size = 30000000000;")
-                .execute(&pool)
                 .await?;
 
             Ok(pool)
