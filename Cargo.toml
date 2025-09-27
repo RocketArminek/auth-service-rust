@@ -1,6 +1,6 @@
 [package]
 name = "auth-service"
-version = "0.15.3"
+version = "0.16.0"
 edition = "2024"
 authors = ["Arkadiusz Krakowiak<arkadiusz.k.e@gmail.com>"]
 description = "A high-performance, event-driven authentication & authorization service. This service provides robust user management and secure authentication flows."
