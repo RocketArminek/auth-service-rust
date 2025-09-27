@@ -23,7 +23,7 @@ use chrono::Duration;
 use clap::{Parser, Subcommand};
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
+use lapin::types::{FieldTable, ShortString};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
@@ -347,7 +347,7 @@ async fn main() {
 
                 let queue = channel
                     .queue_declare(
-                        "",
+                        ShortString::from("".to_owned()),
                         QueueDeclareOptions {
                             exclusive: true,
                             auto_delete: true,
@@ -362,9 +362,9 @@ async fn main() {
 
                 let r = channel
                     .queue_bind(
-                        &queue_name,
-                        &exchange_name,
-                        "",
+                        ShortString::from(queue_name.clone()),
+                        ShortString::from(exchange_name),
+                        ShortString::from("".to_owned()),
                         QueueBindOptions::default(),
                         FieldTable::default(),
                     )
@@ -377,8 +377,8 @@ async fn main() {
 
                 let mut consumer = channel
                     .basic_consume(
-                        &queue_name,
-                        "test_consumer",
+                        ShortString::from(queue_name.clone()),
+                        ShortString::from("test_consumer".to_owned()),
                         BasicConsumeOptions::default(),
                         FieldTable::default(),
                     )

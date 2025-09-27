@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.85.1
+ARG RUST_VERSION=1.90.0
 FROM rust:${RUST_VERSION}-slim-bookworm AS base-builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y curl ca-certificates

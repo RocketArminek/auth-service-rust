@@ -159,7 +159,8 @@ impl Default for Argon2Hasher {
 
 impl Hasher for Argon2Hasher {
     fn hash_password(&self, password: &str) -> Result<String, UserError> {
-        let salt = SaltString::generate(&mut OsRng);
+        let salt = SaltString::try_from_rng(&mut OsRng)
+            .map_err(|_| UserError::EncryptionFailed)?;
 
         self.argon2
             .hash_password(password.as_bytes(), &salt)
@@ -185,15 +186,15 @@ pub struct BcryptHasher {
 
 impl BcryptHasher {
     pub fn new(cost: u32) -> Self {
-        BcryptHasher { cost }
+        Self { cost }
     }
 
     pub fn low_cost() -> Self {
-        BcryptHasher::new(4)
+        Self::new(4)
     }
 
     pub fn max_cost() -> Self {
-        BcryptHasher::new(31)
+        Self::new(31)
     }
 }
 
@@ -215,5 +216,6 @@ impl Hasher for BcryptHasher {
 
 fn get_argon2() -> &'static Argon2<'static> {
     static INSTANCE: OnceLock<Argon2> = OnceLock::new();
+
     INSTANCE.get_or_init(|| Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::default()))
 }

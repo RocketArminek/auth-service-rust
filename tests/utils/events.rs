@@ -1,7 +1,7 @@
 use auth_service::application::configuration::message_publisher::MessagePublisherConfiguration;
 use futures_lite::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
+use lapin::types::{FieldTable, ShortString};
 use lapin::{Channel, Connection, ConnectionProperties, Consumer};
 use std::fmt::Debug;
 use std::time::Duration;
@@ -65,7 +65,7 @@ pub async fn setup_test_consumer(
 
             channel
                 .exchange_declare(
-                    config.rabbitmq_exchange_name(),
+                    ShortString::from(config.rabbitmq_exchange_name()),
                     config.rabbitmq_exchange_kind().clone(),
                     config.rabbitmq_exchange_declare_options(),
                     FieldTable::default(),
@@ -75,7 +75,7 @@ pub async fn setup_test_consumer(
 
             let queue = channel
                 .queue_declare(
-                    "",
+                    ShortString::from("".to_owned()),
                     QueueDeclareOptions {
                         exclusive: true,
                         auto_delete: true,
@@ -90,9 +90,9 @@ pub async fn setup_test_consumer(
 
             channel
                 .queue_bind(
-                    &queue_name,
-                    config.rabbitmq_exchange_name(),
-                    "",
+                    ShortString::from(queue_name.clone()),
+                    ShortString::from(config.rabbitmq_exchange_name()),
+                    ShortString::from("".to_owned()),
                     QueueBindOptions::default(),
                     FieldTable::default(),
                 )
@@ -101,8 +101,8 @@ pub async fn setup_test_consumer(
 
             let consumer = channel
                 .basic_consume(
-                    &queue_name,
-                    "test_consumer",
+                    ShortString::from(queue_name.clone()),
+                    ShortString::from("test_consumer".to_owned()),
                     BasicConsumeOptions::default(),
                     FieldTable::default(),
                 )

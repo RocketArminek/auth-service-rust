@@ -2,12 +2,12 @@ use crate::application::configuration::message_publisher::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::utils::retry_with_backoff;
 use async_trait::async_trait;
-use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
-use lapin::types::FieldTable;
+use lapin::types::{FieldTable, ShortString};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
+use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -26,7 +26,7 @@ impl RabbitmqMessagePublisher {
 
         channel
             .exchange_declare(
-                &exchange_name,
+                ShortString::from(exchange_name.clone()),
                 exchange_kind,
                 exchange_declare_options,
                 FieldTable::default(),
@@ -47,8 +47,8 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublishe
 
         self.channel
             .basic_publish(
-                &self.exchange_name,
-                "",
+                ShortString::from(self.exchange_name.clone()),
+                ShortString::from("".to_owned()),
                 BasicPublishOptions::default(),
                 &payload,
                 BasicProperties::default()

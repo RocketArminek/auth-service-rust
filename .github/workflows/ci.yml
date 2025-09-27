@@ -136,6 +136,9 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:8.4"
+          - engine: "mysql"
+            url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
+            service: "mysql:9.4"
         strategy:
           - "stateful"
           - "stateless"
@@ -209,7 +212,7 @@ jobs:
             url: "sqlite://test.db"
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
+            service: "mysql:9.4"
         rabbitmq:
           - version: "4"
     services:
@@ -275,7 +278,7 @@ jobs:
             url: "sqlite://test.db"
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
-            service: "mysql:8.4"
+            service: "mysql:9.4"
         strategy:
           - "stateful"
           - "stateless"

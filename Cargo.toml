@@ -15,30 +15,30 @@ sqlite = []
 mysql = []
 
 [dependencies]
-axum = "0.8.3"
-tokio = { version = "1.44.1", features = ["signal", "rt-multi-thread", "net"] }
-tracing-subscriber = { version = "0.3.19", features = ["json"] }
-serde = { version = "1.0.219", features = ["derive"] }
-clap = { version = "4.5.34", features = ["derive"] }
-utoipa = { version = "5.3.1", features = ["uuid", "chrono"] }
-chrono = { version = "0.4.40", features = ["serde"] }
-uuid = { version = "1.16.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
-sqlx = { version = "0.8.3", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
+axum = "0.8.4"
+tokio = { version = "1.47.1", features = ["signal", "rt-multi-thread", "net"] }
+tracing-subscriber = { version = "0.3.20", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
+utoipa = { version = "5.4.0", features = ["uuid", "chrono"] }
+chrono = { version = "0.4.42", features = ["serde"] }
+uuid = { version = "1.18.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "macros", "mysql", "migrate", "chrono", "uuid", "sqlite", "time"] }
 dotenvy = "0.15.7"
-serde_json = "1.0.140"
-tower-http = { version = "0.6.2", features = ["trace"] }
+serde_json = "1.0.145"
+tower-http = { version = "0.6.6", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
 tracing = "0.1.41"
-argon2 = "0.6.0-pre.1"
+argon2 = "0.6.0-rc.1"
 lazy-regex = "3.4.1"
-bcrypt = "0.17.0"
+bcrypt = "0.17.1"
 jsonwebtoken = "9.3.1"
-utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }
-lapin = "3.0.0-beta.2"
-futures-lite = "2.6.0"
-async-trait = "0.1.88"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+lapin = "4.0.0-rc.1"
+futures-lite = "2.6.1"
+async-trait = "0.1.89"
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
-axum-test = "17.3.0"
+assert_cmd = "2.0.17"
+axum-test = "18.1.0"
 predicates = "3.1.3"
