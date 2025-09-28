@@ -2,9 +2,7 @@ use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
-use auth_service::application::configuration::message_publisher::{
-    MessagePublisherConfiguration, RabbitmqConfiguration,
-};
+use auth_service::application::configuration::messaging::{MessagingConfigurationBuilder};
 use auth_service::application::service::auth_service::{AuthStrategy, create_auth_service};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
@@ -16,7 +14,7 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::{
-    MessageConsumer, create_debug_rabbitmq_consumer,
+    MessageConsumer,
 };
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::repository::{
@@ -106,7 +104,7 @@ async fn main() {
     let session_repository = create_session_repository(db_pool.clone());
     let permission_repository = create_permission_repository(db_pool.clone());
 
-    let message_publisher = create_message_publisher(config.publisher()).await;
+    let message_publisher = create_message_publisher(config.messaging()).await;
 
     let auth_service = create_auth_service(
         config.app(),
@@ -331,28 +329,39 @@ async fn main() {
             println!("Role deleted for {}", name);
         }
         Some(Commands::HealthCheck) => {}
-        Some(Commands::ConsumeRabbitmqMessages { exchange_name }) => match config.publisher() {
-            MessagePublisherConfiguration::Rabbitmq(config) => {
-                let config = &RabbitmqConfiguration::new(
-                    config.rabbitmq_url().to_string(),
-                    exchange_name.to_string(),
-                    config.rabbitmq_exchange_kind().clone(),
-                    config.rabbitmq_exchange_declare_options(),
-                );
+        Some(Commands::ConsumeRabbitmqMessages { exchange_name }) => {
+            let config =
+                &MessagingConfigurationBuilder::new()
+                    .load_env()
+                    .rabbitmq_exchange_name(exchange_name.clone())
+                    .build();
 
-                let mut debug_consumer = create_debug_rabbitmq_consumer(config).await;
-
-                while let Some(event) = debug_consumer.basic_consume::<UserEvents>().await {
-                    println!("Received event: {:?}", event);
-                }
-            }
-            MessagePublisherConfiguration::None => {
-                println!("No message publishing enabled");
+            let mut consumer = MessageConsumer::new(config).await;
+            while let Some(event) = consumer.basic_consume::<UserEvents>().await {
+                println!("Received event: {:?}", event);
             }
         },
     }
 }
-
+// match config.publisher() {
+// MessagingConfiguration::Rabbitmq(config) => {
+// let config = &RabbitmqConfiguration::new(
+// config.rabbitmq_url().to_string(),
+// exchange_name.to_string(),
+// config.rabbitmq_exchange_kind().clone(),
+// config.rabbitmq_exchange_declare_options(),
+// );
+//
+// let mut debug_consumer = create_debug_rabbitmq_consumer(config).await;
+//
+// while let Some(event) = debug_consumer.basic_consume::<UserEvents>().await {
+// println!("Received event: {:?}", event);
+// }
+// }
+// MessagingConfiguration::None => {
+// println!("No message publishing enabled");
+// }
+// }
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c().await.unwrap();

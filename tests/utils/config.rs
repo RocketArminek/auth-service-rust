@@ -1,13 +1,13 @@
 use auth_service::application::configuration::app::AppConfigurationBuilder;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
-use auth_service::application::configuration::message_publisher::MessagePublisherConfigurationBuilder;
+use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 
 pub fn init_test_publisher_configuration_builder(
     test_case_id: &str,
-    configurator: impl FnOnce(&mut MessagePublisherConfigurationBuilder),
-) -> MessagePublisherConfigurationBuilder {
-    let mut builder = MessagePublisherConfigurationBuilder::new();
+    configurator: impl FnOnce(&mut MessagingConfigurationBuilder),
+) -> MessagingConfigurationBuilder {
+    let mut builder = MessagingConfigurationBuilder::new();
     builder.load_env();
     builder.rabbitmq_exchange_name(format!(
         "{}_{}",

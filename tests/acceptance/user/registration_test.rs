@@ -12,7 +12,7 @@ async fn it_creates_new_user() {
         |b| {
             b.app.verification_required(false);
         },
-        |c| async move {
+        |mut c| async move {
             let role = Role::now("user".to_string()).unwrap();
             c.role_repository.save(&role).await.unwrap();
             let email = String::from("jon@snow.test");
@@ -28,20 +28,19 @@ async fn it_creates_new_user() {
 
             assert_eq!(response.status_code(), StatusCode::CREATED);
 
-            let event = c
-                .wait_for_event(5, |event| matches!(event, UserEvents::Created { .. }))
-                .await;
-
-            assert!(event.is_some(), "Should have received some event");
-
-            if let Some(UserEvents::Created { user }) = event {
-                assert_eq!(user.email, email);
-                assert_eq!(user.first_name, None);
-                assert_eq!(user.last_name, None);
-                assert_eq!(user.avatar_path, None);
-                assert_eq!(user.roles, vec!["user".to_string()]);
-                assert!(user.is_verified);
-            }
+            c.tester.assert_event_published(|event| {
+                match event {
+                    Some(UserEvents::Created { user }) => {
+                        assert_eq!(user.email, email);
+                        assert_eq!(user.first_name, None);
+                        assert_eq!(user.last_name, None);
+                        assert_eq!(user.avatar_path, None);
+                        assert_eq!(user.roles, vec!["user".to_string()]);
+                        assert!(user.is_verified);
+                    }
+                    _ => panic!("Got {:?}", event),
+                }
+            }, 5).await;
         },
     )
     .await
@@ -49,7 +48,7 @@ async fn it_creates_new_user() {
 
 #[tokio::test]
 async fn it_creates_not_verified_user() {
-    run_integration_test_with_default(|c| async move {
+    run_integration_test_with_default(|mut c| async move {
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
         let email = String::from("jon@snow.test");
@@ -66,45 +65,41 @@ async fn it_creates_not_verified_user() {
 
         assert_eq!(response.status_code(), StatusCode::CREATED);
 
-        let event = c
-            .wait_for_event(5, |event| matches!(event, UserEvents::Created { .. }))
-            .await;
+        c.tester.assert_event_published(|event| {
+            match event {
+                Some(UserEvents::Created { user }) => {
+                    assert_eq!(user.email, email);
+                    assert_eq!(user.first_name, None);
+                    assert_eq!(user.last_name, None);
+                    assert_eq!(user.avatar_path, None);
+                    assert_eq!(user.roles, vec!["user".to_string()]);
+                    assert!(!user.is_verified);
+                }
+                _ => panic!("Got {:?}", event),
+            }
+        }, 5).await;
 
-        assert!(event.is_some(), "Should have received some event");
-
-        if let Some(UserEvents::Created { user }) = event {
-            assert_eq!(user.email, email);
-            assert_eq!(user.first_name, None);
-            assert_eq!(user.last_name, None);
-            assert_eq!(user.avatar_path, None);
-            assert_eq!(user.roles, vec!["user".to_string()]);
-            assert!(!user.is_verified);
-        }
-
-        let event = c
-            .wait_for_event(5, |event| {
-                matches!(event, UserEvents::VerificationRequested { .. })
-            })
-            .await;
-
-        assert!(event.is_some(), "Should have received some event");
-
-        if let Some(UserEvents::VerificationRequested { user, token }) = event {
-            assert_eq!(user.email, email);
-            assert_eq!(user.first_name, None);
-            assert_eq!(user.last_name, None);
-            assert_eq!(user.avatar_path, None);
-            assert_eq!(user.roles, vec!["user".to_string()]);
-            assert!(!user.is_verified);
-            assert!(!token.is_empty());
-        }
+        c.tester.assert_event_published(|event| {
+            match event {
+                Some(UserEvents::VerificationRequested { user, token }) => {
+                    assert_eq!(user.email, email);
+                    assert_eq!(user.first_name, None);
+                    assert_eq!(user.last_name, None);
+                    assert_eq!(user.avatar_path, None);
+                    assert_eq!(user.roles, vec!["user".to_string()]);
+                    assert!(!user.is_verified);
+                    assert!(!token.is_empty());
+                }
+                _ => panic!("Got {:?}", event),
+            }
+        }, 5).await;
     })
     .await
 }
 
 #[tokio::test]
 async fn it_does_not_create_user_with_invalid_password() {
-    run_integration_test_with_default(|c| async move {
+    run_integration_test_with_default(|mut c| async move {
         let email = String::from("jon@snow.test");
         let role = Role::now("user".to_string()).unwrap();
         c.role_repository.save(&role).await.unwrap();
@@ -121,8 +116,7 @@ async fn it_does_not_create_user_with_invalid_password() {
 
         assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
 
-        let event = c.wait_for_event(5, |_| true).await;
-        assert!(event.is_none(), "Should not receive any message");
+        c.tester.assert_no_event_published(1).await;
     })
     .await
 }

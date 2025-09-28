@@ -4,7 +4,7 @@ use lapin::options::ExchangeDeclareOptions;
 use std::collections::HashMap;
 use std::env;
 
-pub struct MessagePublisherConfigurationBuilder {
+pub struct MessagingConfigurationBuilder {
     pub engine: Option<MessagingEngine>,
     pub rabbitmq_url: Option<String>,
     pub rabbitmq_exchange_name: Option<String>,
@@ -13,15 +13,15 @@ pub struct MessagePublisherConfigurationBuilder {
     pub rabbitmq_exchange_auto_delete: Option<bool>,
 }
 
-impl Default for MessagePublisherConfigurationBuilder {
+impl Default for MessagingConfigurationBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MessagePublisherConfigurationBuilder {
+impl MessagingConfigurationBuilder {
     pub fn new() -> Self {
-        MessagePublisherConfigurationBuilder {
+        MessagingConfigurationBuilder {
             engine: None,
             rabbitmq_url: None,
             rabbitmq_exchange_name: None,
@@ -81,7 +81,7 @@ impl MessagePublisherConfigurationBuilder {
         self
     }
 
-    pub fn build(&self) -> MessagePublisherConfiguration {
+    pub fn build(&self) -> MessagingConfiguration {
         match self.engine {
             Some(MessagingEngine::Rabbitmq) => {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
@@ -90,7 +90,7 @@ impl MessagePublisherConfigurationBuilder {
                     ..ExchangeDeclareOptions::default()
                 };
 
-                MessagePublisherConfiguration::Rabbitmq(RabbitmqConfiguration::new(
+                MessagingConfiguration::Rabbitmq(RabbitmqConfiguration::new(
                     self.rabbitmq_url
                         .clone()
                         .unwrap_or("amqp://localhost:5672".to_string()),
@@ -103,8 +103,8 @@ impl MessagePublisherConfigurationBuilder {
                     rabbitmq_exchange_declare_options,
                 ))
             }
-            Some(MessagingEngine::None) => MessagePublisherConfiguration::None,
-            None => MessagePublisherConfiguration::None,
+            Some(MessagingEngine::None) => MessagingConfiguration::None,
+            None => MessagingConfiguration::None,
         }
     }
 
@@ -120,7 +120,7 @@ impl MessagePublisherConfigurationBuilder {
 }
 
 #[derive(Debug, Clone)]
-pub enum MessagePublisherConfiguration {
+pub enum MessagingConfiguration {
     Rabbitmq(RabbitmqConfiguration),
     None,
 }

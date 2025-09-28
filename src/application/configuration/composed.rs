@@ -2,8 +2,8 @@ use crate::application::configuration::app::{AppConfiguration, AppConfigurationB
 use crate::application::configuration::database::{
     DatabaseConfiguration, DatabaseConfigurationBuilder,
 };
-use crate::application::configuration::message_publisher::{
-    EnvNames, MessagePublisherConfiguration, MessagePublisherConfigurationBuilder,
+use crate::application::configuration::messaging::{
+    EnvNames, MessagingConfiguration, MessagingConfigurationBuilder,
 };
 use dotenvy::{dotenv, from_filename};
 use std::collections::HashMap;
@@ -12,14 +12,14 @@ use std::fmt::Debug;
 pub struct ConfigurationBuilder {
     pub app: AppConfigurationBuilder,
     pub db: DatabaseConfigurationBuilder,
-    pub publisher: MessagePublisherConfigurationBuilder,
+    pub publisher: MessagingConfigurationBuilder,
 }
 
 impl ConfigurationBuilder {
     pub fn new(
         app: AppConfigurationBuilder,
         db: DatabaseConfigurationBuilder,
-        publisher: MessagePublisherConfigurationBuilder,
+        publisher: MessagingConfigurationBuilder,
     ) -> Self {
         ConfigurationBuilder { app, db, publisher }
     }
@@ -33,14 +33,14 @@ impl ConfigurationBuilder {
 pub struct Configuration {
     app: AppConfiguration,
     db: DatabaseConfiguration,
-    publisher: MessagePublisherConfiguration,
+    publisher: MessagingConfiguration,
 }
 
 impl Configuration {
     pub fn new(
         app: AppConfiguration,
         db: DatabaseConfiguration,
-        publisher: MessagePublisherConfiguration,
+        publisher: MessagingConfiguration,
     ) -> Self {
         Configuration { app, db, publisher }
     }
@@ -50,17 +50,17 @@ impl Configuration {
         F: FnOnce(
             AppConfigurationBuilder,
             DatabaseConfigurationBuilder,
-            MessagePublisherConfigurationBuilder,
+            MessagingConfigurationBuilder,
         ) -> (
             AppConfiguration,
             DatabaseConfiguration,
-            MessagePublisherConfiguration,
+            MessagingConfiguration,
         ),
     {
         let (app, db, publisher) = loader(
             AppConfigurationBuilder::new(),
             DatabaseConfigurationBuilder::new(),
-            MessagePublisherConfigurationBuilder::new(),
+            MessagingConfigurationBuilder::new(),
         );
 
         Configuration { app, db, publisher }
@@ -71,14 +71,14 @@ impl Configuration {
         envs.extend(self.app.envs());
         envs.extend(self.db.envs());
         match &self.publisher {
-            MessagePublisherConfiguration::Rabbitmq(config) => {
+            MessagingConfiguration::Rabbitmq(config) => {
                 envs.extend(config.envs());
                 envs.insert(
                     EnvNames::MESSAGE_PUBLISHER_ENGINE.to_owned(),
                     "rabbitmq".to_owned(),
                 );
             }
-            MessagePublisherConfiguration::None => {
+            MessagingConfiguration::None => {
                 envs.insert(
                     EnvNames::MESSAGE_PUBLISHER_ENGINE.to_owned(),
                     "none".to_owned(),
@@ -97,7 +97,7 @@ impl Configuration {
         &self.db
     }
 
-    pub fn publisher(&self) -> &MessagePublisherConfiguration {
+    pub fn messaging(&self) -> &MessagingConfiguration {
         &self.publisher
     }
 }

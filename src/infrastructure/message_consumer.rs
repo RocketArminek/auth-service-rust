@@ -1,30 +1,45 @@
-use crate::application::configuration::message_publisher::RabbitmqConfiguration;
+use crate::application::configuration::messaging::{MessagingConfiguration};
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
-use async_trait::async_trait;
-use futures_lite::StreamExt;
-use lapin::options::{
-    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
-    QueueDeclareOptions,
-};
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::{FieldTable, ShortString};
 use lapin::{Connection, Consumer, ExchangeKind};
-use serde::Deserialize;
 use std::error::Error;
+use futures_lite::StreamExt;
+use serde::Deserialize;
+use uuid::Uuid;
 
-#[async_trait]
-pub trait MessageConsumer: Send + Sync {
-    async fn basic_consume<T>(&mut self) -> Option<T>
-    where
-        T: for<'de> Deserialize<'de> + Send + Sync + 'static;
+pub enum MessageConsumer {
+    None,
+    DebugRabbitmqConsumer(DebugRabbitmqConsumer),
 }
 
-#[derive(Clone)]
-pub struct NoneConsumer {}
+impl MessageConsumer {
+    pub async fn new(config: &MessagingConfiguration) -> Self {
+        match config {
+            MessagingConfiguration::Rabbitmq(config) => {
+                let conn = create_rabbitmq_connection(config).await;
 
-#[async_trait]
-impl MessageConsumer for NoneConsumer {
-    async fn basic_consume<T>(&mut self) -> Option<T> {
-        None
+                MessageConsumer::DebugRabbitmqConsumer(
+                    DebugRabbitmqConsumer::new(
+                        &conn,
+                        config.rabbitmq_exchange_name().to_string(),
+                        config.rabbitmq_exchange_kind().clone(),
+                        config.rabbitmq_exchange_declare_options(),
+                    ).await.expect("Should create consumer")
+                )
+            },
+            MessagingConfiguration::None => MessageConsumer::None,
+        }
+    }
+
+    pub async fn basic_consume<T>(&mut self) -> Option<T>
+    where
+        T: for<'de> Deserialize<'de> + Send + Sync,
+    {
+        match self {
+            MessageConsumer::DebugRabbitmqConsumer(debug) => debug.basic_consume().await,
+            _ => None,
+        }
     }
 }
 
@@ -51,7 +66,8 @@ impl DebugRabbitmqConsumer {
             )
             .await?;
 
-        let queue_name = "debug_queue".to_owned();
+        let id = Uuid::new_v4();
+        let queue_name = format!("test_queue_{}", id);
         channel
             .queue_declare(
                 ShortString::from(queue_name.clone()),
@@ -87,11 +103,10 @@ impl DebugRabbitmqConsumer {
     }
 }
 
-#[async_trait]
-impl MessageConsumer for DebugRabbitmqConsumer {
-    async fn basic_consume<T>(&mut self) -> Option<T>
+impl DebugRabbitmqConsumer {
+    pub async fn basic_consume<T>(&mut self) -> Option<T>
     where
-        T: for<'de> Deserialize<'de> + Send + Sync + 'static,
+        T: for<'de> Deserialize<'de> + Send + Sync,
     {
         let delivery = self.consumer.next().await?.ok()?;
         let event = serde_json::from_slice::<T>(&delivery.data).ok()?;
@@ -99,19 +114,4 @@ impl MessageConsumer for DebugRabbitmqConsumer {
 
         Some(event)
     }
-}
-
-pub async fn create_debug_rabbitmq_consumer(
-    config: &RabbitmqConfiguration,
-) -> DebugRabbitmqConsumer {
-    let conn = create_rabbitmq_connection(config).await;
-
-    DebugRabbitmqConsumer::new(
-        &conn,
-        config.rabbitmq_exchange_name().to_string(),
-        config.rabbitmq_exchange_kind().clone(),
-        config.rabbitmq_exchange_declare_options(),
-    )
-    .await
-    .expect("Should create consumer")
 }

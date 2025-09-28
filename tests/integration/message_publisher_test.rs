@@ -4,7 +4,7 @@ use auth_service::domain::jwt::UserDTO;
 
 #[tokio::test]
 async fn it_dispatches_message_into_queue() {
-    run_message_publisher_test_with_default(|c| async move {
+    run_message_publisher_test_with_default(|mut c| async move {
         c.message_publisher
             .publish(&UserEvents::Created {
                 user: UserDTO {
@@ -21,20 +21,21 @@ async fn it_dispatches_message_into_queue() {
             .await
             .unwrap();
 
-        let event = c.wait_for_event(5, |_| true).await;
-
-        assert!(event.is_some(), "Should have received some event");
-
-        if let Some(UserEvents::Created { user }) = event {
-            assert_eq!(user.email, "some@test.com");
-        }
+        c.tester.assert_event_published(|e| {
+            match e {
+                Some(UserEvents::Created { user }) => {
+                    assert_eq!(user.email, "some@test.com");
+                }
+                _ => panic!("Got {:?}", e),
+            }
+        }, 5).await;
     })
     .await;
 }
 
 #[tokio::test]
 async fn it_dispatches_all_messages_into_queue() {
-    run_message_publisher_test_with_default(|c| async move {
+    run_message_publisher_test_with_default(|mut c| async move {
         c.message_publisher
             .publish_all(vec![
                 &UserEvents::Created {
@@ -65,27 +66,25 @@ async fn it_dispatches_all_messages_into_queue() {
             .await
             .unwrap();
 
-        let created = c
-            .wait_for_event(5, |e| matches!(e, UserEvents::Created { .. }))
-            .await;
+        c.tester.assert_event_published(|e| {
+            match e {
+                Some(UserEvents::Created { user }) => {
+                    assert_eq!(user.email, "some@test.com");
+                    assert!(!user.is_verified, "It should not be verified");
+                }
+                _ => panic!("Got {:?}", e),
+            }
+        }, 5).await;
 
-        assert!(created.is_some(), "Should have received created event");
-
-        let verified = c
-            .wait_for_event(5, |e| matches!(e, UserEvents::Verified { .. }))
-            .await;
-
-        assert!(verified.is_some(), "Should have received verified event");
-
-        if let Some(UserEvents::Created { user }) = created {
-            assert_eq!(user.email, "some@test.com");
-            assert!(!user.is_verified, "It should not be verified");
-        }
-
-        if let Some(UserEvents::Verified { user }) = verified {
-            assert_eq!(user.email, "some@test.com");
-            assert!(user.is_verified, "It should be verified");
-        }
+        c.tester.assert_event_published(|e| {
+            match e {
+                Some(UserEvents::Verified { user }) => {
+                    assert_eq!(user.email, "some@test.com");
+                    assert!(user.is_verified, "It should be verified");
+                }
+                _ => panic!("Got {:?}", e),
+            }
+        }, 5).await;
     })
     .await;
 }
