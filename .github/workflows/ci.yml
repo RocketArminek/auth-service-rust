@@ -174,7 +174,7 @@ jobs:
       RABBITMQ_URL: amqp://127.0.0.1:5672
       RABBITMQ_EXCHANGE_AUTO_DELETE: true
       RABBITMQ_EXCHANGE_DURABLE: false
-      RABBITMQ_EXCHANGE_NAME: nebula.auth.test
+      RABBITMQ_EXCHANGE_NAME: auth.test
       SECRET: secret
       PASSWORD_HASHING_SCHEME: bcrypt_low
     steps:

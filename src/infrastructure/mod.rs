@@ -1,5 +1,6 @@
 pub mod database;
 pub mod dto;
+pub mod message_consumer;
 pub mod message_publisher;
 pub mod mysql_permission_repository;
 pub mod mysql_role_repository;

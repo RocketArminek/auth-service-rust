@@ -18,8 +18,8 @@ services:
           memory: 64M
           cpus: '0.5'
     environment:
-      DATABASE_URL: mysql://root:toor@mysql:3306/nebula_dev
-#      DATABASE_URL: sqlite://nebula_dev.db
+      DATABASE_URL: mysql://root:toor@mysql:3306/auth_dev
+#      DATABASE_URL: sqlite://auth_dev.db
       PASSWORD_HASHING_SCHEME: 'bcrypt_low'
       SECRET: "secret"
       RABBITMQ_URL: amqp://rabbit:5672
@@ -28,7 +28,7 @@ services:
       AUTH_STRATEGY: stateful
       LOG_LEVEL: info
       CLEANUP_INTERVAL_IN_MINUTES: 1
-      RABBITMQ_EXCHANGE_NAME: nebula.auth.dev
+      RABBITMQ_EXCHANGE_NAME: auth.dev
     ports:
       - "8080:8080"
 

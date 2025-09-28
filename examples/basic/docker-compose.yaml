@@ -50,7 +50,7 @@ services:
       AUTH_STRATEGY: stateful
       LOG_LEVEL: info
       CLEANUP_INTERVAL_IN_MINUTES: 1
-      RABBITMQ_EXCHANGE_NAME: nebula.auth.dev
+      RABBITMQ_EXCHANGE_NAME: auth.dev
   mysql:
     image: mysql:8.4
     environment:

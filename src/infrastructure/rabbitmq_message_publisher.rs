@@ -86,9 +86,8 @@ pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Conne
 
 pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(
     config: &RabbitmqConfiguration,
+    conn: &Connection,
 ) -> Arc<dyn MessagePublisher<T> + Send + Sync> {
-    let conn = create_rabbitmq_connection(config).await;
-
     let message_publisher = RabbitmqMessagePublisher::new(
         &conn,
         config.rabbitmq_exchange_name().to_string(),

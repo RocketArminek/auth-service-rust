@@ -96,7 +96,7 @@ impl MessagePublisherConfigurationBuilder {
                         .unwrap_or("amqp://localhost:5672".to_string()),
                     self.rabbitmq_exchange_name
                         .clone()
-                        .unwrap_or("nebula.auth.events".to_string()),
+                        .unwrap_or("auth.events".to_string()),
                     self.rabbitmq_exchange_kind
                         .clone()
                         .unwrap_or(ExchangeKind::Fanout),

@@ -2,7 +2,9 @@ use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
-use auth_service::application::configuration::message_publisher::MessagePublisherConfiguration;
+use auth_service::application::configuration::message_publisher::{
+    MessagePublisherConfiguration, RabbitmqConfiguration,
+};
 use auth_service::application::service::auth_service::{AuthStrategy, create_auth_service};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
@@ -13,17 +15,16 @@ use auth_service::domain::repository::{
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
+use auth_service::infrastructure::message_consumer::{
+    MessageConsumer, create_debug_rabbitmq_consumer,
+};
 use auth_service::infrastructure::message_publisher::create_message_publisher;
-use auth_service::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
     create_user_repository,
 };
 use chrono::Duration;
 use clap::{Parser, Subcommand};
-use futures_lite::StreamExt;
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::{FieldTable, ShortString};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
@@ -85,8 +86,6 @@ enum Commands {
     ConsumeRabbitmqMessages {
         #[arg(short, long)]
         exchange_name: String,
-        #[arg(short, long)]
-        dry_run: Option<bool>,
     },
 }
 
@@ -118,15 +117,15 @@ async fn main() {
     load_fixtures(config.app(), &user_repository, &role_repository).await;
     let hashing_scheme = config.app().password_hashing_scheme();
 
-    if config.app().auth_strategy() == AuthStrategy::Stateful {
-        spawn_cleanup_expired_session_job(
-            session_repository.clone(),
-            config.app().cleanup_interval_in_minutes(),
-        );
-    }
-
     match &cli.command {
         Some(Commands::Start) | None => {
+            if config.app().auth_strategy() == AuthStrategy::Stateful {
+                spawn_cleanup_expired_session_job(
+                    session_repository.clone(),
+                    config.app().cleanup_interval_in_minutes(),
+                );
+            }
+
             let port = config.app().port();
             let host = config.app().host();
             let addr = format!("{}:{}", host, port);
@@ -332,83 +331,19 @@ async fn main() {
             println!("Role deleted for {}", name);
         }
         Some(Commands::HealthCheck) => {}
-        Some(Commands::ConsumeRabbitmqMessages {
-            exchange_name,
-            dry_run,
-        }) => match config.publisher() {
+        Some(Commands::ConsumeRabbitmqMessages { exchange_name }) => match config.publisher() {
             MessagePublisherConfiguration::Rabbitmq(config) => {
-                let conn = create_rabbitmq_connection(config).await;
-                let exchange_name = exchange_name.to_owned();
-                let channel = conn
-                    .create_channel()
-                    .await
-                    .expect("Failed to create channel");
-                let dry_run = dry_run.unwrap_or(false);
+                let config = &RabbitmqConfiguration::new(
+                    config.rabbitmq_url().to_string(),
+                    exchange_name.to_string(),
+                    config.rabbitmq_exchange_kind().clone(),
+                    config.rabbitmq_exchange_declare_options(),
+                );
 
-                let queue = channel
-                    .queue_declare(
-                        ShortString::from("".to_owned()),
-                        QueueDeclareOptions {
-                            exclusive: true,
-                            auto_delete: true,
-                            ..QueueDeclareOptions::default()
-                        },
-                        FieldTable::default(),
-                    )
-                    .await
-                    .expect("Failed to declare queue");
+                let mut debug_consumer = create_debug_rabbitmq_consumer(config).await;
 
-                let queue_name = queue.name().to_string();
-
-                let r = channel
-                    .queue_bind(
-                        ShortString::from(queue_name.clone()),
-                        ShortString::from(exchange_name),
-                        ShortString::from("".to_owned()),
-                        QueueBindOptions::default(),
-                        FieldTable::default(),
-                    )
-                    .await;
-
-                if r.is_err() {
-                    println!("Could not bind queue");
-                    return;
-                }
-
-                let mut consumer = channel
-                    .basic_consume(
-                        ShortString::from(queue_name.clone()),
-                        ShortString::from("test_consumer".to_owned()),
-                        BasicConsumeOptions::default(),
-                        FieldTable::default(),
-                    )
-                    .await
-                    .expect("Failed to create consumer");
-
-                if dry_run {
-                    println!("Just a dry run");
-                    return;
-                }
-
-                while let Some(delivery) = consumer.next().await {
-                    match delivery {
-                        Ok(delivery) => {
-                            if let Ok(event) = serde_json::from_slice::<UserEvents>(&delivery.data)
-                            {
-                                println!("Received event: {:?}", event);
-                            } else {
-                                println!("Cannot deserialize event: {:?}", delivery);
-                            }
-
-                            delivery
-                                .ack(BasicAckOptions::default())
-                                .await
-                                .expect("Failed to ack message");
-                        }
-                        Err(e) => {
-                            println!("Error receiving message: {:?}", e);
-                        }
-                    }
+                while let Some(event) = debug_consumer.basic_consume::<UserEvents>().await {
+                    println!("Received event: {:?}", event);
                 }
             }
             MessagePublisherConfiguration::None => {

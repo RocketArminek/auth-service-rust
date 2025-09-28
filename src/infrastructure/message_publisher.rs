@@ -1,5 +1,7 @@
 use crate::application::configuration::message_publisher::MessagePublisherConfiguration;
-use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_publisher;
+use crate::infrastructure::rabbitmq_message_publisher::{
+    create_rabbitmq_connection, create_rabbitmq_message_publisher,
+};
 use async_trait::async_trait;
 use serde::Serialize;
 use std::error::Error;
@@ -64,7 +66,9 @@ pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
 ) -> Arc<dyn MessagePublisher<T>> {
     match publisher_config {
         MessagePublisherConfiguration::Rabbitmq(config) => {
-            create_rabbitmq_message_publisher(config).await
+            let conn = create_rabbitmq_connection(config).await;
+
+            create_rabbitmq_message_publisher(config, &conn).await
         }
         MessagePublisherConfiguration::None => {
             tracing::info!("Event driven is turned off. Events wont be published.");
