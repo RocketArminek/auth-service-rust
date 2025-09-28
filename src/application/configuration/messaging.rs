@@ -1,33 +1,39 @@
+use crate::infrastructure::message_publisher::MessagingEngine;
 use lapin::ExchangeKind;
 use lapin::options::ExchangeDeclareOptions;
 use std::collections::HashMap;
 use std::env;
 
-pub struct MessagePublisherConfigurationBuilder {
+pub struct MessagingConfigurationBuilder {
+    pub engine: Option<MessagingEngine>,
     pub rabbitmq_url: Option<String>,
     pub rabbitmq_exchange_name: Option<String>,
     pub rabbitmq_exchange_kind: Option<ExchangeKind>,
     pub rabbitmq_exchange_durable: Option<bool>,
     pub rabbitmq_exchange_auto_delete: Option<bool>,
-    pub event_driven: Option<bool>,
 }
 
-impl Default for MessagePublisherConfigurationBuilder {
+impl Default for MessagingConfigurationBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MessagePublisherConfigurationBuilder {
+impl MessagingConfigurationBuilder {
     pub fn new() -> Self {
-        MessagePublisherConfigurationBuilder {
+        MessagingConfigurationBuilder {
+            engine: None,
             rabbitmq_url: None,
             rabbitmq_exchange_name: None,
             rabbitmq_exchange_kind: None,
             rabbitmq_exchange_durable: None,
             rabbitmq_exchange_auto_delete: None,
-            event_driven: None,
         }
+    }
+
+    pub fn engine(&mut self, value: MessagingEngine) -> &mut Self {
+        self.engine = Some(value);
+        self
     }
 
     pub fn rabbitmq_url(&mut self, value: String) -> &mut Self {
@@ -55,12 +61,11 @@ impl MessagePublisherConfigurationBuilder {
         self
     }
 
-    pub fn event_driven(&mut self, value: bool) -> &mut Self {
-        self.event_driven = Some(value);
-        self
-    }
-
     pub fn load_env(&mut self) -> &mut Self {
+        self.engine = env::var(EnvNames::MESSAGE_PUBLISHER_ENGINE)
+            .map(|v| v.try_into().unwrap_or_default())
+            .ok();
+
         self.rabbitmq_url = env::var(EnvNames::RABBITMQ_URL).ok();
         self.rabbitmq_exchange_name = env::var(EnvNames::RABBITMQ_EXCHANGE_NAME).ok();
         self.rabbitmq_exchange_kind = env::var(EnvNames::RABBITMQ_EXCHANGE_KIND)
@@ -72,36 +77,34 @@ impl MessagePublisherConfigurationBuilder {
         self.rabbitmq_exchange_auto_delete = env::var(EnvNames::RABBITMQ_EXCHANGE_AUTO_DELETE)
             .map(|v| v.parse::<bool>().unwrap())
             .ok();
-        self.event_driven = env::var(EnvNames::EVENT_DRIVEN)
-            .map(|v| v.parse::<bool>().unwrap())
-            .ok();
 
         self
     }
 
-    pub fn build(&self) -> MessagePublisherConfiguration {
-        match self.event_driven.unwrap_or(true) {
-            true => {
+    pub fn build(&self) -> MessagingConfiguration {
+        match self.engine {
+            Some(MessagingEngine::Rabbitmq) => {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
                     auto_delete: self.rabbitmq_exchange_auto_delete.unwrap_or_default(),
                     durable: self.rabbitmq_exchange_durable.unwrap_or_default(),
                     ..ExchangeDeclareOptions::default()
                 };
 
-                MessagePublisherConfiguration::Rabbitmq(RabbitmqConfiguration::new(
+                MessagingConfiguration::Rabbitmq(RabbitmqConfiguration::new(
                     self.rabbitmq_url
                         .clone()
                         .unwrap_or("amqp://localhost:5672".to_string()),
                     self.rabbitmq_exchange_name
                         .clone()
-                        .unwrap_or("nebula.auth.events".to_string()),
+                        .unwrap_or("auth.events".to_string()),
                     self.rabbitmq_exchange_kind
                         .clone()
                         .unwrap_or(ExchangeKind::Fanout),
                     rabbitmq_exchange_declare_options,
                 ))
             }
-            false => MessagePublisherConfiguration::None,
+            Some(MessagingEngine::None) => MessagingConfiguration::None,
+            None => MessagingConfiguration::None,
         }
     }
 
@@ -117,7 +120,7 @@ impl MessagePublisherConfigurationBuilder {
 }
 
 #[derive(Debug, Clone)]
-pub enum MessagePublisherConfiguration {
+pub enum MessagingConfiguration {
     Rabbitmq(RabbitmqConfiguration),
     None,
 }
@@ -202,10 +205,10 @@ impl RabbitmqConfiguration {
 pub struct EnvNames;
 
 impl EnvNames {
+    pub const MESSAGE_PUBLISHER_ENGINE: &'static str = "MESSAGE_PUBLISHER_ENGINE";
     pub const RABBITMQ_URL: &'static str = "RABBITMQ_URL";
     pub const RABBITMQ_EXCHANGE_NAME: &'static str = "RABBITMQ_EXCHANGE_NAME";
     pub const RABBITMQ_EXCHANGE_KIND: &'static str = "RABBITMQ_EXCHANGE_KIND";
     pub const RABBITMQ_EXCHANGE_DURABLE: &'static str = "RABBITMQ_EXCHANGE_DURABLE";
     pub const RABBITMQ_EXCHANGE_AUTO_DELETE: &'static str = "RABBITMQ_EXCHANGE_AUTO_DELETE";
-    pub const EVENT_DRIVEN: &'static str = "EVENT_DRIVEN";
 }

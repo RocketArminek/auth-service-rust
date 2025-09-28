@@ -58,16 +58,6 @@ module "app_demo" {
       name        = "SECRET"
       secret_name = local.app_name
       secret_key  = "secret"
-    },
-    {
-      name        = "AWS_ACCESS_KEY"
-      secret_name = local.app_name
-      secret_key  = "aws-access-key"
-    },
-    {
-      name        = "AWS_SECRET_ACCESS_KEY"
-      secret_name = local.app_name
-      secret_key  = "aws-secret-access-key"
     }
   ]
   envs_from_value = [
@@ -94,14 +84,6 @@ module "app_demo" {
       //bcrypt_low is the most efficient hashing scheme
       //bcrypt is more cpu intensive than bcrypt_low
       //argon2 is the most memory & cpu intensive hashing scheme it requires at least 1GB of memory per pod 300 r/s
-    },
-    {
-      name  = "AWS_BUCKET"
-      value = "rocketarminek-auth-service"
-    },
-    {
-      name  = "AWS_REGION"
-      value = "eu-central-1"
     }
   ]
 }

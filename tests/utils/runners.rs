@@ -4,16 +4,17 @@ use crate::utils::config::{
     init_test_publisher_configuration_builder,
 };
 use crate::utils::context::{
-    AcceptanceTestContext, CliTestContext, DatabaseTestContext, PublisherTestContext,
+    AcceptanceTestContext, CliTestContext, DatabaseTestContext, MessagingTester,
+    PublisherTestContext,
 };
 use crate::utils::db::drop_database;
-use crate::utils::events::setup_test_consumer;
 use crate::utils::server::create_test_server;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
-use auth_service::application::configuration::message_publisher::MessagePublisherConfigurationBuilder;
+use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::create_auth_service;
 use auth_service::infrastructure::database::create_pool;
+use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
@@ -24,7 +25,7 @@ use std::future::Future;
 use uuid::Uuid;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
-const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagePublisherConfigurationBuilder) = |_| {};
+const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};
 const NONE_DATABASE_CONFIGURATOR: fn(&mut DatabaseConfigurationBuilder) = |_| {};
 
 pub async fn run_database_test_with_default<F, Fut>(test: F)
@@ -77,7 +78,7 @@ pub async fn run_message_publisher_test<F, Fut, C>(configurator: C, test: F)
 where
     F: Fn(PublisherTestContext) -> Fut,
     Fut: Future<Output = ()>,
-    C: FnOnce(&mut MessagePublisherConfigurationBuilder),
+    C: FnOnce(&mut MessagingConfigurationBuilder),
 {
     from_filename(".env.test").or(dotenv()).ok();
     let case = Uuid::new_v4().to_string().replace("-", "_");
@@ -86,7 +87,7 @@ where
     let config = builder.build();
 
     let message_publisher = create_message_publisher(&config).await;
-    let (_, consumer, _) = setup_test_consumer(&config).await;
+    let consumer = MessagingTester::new(MessageConsumer::new(&config).await);
 
     test(PublisherTestContext::new(message_publisher, consumer)).await
 }
@@ -118,8 +119,8 @@ where
     let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
-    let message_publisher = create_message_publisher(config.publisher()).await;
-    let (_, consumer, _) = setup_test_consumer(config.publisher()).await;
+    let message_publisher = create_message_publisher(config.messaging()).await;
+    let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
 
     let auth_service = create_auth_service(
         config.app(),

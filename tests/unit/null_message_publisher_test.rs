@@ -1,11 +1,11 @@
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::jwt::UserDTO;
-use auth_service::infrastructure::message_publisher::{MessagePublisher, NullPublisher};
+use auth_service::infrastructure::message_publisher::{MessagePublisher, NonePublisher};
 use uuid::Uuid;
 
 #[tokio::test]
 async fn it_does_nothing() {
-    let publisher = NullPublisher {};
+    let publisher = NonePublisher {};
 
     let r = publisher
         .publish(&UserEvents::Created {
@@ -27,7 +27,7 @@ async fn it_does_nothing() {
 
 #[tokio::test]
 async fn it_does_nothing_multiple_times() {
-    let publisher = NullPublisher {};
+    let publisher = NonePublisher {};
     let r = publisher
         .publish_all(vec![&UserEvents::Created {
             user: UserDTO {

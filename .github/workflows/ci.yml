@@ -174,7 +174,7 @@ jobs:
       RABBITMQ_URL: amqp://127.0.0.1:5672
       RABBITMQ_EXCHANGE_AUTO_DELETE: true
       RABBITMQ_EXCHANGE_DURABLE: false
-      RABBITMQ_EXCHANGE_NAME: nebula.auth.test
+      RABBITMQ_EXCHANGE_NAME: auth.test
       SECRET: secret
       PASSWORD_HASHING_SCHEME: bcrypt_low
     steps:
@@ -253,7 +253,7 @@ jobs:
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
+          MESSAGE_PUBLISHER_ENGINE: rabbitmq
         options: >-
           --health-cmd="app health-check"
           --health-interval=10s
@@ -322,7 +322,7 @@ jobs:
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
+          MESSAGE_PUBLISHER_ENGINE: rabbitmq
         options: >-
           --health-cmd="app health-check"
           --health-interval=10s

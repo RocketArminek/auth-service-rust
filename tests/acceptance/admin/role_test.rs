@@ -213,7 +213,7 @@ async fn it_requires_admin_role() {
 
 #[tokio::test]
 async fn it_can_assign_role_to_user() {
-    run_integration_test_with_default(|c| async move {
+    run_integration_test_with_default(|mut c| async move {
         let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
 
         let user = User::now_with_email_and_password(
@@ -246,24 +246,25 @@ async fn it_can_assign_role_to_user() {
         let updated_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert!(updated_user.has_role("TEST_ROLE".to_string()));
 
-        let event = c
-            .wait_for_event(5, |event| matches!(event, UserEvents::RoleAssigned { .. }))
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::RoleAssigned { user, role }) => {
+                        assert_eq!(user.id, updated_user.id);
+                        assert_eq!(role, "TEST_ROLE");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
             .await;
-
-        match event {
-            Some(UserEvents::RoleAssigned { user, role }) => {
-                assert_eq!(user.id, updated_user.id);
-                assert_eq!(role, "TEST_ROLE");
-            }
-            _ => panic!("Should have received role assigned event!"),
-        }
     })
     .await;
 }
 
 #[tokio::test]
 async fn it_can_remove_role_from_user() {
-    run_integration_test_with_default(|c| async move {
+    run_integration_test_with_default(|mut c| async move {
         let (_, token) = utils::i_am_logged_in_as_admin(&c).await;
 
         let mut user = User::now_with_email_and_password(
@@ -297,17 +298,18 @@ async fn it_can_remove_role_from_user() {
         let updated_user = c.user_repository.get_by_id(&user.id).await.unwrap();
         assert!(!updated_user.has_role("TEST_ROLE".to_string()));
 
-        let event = c
-            .wait_for_event(5, |event| matches!(event, UserEvents::RoleRemoved { .. }))
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::RoleRemoved { user, role }) => {
+                        assert_eq!(user.id, updated_user.id);
+                        assert_eq!(role, "TEST_ROLE");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
             .await;
-
-        match event {
-            Some(UserEvents::RoleRemoved { user, role }) => {
-                assert_eq!(user.id, updated_user.id);
-                assert_eq!(role, "TEST_ROLE");
-            }
-            _ => panic!("Should have received role assigned event!"),
-        }
     })
     .await;
 }

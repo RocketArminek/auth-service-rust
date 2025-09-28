@@ -3,6 +3,7 @@ use assert_cmd::prelude::*;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
+use auth_service::infrastructure::message_publisher::MessagingEngine;
 use predicates::prelude::*;
 
 #[tokio::test]
@@ -254,8 +255,7 @@ async fn it_consumes_rabbitmq_messages() {
 
     run_cli_test(
         |c| {
-            c.publisher
-                .rabbitmq_exchange_name(exchange_name.to_string());
+            c.publisher.engine(MessagingEngine::None);
         },
         |c| async move {
             let mut cmd = c.cf.create("app").unwrap();
@@ -263,8 +263,6 @@ async fn it_consumes_rabbitmq_messages() {
             cmd.arg("consume-rabbitmq-messages")
                 .arg("-e")
                 .arg(exchange_name)
-                .arg("-d")
-                .arg("true")
                 .assert()
                 .success();
         },

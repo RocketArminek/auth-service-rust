@@ -1,35 +1,29 @@
 use crate::utils::cli::CommandFactory;
-use crate::utils::events::wait_for_event;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::repository::{
     PermissionRepository, RoleRepository, SessionRepository, UserRepository,
 };
+use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
-use lapin::Consumer;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::time::timeout;
 
 pub struct PublisherTestContext {
     pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
-    pub consumer: Consumer,
+    pub tester: MessagingTester,
 }
 
 impl PublisherTestContext {
     pub fn new(
         message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
-        consumer: Consumer,
+        tester: MessagingTester,
     ) -> PublisherTestContext {
         PublisherTestContext {
             message_publisher,
-            consumer,
+            tester,
         }
-    }
-
-    pub async fn wait_for_event<F>(&self, timeout: u64, predicate: F) -> Option<UserEvents>
-    where
-        F: Fn(&UserEvents) -> bool,
-    {
-        wait_for_event(self.consumer.clone(), timeout, predicate).await
     }
 }
 
@@ -62,7 +56,7 @@ pub struct AcceptanceTestContext {
     pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub server: TestServer,
-    pub consumer: Consumer,
+    pub tester: MessagingTester,
 }
 
 impl AcceptanceTestContext {
@@ -72,7 +66,7 @@ impl AcceptanceTestContext {
         session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         server: TestServer,
-        consumer: Consumer,
+        tester: MessagingTester,
     ) -> Self {
         AcceptanceTestContext {
             user_repository,
@@ -80,15 +74,8 @@ impl AcceptanceTestContext {
             session_repository,
             permission_repository,
             server,
-            consumer,
+            tester,
         }
-    }
-
-    pub async fn wait_for_event<F>(&self, timeout: u64, predicate: F) -> Option<UserEvents>
-    where
-        F: Fn(&UserEvents) -> bool,
-    {
-        wait_for_event(self.consumer.clone(), timeout, predicate).await
     }
 }
 
@@ -108,6 +95,59 @@ impl CliTestContext {
             user_repository,
             role_repository,
             cf,
+        }
+    }
+}
+
+pub struct MessagingTester {
+    pub consumer: MessageConsumer,
+}
+
+impl MessagingTester {
+    pub fn new(consumer: MessageConsumer) -> Self {
+        Self { consumer }
+    }
+
+    pub async fn assert_event_published<F>(&mut self, predicate: F, timeout_secs: u64)
+    where
+        F: Fn(Option<UserEvents>),
+    {
+        let timeout_duration = Duration::from_secs(timeout_secs);
+
+        match &self.consumer {
+            MessageConsumer::None => {}
+            MessageConsumer::DebugRabbitmqConsumer(_) => {
+                match timeout(
+                    timeout_duration,
+                    self.consumer.basic_consume::<UserEvents>(),
+                )
+                .await
+                {
+                    Ok(event) => predicate(event),
+                    Err(_) => panic!("Event assertion timed out after {} seconds", timeout_secs),
+                }
+            }
+        }
+    }
+
+    pub async fn assert_no_event_published(&mut self, timeout_secs: u64) {
+        let timeout_duration = Duration::from_secs(timeout_secs);
+
+        match &self.consumer {
+            MessageConsumer::None => {}
+            MessageConsumer::DebugRabbitmqConsumer(_) => {
+                match timeout(
+                    timeout_duration,
+                    self.consumer.basic_consume::<UserEvents>(),
+                )
+                .await
+                {
+                    Ok(event) => {
+                        panic!("Expected no event, but received: {:?}", event);
+                    }
+                    Err(_) => {}
+                }
+            }
         }
     }
 }

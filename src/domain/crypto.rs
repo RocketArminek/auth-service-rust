@@ -159,8 +159,7 @@ impl Default for Argon2Hasher {
 
 impl Hasher for Argon2Hasher {
     fn hash_password(&self, password: &str) -> Result<String, UserError> {
-        let salt = SaltString::try_from_rng(&mut OsRng)
-            .map_err(|_| UserError::EncryptionFailed)?;
+        let salt = SaltString::try_from_rng(&mut OsRng).map_err(|_| UserError::EncryptionFailed)?;
 
         self.argon2
             .hash_password(password.as_bytes(), &salt)
