@@ -1,11 +1,11 @@
-use crate::infrastructure::message_publisher::MessagePublisherEngine;
+use crate::infrastructure::message_publisher::MessagingEngine;
 use lapin::ExchangeKind;
 use lapin::options::ExchangeDeclareOptions;
 use std::collections::HashMap;
 use std::env;
 
 pub struct MessagePublisherConfigurationBuilder {
-    pub engine: Option<MessagePublisherEngine>,
+    pub engine: Option<MessagingEngine>,
     pub rabbitmq_url: Option<String>,
     pub rabbitmq_exchange_name: Option<String>,
     pub rabbitmq_exchange_kind: Option<ExchangeKind>,
@@ -31,7 +31,7 @@ impl MessagePublisherConfigurationBuilder {
         }
     }
 
-    pub fn engine(&mut self, value: MessagePublisherEngine) -> &mut Self {
+    pub fn engine(&mut self, value: MessagingEngine) -> &mut Self {
         self.engine = Some(value);
         self
     }
@@ -83,7 +83,7 @@ impl MessagePublisherConfigurationBuilder {
 
     pub fn build(&self) -> MessagePublisherConfiguration {
         match self.engine {
-            Some(MessagePublisherEngine::Rabbitmq) => {
+            Some(MessagingEngine::Rabbitmq) => {
                 let rabbitmq_exchange_declare_options = ExchangeDeclareOptions {
                     auto_delete: self.rabbitmq_exchange_auto_delete.unwrap_or_default(),
                     durable: self.rabbitmq_exchange_durable.unwrap_or_default(),
@@ -103,7 +103,7 @@ impl MessagePublisherConfigurationBuilder {
                     rabbitmq_exchange_declare_options,
                 ))
             }
-            Some(MessagePublisherEngine::None) => MessagePublisherConfiguration::None,
+            Some(MessagingEngine::None) => MessagePublisherConfiguration::None,
             None => MessagePublisherConfiguration::None,
         }
     }

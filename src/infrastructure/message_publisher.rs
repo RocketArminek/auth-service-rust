@@ -7,34 +7,34 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Default)]
-pub enum MessagePublisherEngine {
+pub enum MessagingEngine {
     Rabbitmq,
     #[default]
     None,
 }
 
-impl Display for MessagePublisherEngine {
+impl Display for MessagingEngine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MessagePublisherEngine::None => write!(f, "none"),
-            MessagePublisherEngine::Rabbitmq => write!(f, "rabbitmq"),
+            MessagingEngine::None => write!(f, "none"),
+            MessagingEngine::Rabbitmq => write!(f, "rabbitmq"),
         }
     }
 }
 
-impl From<MessagePublisherEngine> for String {
-    fn from(value: MessagePublisherEngine) -> Self {
+impl From<MessagingEngine> for String {
+    fn from(value: MessagingEngine) -> Self {
         value.to_string()
     }
 }
 
-impl TryFrom<String> for MessagePublisherEngine {
+impl TryFrom<String> for MessagingEngine {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "none" => Ok(MessagePublisherEngine::None),
-            "rabbitmq" => Ok(MessagePublisherEngine::Rabbitmq),
+            "none" => Ok(MessagingEngine::None),
+            "rabbitmq" => Ok(MessagingEngine::Rabbitmq),
             _ => Err(format!("Unknown message publisher type: {}", value)),
         }
     }
