@@ -1,4 +1,3 @@
-use std::ops::Add;
 use crate::utils::runners::run_integration_test_with_default;
 use auth_service::api::dto::LoginResponse;
 use auth_service::domain::crypto::SchemeAwareHasher;
@@ -8,8 +7,9 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use serde_json::json;
+use std::ops::Add;
 
 #[tokio::test]
 async fn it_updates_user_information() {
@@ -60,27 +60,30 @@ async fn it_updates_user_information() {
         assert_eq!(body.last_name.unwrap(), "Doe");
         assert_eq!(body.avatar_path.unwrap(), "https://somepath.com/123.jpg");
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::Updated { old_user, new_user }) => {
-                    assert_eq!(old_user.email, "user@test.com".to_string());
-                    assert_eq!(old_user.first_name, Some("Jon".to_string()));
-                    assert_eq!(old_user.last_name, Some("Snow".to_string()));
-                    assert_eq!(old_user.avatar_path, None);
-                    assert_eq!(old_user.roles, vec!["USER".to_string()]);
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::Updated { old_user, new_user }) => {
+                        assert_eq!(old_user.email, "user@test.com".to_string());
+                        assert_eq!(old_user.first_name, Some("Jon".to_string()));
+                        assert_eq!(old_user.last_name, Some("Snow".to_string()));
+                        assert_eq!(old_user.avatar_path, None);
+                        assert_eq!(old_user.roles, vec!["USER".to_string()]);
 
-                    assert_eq!(new_user.email, "user@test.com".to_string());
-                    assert_eq!(new_user.first_name.unwrap(), "Jon".to_string());
-                    assert_eq!(new_user.last_name.unwrap(), "Doe".to_string());
-                    assert_eq!(
-                        new_user.avatar_path,
-                        Some("https://somepath.com/123.jpg".to_string())
-                    );
-                    assert_eq!(new_user.roles, vec!["USER".to_string()]);
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+                        assert_eq!(new_user.email, "user@test.com".to_string());
+                        assert_eq!(new_user.first_name.unwrap(), "Jon".to_string());
+                        assert_eq!(new_user.last_name.unwrap(), "Doe".to_string());
+                        assert_eq!(
+                            new_user.avatar_path,
+                            Some("https://somepath.com/123.jpg".to_string())
+                        );
+                        assert_eq!(new_user.roles, vec!["USER".to_string()]);
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
     })
     .await;
 }
@@ -103,23 +106,29 @@ async fn it_produces_user_account_verification_requested() {
             }))
             .await;
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::Created { user }) => {
-                    assert_eq!(user.email, "jon@snow.test");
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::Created { user }) => {
+                        assert_eq!(user.email, "jon@snow.test");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::VerificationRequested {  user, .. }) => {
-                    assert_eq!(user.email, "jon@snow.test");
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::VerificationRequested { user, .. }) => {
+                        assert_eq!(user.email, "jon@snow.test");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
     })
     .await
 }
@@ -136,7 +145,7 @@ async fn it_verifies_user_account_base_on_token() {
             Some(String::from("Snow")),
             Some(false),
         )
-            .unwrap();
+        .unwrap();
         user.hash_password(&SchemeAwareHasher::default()).unwrap();
 
         let role = Role::now("USER".to_string()).unwrap();
@@ -158,8 +167,7 @@ async fn it_verifies_user_account_base_on_token() {
 
         let user_dto = UserDTO::from(user);
         let now = Utc::now();
-        let vr_duration = Duration::new(10, 0)
-            .unwrap_or_default();
+        let vr_duration = Duration::new(10, 0).unwrap_or_default();
         let vr_exp = now.add(vr_duration);
 
         let vr_body = Claims::new(
@@ -173,7 +181,8 @@ async fn it_verifies_user_account_base_on_token() {
             &Header::default(),
             &vr_body,
             &EncodingKey::from_secret("secret".as_bytes()),
-        ).unwrap();
+        )
+        .unwrap();
 
         let response = c
             .server
@@ -195,15 +204,19 @@ async fn it_verifies_user_account_base_on_token() {
         assert_eq!(body.email, email);
         assert_eq!(body.roles, vec!["USER".to_string()]);
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::Verified { user }) => {
-                    assert_eq!(user.email, "user@test.com");
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
-    }).await
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::Verified { user }) => {
+                        assert_eq!(user.email, "user@test.com");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
+    })
+    .await
 }
 
 #[tokio::test]
@@ -247,14 +260,17 @@ async fn it_can_request_for_resend_verification_message() {
 
         assert_eq!(response.status_code(), StatusCode::OK);
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::VerificationRequested { user, .. }) => {
-                    assert_eq!(user.email, "jon@snow.test");
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::VerificationRequested { user, .. }) => {
+                        assert_eq!(user.email, "jon@snow.test");
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
     })
     .await
 }

@@ -28,19 +28,22 @@ async fn it_creates_new_user() {
 
             assert_eq!(response.status_code(), StatusCode::CREATED);
 
-            c.tester.assert_event_published(|event| {
-                match event {
-                    Some(UserEvents::Created { user }) => {
-                        assert_eq!(user.email, email);
-                        assert_eq!(user.first_name, None);
-                        assert_eq!(user.last_name, None);
-                        assert_eq!(user.avatar_path, None);
-                        assert_eq!(user.roles, vec!["user".to_string()]);
-                        assert!(user.is_verified);
-                    }
-                    _ => panic!("Got {:?}", event),
-                }
-            }, 5).await;
+            c.tester
+                .assert_event_published(
+                    |event| match event {
+                        Some(UserEvents::Created { user }) => {
+                            assert_eq!(user.email, email);
+                            assert_eq!(user.first_name, None);
+                            assert_eq!(user.last_name, None);
+                            assert_eq!(user.avatar_path, None);
+                            assert_eq!(user.roles, vec!["user".to_string()]);
+                            assert!(user.is_verified);
+                        }
+                        _ => panic!("Got {:?}", event),
+                    },
+                    5,
+                )
+                .await;
         },
     )
     .await
@@ -65,34 +68,40 @@ async fn it_creates_not_verified_user() {
 
         assert_eq!(response.status_code(), StatusCode::CREATED);
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::Created { user }) => {
-                    assert_eq!(user.email, email);
-                    assert_eq!(user.first_name, None);
-                    assert_eq!(user.last_name, None);
-                    assert_eq!(user.avatar_path, None);
-                    assert_eq!(user.roles, vec!["user".to_string()]);
-                    assert!(!user.is_verified);
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::Created { user }) => {
+                        assert_eq!(user.email, email);
+                        assert_eq!(user.first_name, None);
+                        assert_eq!(user.last_name, None);
+                        assert_eq!(user.avatar_path, None);
+                        assert_eq!(user.roles, vec!["user".to_string()]);
+                        assert!(!user.is_verified);
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::VerificationRequested { user, token }) => {
-                    assert_eq!(user.email, email);
-                    assert_eq!(user.first_name, None);
-                    assert_eq!(user.last_name, None);
-                    assert_eq!(user.avatar_path, None);
-                    assert_eq!(user.roles, vec!["user".to_string()]);
-                    assert!(!user.is_verified);
-                    assert!(!token.is_empty());
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::VerificationRequested { user, token }) => {
+                        assert_eq!(user.email, email);
+                        assert_eq!(user.first_name, None);
+                        assert_eq!(user.last_name, None);
+                        assert_eq!(user.avatar_path, None);
+                        assert_eq!(user.roles, vec!["user".to_string()]);
+                        assert!(!user.is_verified);
+                        assert!(!token.is_empty());
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
     })
     .await
 }

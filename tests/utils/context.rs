@@ -3,12 +3,12 @@ use auth_service::domain::event::UserEvents;
 use auth_service::domain::repository::{
     PermissionRepository, RoleRepository, SessionRepository, UserRepository,
 };
+use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
-use auth_service::infrastructure::message_consumer::MessageConsumer;
 
 pub struct PublisherTestContext {
     pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
@@ -115,11 +115,16 @@ impl MessagingTester {
         let timeout_duration = Duration::from_secs(timeout_secs);
 
         match &self.consumer {
-            MessageConsumer::None => {},
+            MessageConsumer::None => {}
             MessageConsumer::DebugRabbitmqConsumer(_) => {
-                match timeout(timeout_duration, self.consumer.basic_consume::<UserEvents>()).await {
+                match timeout(
+                    timeout_duration,
+                    self.consumer.basic_consume::<UserEvents>(),
+                )
+                .await
+                {
                     Ok(event) => predicate(event),
-                    Err(_) => panic!("Event assertion timed out after {} seconds", timeout_secs)
+                    Err(_) => panic!("Event assertion timed out after {} seconds", timeout_secs),
                 }
             }
         }
@@ -129,9 +134,14 @@ impl MessagingTester {
         let timeout_duration = Duration::from_secs(timeout_secs);
 
         match &self.consumer {
-            MessageConsumer::None => {},
+            MessageConsumer::None => {}
             MessageConsumer::DebugRabbitmqConsumer(_) => {
-                match timeout(timeout_duration, self.consumer.basic_consume::<UserEvents>()).await {
+                match timeout(
+                    timeout_duration,
+                    self.consumer.basic_consume::<UserEvents>(),
+                )
+                .await
+                {
                     Ok(event) => {
                         panic!("Expected no event, but received: {:?}", event);
                     }

@@ -2,7 +2,7 @@ use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
-use auth_service::application::configuration::messaging::{MessagingConfigurationBuilder};
+use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::{AuthStrategy, create_auth_service};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
@@ -13,9 +13,7 @@ use auth_service::domain::repository::{
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
-use auth_service::infrastructure::message_consumer::{
-    MessageConsumer,
-};
+use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
@@ -330,17 +328,16 @@ async fn main() {
         }
         Some(Commands::HealthCheck) => {}
         Some(Commands::ConsumeRabbitmqMessages { exchange_name }) => {
-            let config =
-                &MessagingConfigurationBuilder::new()
-                    .load_env()
-                    .rabbitmq_exchange_name(exchange_name.clone())
-                    .build();
+            let config = &MessagingConfigurationBuilder::new()
+                .load_env()
+                .rabbitmq_exchange_name(exchange_name.clone())
+                .build();
 
             let mut consumer = MessageConsumer::new(config).await;
             while let Some(event) = consumer.basic_consume::<UserEvents>().await {
                 println!("Received event: {:?}", event);
             }
-        },
+        }
     }
 }
 // match config.publisher() {

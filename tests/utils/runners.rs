@@ -3,7 +3,10 @@ use crate::utils::config::{
     init_test_config_builder, init_test_database_configuration_builder,
     init_test_publisher_configuration_builder,
 };
-use crate::utils::context::{AcceptanceTestContext, CliTestContext, DatabaseTestContext, MessagingTester, PublisherTestContext};
+use crate::utils::context::{
+    AcceptanceTestContext, CliTestContext, DatabaseTestContext, MessagingTester,
+    PublisherTestContext,
+};
 use crate::utils::db::drop_database;
 use crate::utils::server::create_test_server;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
@@ -11,6 +14,7 @@ use auth_service::application::configuration::database::DatabaseConfigurationBui
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::create_auth_service;
 use auth_service::infrastructure::database::create_pool;
+use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::create_message_publisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
@@ -19,7 +23,6 @@ use auth_service::infrastructure::repository::{
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
-use auth_service::infrastructure::message_consumer::MessageConsumer;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};

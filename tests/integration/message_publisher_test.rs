@@ -21,14 +21,17 @@ async fn it_dispatches_message_into_queue() {
             .await
             .unwrap();
 
-        c.tester.assert_event_published(|e| {
-            match e {
-                Some(UserEvents::Created { user }) => {
-                    assert_eq!(user.email, "some@test.com");
-                }
-                _ => panic!("Got {:?}", e),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |e| match e {
+                    Some(UserEvents::Created { user }) => {
+                        assert_eq!(user.email, "some@test.com");
+                    }
+                    _ => panic!("Got {:?}", e),
+                },
+                5,
+            )
+            .await;
     })
     .await;
 }
@@ -66,25 +69,31 @@ async fn it_dispatches_all_messages_into_queue() {
             .await
             .unwrap();
 
-        c.tester.assert_event_published(|e| {
-            match e {
-                Some(UserEvents::Created { user }) => {
-                    assert_eq!(user.email, "some@test.com");
-                    assert!(!user.is_verified, "It should not be verified");
-                }
-                _ => panic!("Got {:?}", e),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |e| match e {
+                    Some(UserEvents::Created { user }) => {
+                        assert_eq!(user.email, "some@test.com");
+                        assert!(!user.is_verified, "It should not be verified");
+                    }
+                    _ => panic!("Got {:?}", e),
+                },
+                5,
+            )
+            .await;
 
-        c.tester.assert_event_published(|e| {
-            match e {
-                Some(UserEvents::Verified { user }) => {
-                    assert_eq!(user.email, "some@test.com");
-                    assert!(user.is_verified, "It should be verified");
-                }
-                _ => panic!("Got {:?}", e),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |e| match e {
+                    Some(UserEvents::Verified { user }) => {
+                        assert_eq!(user.email, "some@test.com");
+                        assert!(user.is_verified, "It should be verified");
+                    }
+                    _ => panic!("Got {:?}", e),
+                },
+                5,
+            )
+            .await;
     })
     .await;
 }

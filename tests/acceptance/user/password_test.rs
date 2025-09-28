@@ -1,14 +1,14 @@
-use std::ops::Add;
 use crate::utils::runners::run_integration_test_with_default;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
+use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use serde_json::json;
-use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
+use std::ops::Add;
 
 #[tokio::test]
 async fn it_cannot_reset_password_if_user_does_not_exist() {
@@ -49,8 +49,7 @@ async fn it_can_reset_password() {
         let user_dto = UserDTO::from(user);
         let now = Utc::now();
 
-        let rp_duration = Duration::new(10, 0)
-            .unwrap_or_default();
+        let rp_duration = Duration::new(10, 0).unwrap_or_default();
         let rp_exp = now.add(rp_duration);
 
         let rp_body = Claims::new(
@@ -64,7 +63,8 @@ async fn it_can_reset_password() {
             &Header::default(),
             &rp_body,
             &EncodingKey::from_secret("secret".as_bytes()),
-        ).unwrap();
+        )
+        .unwrap();
 
         let new_password = String::from("User#pass1New");
         let response = c
@@ -75,28 +75,31 @@ async fn it_can_reset_password() {
                 HeaderValue::try_from(format!("Bearer {}", token)).unwrap(),
             )
             .json(&json!({
-                        "password": new_password,
-                    }))
+                "password": new_password,
+            }))
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
 
-        c.tester.assert_event_published(|event| {
-            match event {
-                Some(UserEvents::PasswordReset { user }) => {
-                    assert_eq!(user.email, email);
-                }
-                _ => panic!("Got {:?}", event),
-            }
-        }, 5).await;
+        c.tester
+            .assert_event_published(
+                |event| match event {
+                    Some(UserEvents::PasswordReset { user }) => {
+                        assert_eq!(user.email, email);
+                    }
+                    _ => panic!("Got {:?}", event),
+                },
+                5,
+            )
+            .await;
 
         let login_response = c
             .server
             .post("/v1/login")
             .json(&json!({
-                        "email": &email,
-                        "password": &new_password,
-                    }))
+                "email": &email,
+                "password": &new_password,
+            }))
             .await;
 
         assert_eq!(login_response.status_code(), StatusCode::OK);
@@ -105,9 +108,9 @@ async fn it_can_reset_password() {
             .server
             .post("/v1/login")
             .json(&json!({
-                        "email": &email,
-                        "password": &password,
-                    }))
+                "email": &email,
+                "password": &password,
+            }))
             .await;
 
         assert_eq!(login_response.status_code(), StatusCode::UNAUTHORIZED);

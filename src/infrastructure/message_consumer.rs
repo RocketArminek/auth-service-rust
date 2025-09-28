@@ -1,11 +1,14 @@
-use crate::application::configuration::messaging::{MessagingConfiguration};
+use crate::application::configuration::messaging::MessagingConfiguration;
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions};
+use futures_lite::StreamExt;
+use lapin::options::{
+    BasicAckOptions, BasicConsumeOptions, ExchangeDeclareOptions, QueueBindOptions,
+    QueueDeclareOptions,
+};
 use lapin::types::{FieldTable, ShortString};
 use lapin::{Connection, Consumer, ExchangeKind};
-use std::error::Error;
-use futures_lite::StreamExt;
 use serde::Deserialize;
+use std::error::Error;
 use uuid::Uuid;
 
 pub enum MessageConsumer {
@@ -25,9 +28,11 @@ impl MessageConsumer {
                         config.rabbitmq_exchange_name().to_string(),
                         config.rabbitmq_exchange_kind().clone(),
                         config.rabbitmq_exchange_declare_options(),
-                    ).await.expect("Should create consumer")
+                    )
+                    .await
+                    .expect("Should create consumer"),
                 )
-            },
+            }
             MessagingConfiguration::None => MessageConsumer::None,
         }
     }
