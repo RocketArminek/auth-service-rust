@@ -67,7 +67,7 @@ jobs:
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
+          MESSAGE_PUBLISHER_ENGINE: rabbitmq
         options: >-
           --health-cmd="app health-check"
           --health-interval=10s
@@ -136,7 +136,7 @@ jobs:
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
-          EVENT_DRIVEN: true
+          MESSAGE_PUBLISHER_ENGINE: rabbitmq
         options: >-
           --health-cmd="app health-check"
           --health-interval=10s

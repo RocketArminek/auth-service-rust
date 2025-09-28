@@ -24,7 +24,7 @@ services:
       SECRET: "secret"
       RABBITMQ_URL: amqp://rabbit:5672
       VERIFICATION_REQUIRED: false
-      EVENT_DRIVEN: true
+      MESSAGE_PUBLISHER_ENGINE: rabbitmq
       AUTH_STRATEGY: stateful
       LOG_LEVEL: info
       CLEANUP_INTERVAL_IN_MINUTES: 1

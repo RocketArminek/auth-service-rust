@@ -73,10 +73,16 @@ impl Configuration {
         match &self.publisher {
             MessagePublisherConfiguration::Rabbitmq(config) => {
                 envs.extend(config.envs());
-                envs.insert(EnvNames::EVENT_DRIVEN.to_owned(), "true".to_string());
+                envs.insert(
+                    EnvNames::MESSAGE_PUBLISHER_ENGINE.to_owned(),
+                    "rabbitmq".to_owned(),
+                );
             }
             MessagePublisherConfiguration::None => {
-                envs.insert(EnvNames::EVENT_DRIVEN.to_owned(), "false".to_string());
+                envs.insert(
+                    EnvNames::MESSAGE_PUBLISHER_ENGINE.to_owned(),
+                    "none".to_owned(),
+                );
             }
         }
 

@@ -10,7 +10,7 @@ pub async fn retry_with_backoff<T, E, F, Fut>(
 ) -> Result<T, E>
 where
     F: Fn() -> Fut,
-    Fut: std::future::Future<Output = Result<T, E>>,
+    Fut: Future<Output = Result<T, E>>,
     E: Display,
 {
     let mut retries = 0;

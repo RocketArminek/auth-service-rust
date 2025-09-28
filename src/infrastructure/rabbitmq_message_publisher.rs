@@ -2,12 +2,12 @@ use crate::application::configuration::message_publisher::RabbitmqConfiguration;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::utils::retry_with_backoff;
 use async_trait::async_trait;
+use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::{FieldTable, ShortString};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
 use std::error::Error;
 use std::sync::Arc;
-use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {

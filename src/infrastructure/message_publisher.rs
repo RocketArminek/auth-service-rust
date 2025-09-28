@@ -3,7 +3,42 @@ use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_message_p
 use async_trait::async_trait;
 use serde::Serialize;
 use std::error::Error;
+use std::fmt::Display;
 use std::sync::Arc;
+
+#[derive(Debug, Clone, Default)]
+pub enum MessagePublisherEngine {
+    Rabbitmq,
+    #[default]
+    None,
+}
+
+impl Display for MessagePublisherEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MessagePublisherEngine::None => write!(f, "none"),
+            MessagePublisherEngine::Rabbitmq => write!(f, "rabbitmq"),
+        }
+    }
+}
+
+impl From<MessagePublisherEngine> for String {
+    fn from(value: MessagePublisherEngine) -> Self {
+        value.to_string()
+    }
+}
+
+impl TryFrom<String> for MessagePublisherEngine {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "none" => Ok(MessagePublisherEngine::None),
+            "rabbitmq" => Ok(MessagePublisherEngine::Rabbitmq),
+            _ => Err(format!("Unknown message publisher type: {}", value)),
+        }
+    }
+}
 
 #[async_trait]
 pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
@@ -12,10 +47,10 @@ pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
 }
 
 #[derive(Clone)]
-pub struct NullPublisher {}
+pub struct NonePublisher {}
 
 #[async_trait]
-impl<T: Serialize + Send + Sync> MessagePublisher<T> for NullPublisher {
+impl<T: Serialize + Send + Sync> MessagePublisher<T> for NonePublisher {
     async fn publish(&self, _event: &T) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
@@ -33,7 +68,7 @@ pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
         }
         MessagePublisherConfiguration::None => {
             tracing::info!("Event driven is turned off. Events wont be published.");
-            Arc::new(NullPublisher {})
+            Arc::new(NonePublisher {})
         }
     }
 }
