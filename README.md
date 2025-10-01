@@ -31,17 +31,6 @@ A high-performance, event-driven authentication and authorization middleware for
   - Docker & Docker Compose support
   - Comprehensive test suite (unit, integration, performance)
 
-## Performance
-
-The service demonstrates excellent performance characteristics:
-
-- Average response time: 1.77ms
-- P95 latency: 4.59ms
-- Handles 150+ requests/second under load
-- Successfully manages spikes up to 100 concurrent users
-- Zero error rate under stress testing
-- ⚠️There are issues with sqlite db engine -> concurrent requests causes deadlocks on sqlite file. (It requires experiments with sqlite configuration)
-
 ## Prerequisites
 
 - Rust 1.84.0 or higher
@@ -208,7 +197,7 @@ RABBITMQ_EXCHANGE_DURABLE=true
 RABBITMQ_EXCHANGE_AUTO_DELETE=false
 
 # Enable/disable event-driven features
-EVENT_DRIVEN=true
+MESSAGE_PUBLISHER_ENGINE=rabbitmq
 ```
 
 ## API Documentation
@@ -225,34 +214,6 @@ The service includes several CLI commands for management:
 app help
 ```
 
-### Testing Strategy
-
-The project employs a comprehensive testing approach:
-
-1. **Unit Tests**
-   - Test individual components in isolation
-   - Mock external dependencies
-   - Focus on business logic validation
-
-2. **Integration Tests**
-   - Test component interactions
-   - Use test databases
-   - Verify repository implementations
-
-3. **Acceptance Tests**
-   - End-to-end scenarios
-   - Test complete user workflows
-   - Verify business requirements
-
-4. **Performance Tests**
-   - Load testing with K6
-   - Test different load patterns
-   - Measure response times and throughput
-   - Verify system behavior under stress
-
-5. **OWASP ZAP Security Scanning**
-   - Performing zap full scan (check github action artifacts to read reports)
-
 ## Running Tests
 
 ```bash
@@ -262,37 +223,6 @@ cargo test
 # Run performance tests
 k6 run tests/performance/auth_flow.js
 ```
-
-## Production Deployment
-
-For production deployment, consider:
-
-1. Using a reverse proxy (e.g., Traefik, Nginx)
-2. Setting up proper SSL/TLS
-3. Configuring appropriate database connection pools
-4. Setting up monitoring and logging
-5. Using proper secrets management
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages
-
-Types:
-- `feat`: New feature
-- `fix`: Bug fix
-- `refactor`: Code change that neither fixes a bug nor adds a feature
-- `test`: Adding missing tests or correcting existing tests
-- `docs`: Documentation only changes
-- `chore`: Changes to the build process or auxiliary tools
-- `perf`: Performance improvements
-- `style`: Code style changes (formatting, missing semi-colons, etc)
-
 
 ## License
 
