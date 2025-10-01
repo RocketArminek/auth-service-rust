@@ -1,4 +1,5 @@
 use crate::application::configuration::messaging::MessagingConfiguration;
+use crate::infrastructure::message_publisher::Error;
 use crate::infrastructure::rabbitmq_message_publisher::create_rabbitmq_connection;
 use futures_lite::StreamExt;
 use lapin::options::{
@@ -8,7 +9,6 @@ use lapin::options::{
 use lapin::types::{FieldTable, ShortString};
 use lapin::{Connection, Consumer, ExchangeKind};
 use serde::Deserialize;
-use std::error::Error;
 use uuid::Uuid;
 
 pub enum MessageConsumer {
@@ -39,7 +39,7 @@ impl MessageConsumer {
 
     pub async fn basic_consume<T>(&mut self) -> Option<T>
     where
-        T: for<'de> Deserialize<'de> + Send + Sync,
+        T: for<'de> Deserialize<'de>,
     {
         match self {
             MessageConsumer::DebugRabbitmqConsumer(debug) => debug.basic_consume().await,
@@ -59,7 +59,7 @@ impl DebugRabbitmqConsumer {
         exchange_name: String,
         exchange_kind: ExchangeKind,
         exchange_declare_options: ExchangeDeclareOptions,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, Error> {
         let channel = connection.create_channel().await?;
 
         channel
@@ -111,7 +111,7 @@ impl DebugRabbitmqConsumer {
 impl DebugRabbitmqConsumer {
     pub async fn basic_consume<T>(&mut self) -> Option<T>
     where
-        T: for<'de> Deserialize<'de> + Send + Sync,
+        T: for<'de> Deserialize<'de>,
     {
         let delivery = self.consumer.next().await?.ok()?;
         let event = serde_json::from_slice::<T>(&delivery.data).ok()?;

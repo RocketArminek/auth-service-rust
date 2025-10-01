@@ -15,7 +15,7 @@ use auth_service::application::configuration::messaging::MessagingConfigurationB
 use auth_service::application::service::auth_service::create_auth_service;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
-use auth_service::infrastructure::message_publisher::create_message_publisher;
+use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
     create_user_repository,
@@ -86,7 +86,7 @@ where
 
     let config = builder.build();
 
-    let message_publisher = create_message_publisher(&config).await;
+    let message_publisher = MessagePublisher::new(&config).await;
     let consumer = MessagingTester::new(MessageConsumer::new(&config).await);
 
     test(PublisherTestContext::new(message_publisher, consumer)).await
@@ -119,7 +119,7 @@ where
     let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
-    let message_publisher = create_message_publisher(config.messaging()).await;
+    let message_publisher = MessagePublisher::new(config.messaging()).await;
     let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
 
     let auth_service = create_auth_service(

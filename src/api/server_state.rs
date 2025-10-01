@@ -1,6 +1,5 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
-use crate::domain::event::UserEvents;
 use crate::domain::repository::{
     PermissionRepository, RoleRepository, SessionRepository, UserRepository,
 };
@@ -14,7 +13,7 @@ pub struct ServerState {
     pub role_repository: Arc<dyn RoleRepository>,
     pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
-    pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
+    pub message_publisher: MessagePublisher,
     pub auth_service: Arc<dyn AuthService>,
 }
 
@@ -25,7 +24,7 @@ impl ServerState {
         role_repository: Arc<dyn RoleRepository>,
         session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
-        message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
+        message_publisher: MessagePublisher,
         auth_service: Arc<dyn AuthService>,
     ) -> Self {
         ServerState {

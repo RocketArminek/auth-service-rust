@@ -1,12 +1,30 @@
 use crate::application::configuration::messaging::MessagingConfiguration;
 use crate::infrastructure::rabbitmq_message_publisher::{
-    create_rabbitmq_connection, create_rabbitmq_message_publisher,
+    RabbitmqMessagePublisher, create_rabbitmq_connection, create_rabbitmq_message_publisher,
 };
-use async_trait::async_trait;
+use lapin::Error as LapinError;
 use serde::Serialize;
-use std::error::Error;
-use std::fmt::Display;
-use std::sync::Arc;
+use serde_json::Error as SerdeError;
+use std::fmt::{Debug, Display};
+
+#[derive(Debug)]
+pub enum Error {
+    Rabbitmq(LapinError),
+    Serde(SerdeError),
+    Unknown,
+}
+
+impl From<LapinError> for Error {
+    fn from(value: LapinError) -> Self {
+        Self::Rabbitmq(value)
+    }
+}
+
+impl From<SerdeError> for Error {
+    fn from(value: SerdeError) -> Self {
+        Self::Serde(value)
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 pub enum MessagingEngine {
@@ -42,37 +60,36 @@ impl TryFrom<String> for MessagingEngine {
     }
 }
 
-#[async_trait]
-pub trait MessagePublisher<T: Serialize + Send + Sync>: Send + Sync {
-    async fn publish(&self, event: &T) -> Result<(), Box<dyn Error>>;
-    async fn publish_all(&self, events: Vec<&T>) -> Result<(), Box<dyn Error>>;
-}
-
 #[derive(Clone)]
-pub struct NonePublisher {}
-
-#[async_trait]
-impl<T: Serialize + Send + Sync> MessagePublisher<T> for NonePublisher {
-    async fn publish(&self, _event: &T) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-    async fn publish_all(&self, _events: Vec<&T>) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
+pub enum MessagePublisher {
+    None,
+    Rabbitmq(RabbitmqMessagePublisher),
 }
 
-pub async fn create_message_publisher<T: Serialize + Send + Sync + 'static>(
-    publisher_config: &MessagingConfiguration,
-) -> Arc<dyn MessagePublisher<T>> {
-    match publisher_config {
-        MessagingConfiguration::Rabbitmq(config) => {
-            let conn = create_rabbitmq_connection(config).await;
+impl MessagePublisher {
+    pub async fn new(config: &MessagingConfiguration) -> Self {
+        match config {
+            MessagingConfiguration::Rabbitmq(config) => {
+                let conn = create_rabbitmq_connection(config).await;
+                let publisher = create_rabbitmq_message_publisher(config, &conn).await;
 
-            create_rabbitmq_message_publisher(config, &conn).await
+                MessagePublisher::Rabbitmq(publisher)
+            }
+            MessagingConfiguration::None => MessagePublisher::None,
         }
-        MessagingConfiguration::None => {
-            tracing::info!("Event driven is turned off. Events wont be published.");
-            Arc::new(NonePublisher {})
+    }
+
+    pub async fn publish<T: Serialize>(&self, event: &T) -> Result<(), Error> {
+        match &self {
+            MessagePublisher::None => Ok(()),
+            MessagePublisher::Rabbitmq(publisher) => publisher.publish(event).await,
+        }
+    }
+
+    pub async fn publish_all<T: Serialize>(&self, events: Vec<&T>) -> Result<(), Error> {
+        match &self {
+            MessagePublisher::None => Ok(()),
+            MessagePublisher::Rabbitmq(publisher) => publisher.publish_all(events).await,
         }
     }
 }

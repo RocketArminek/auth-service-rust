@@ -1,13 +1,10 @@
 use crate::application::configuration::messaging::RabbitmqConfiguration;
-use crate::infrastructure::message_publisher::MessagePublisher;
+use crate::infrastructure::message_publisher::Error;
 use crate::infrastructure::utils::retry_with_backoff;
-use async_trait::async_trait;
 use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions};
 use lapin::types::{FieldTable, ShortString};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use serde::Serialize;
-use std::error::Error;
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct RabbitmqMessagePublisher {
@@ -21,7 +18,7 @@ impl RabbitmqMessagePublisher {
         exchange_name: String,
         exchange_kind: ExchangeKind,
         exchange_declare_options: ExchangeDeclareOptions,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, Error> {
         let channel = connection.create_channel().await?;
 
         channel
@@ -40,9 +37,8 @@ impl RabbitmqMessagePublisher {
     }
 }
 
-#[async_trait]
-impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublisher {
-    async fn publish(&self, event: &T) -> Result<(), Box<dyn Error>> {
+impl RabbitmqMessagePublisher {
+    pub async fn publish<T: Serialize>(&self, event: &T) -> Result<(), Error> {
         let payload = serde_json::to_vec(event)?;
 
         self.channel
@@ -61,7 +57,7 @@ impl<T: Serialize + Send + Sync> MessagePublisher<T> for RabbitmqMessagePublishe
         Ok(())
     }
 
-    async fn publish_all(&self, events: Vec<&T>) -> Result<(), Box<dyn Error>> {
+    pub async fn publish_all<T: Serialize>(&self, events: Vec<&T>) -> Result<(), Error> {
         for event in events {
             self.publish(event).await?;
         }
@@ -84,10 +80,10 @@ pub async fn create_rabbitmq_connection(config: &RabbitmqConfiguration) -> Conne
     .unwrap()
 }
 
-pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'static>(
+pub async fn create_rabbitmq_message_publisher(
     config: &RabbitmqConfiguration,
     conn: &Connection,
-) -> Arc<dyn MessagePublisher<T> + Send + Sync> {
+) -> RabbitmqMessagePublisher {
     let message_publisher = RabbitmqMessagePublisher::new(
         &conn,
         config.rabbitmq_exchange_name().to_string(),
@@ -99,5 +95,5 @@ pub async fn create_rabbitmq_message_publisher<T: Serialize + Send + Sync + 'sta
 
     tracing::info!("Rabbitmq message publisher connected");
 
-    Arc::new(message_publisher)
+    message_publisher
 }
