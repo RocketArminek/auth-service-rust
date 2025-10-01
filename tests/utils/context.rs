@@ -11,13 +11,13 @@ use std::time::Duration;
 use tokio::time::timeout;
 
 pub struct PublisherTestContext {
-    pub message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
+    pub message_publisher: MessagePublisher,
     pub tester: MessagingTester,
 }
 
 impl PublisherTestContext {
     pub fn new(
-        message_publisher: Arc<dyn MessagePublisher<UserEvents>>,
+        message_publisher: MessagePublisher,
         tester: MessagingTester,
     ) -> PublisherTestContext {
         PublisherTestContext {

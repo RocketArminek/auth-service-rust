@@ -14,7 +14,7 @@ use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
-use auth_service::infrastructure::message_publisher::create_message_publisher;
+use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository, create_session_repository,
     create_user_repository,
@@ -102,7 +102,7 @@ async fn main() {
     let session_repository = create_session_repository(db_pool.clone());
     let permission_repository = create_permission_repository(db_pool.clone());
 
-    let message_publisher = create_message_publisher(config.messaging()).await;
+    let message_publisher = MessagePublisher::new(config.messaging()).await;
 
     let auth_service = create_auth_service(
         config.app(),
