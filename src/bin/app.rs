@@ -3,7 +3,7 @@ use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
-use auth_service::application::service::auth_service::{AuthStrategy, create_auth_service};
+use auth_service::application::service::auth_service::{create_auth_service};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
@@ -115,12 +115,6 @@ async fn main() {
 
     match &cli.command {
         Some(Commands::Start) | None => {
-            if config.app().auth_strategy() == AuthStrategy::Stateful {
-                spawn_cleanup_expired_session_job(
-                    session_repository.clone(),
-                    config.app().cleanup_interval_in_minutes(),
-                );
-            }
 
             let port = config.app().port();
             let host = config.app().host();

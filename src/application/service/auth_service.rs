@@ -1,5 +1,4 @@
 use crate::application::configuration::app::AppConfiguration;
-use crate::application::service::stateful_auth_service::StatefulAuthService;
 use crate::application::service::stateless_auth_service::StatelessAuthService;
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::repository::{SessionRepository, UserRepository};
@@ -126,16 +125,14 @@ pub struct Token {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum AuthStrategy {
-    Stateless,
     #[default]
-    Stateful,
+    Stateless,
 }
 
 impl Display for AuthStrategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AuthStrategy::Stateless => write!(f, "stateless"),
-            AuthStrategy::Stateful => write!(f, "stateful"),
         }
     }
 }
@@ -152,7 +149,6 @@ impl TryFrom<String> for AuthStrategy {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "stateless" => Ok(AuthStrategy::Stateless),
-            "stateful" => Ok(AuthStrategy::Stateful),
             _ => Err(format!("Unrecognized auth strategy: {}", value)),
         }
     }
@@ -171,13 +167,6 @@ pub fn create_auth_service(
             config.at_duration_in_seconds().to_signed(),
             config.rt_duration_in_seconds().to_signed(),
         )),
-        AuthStrategy::Stateful => Arc::new(StatefulAuthService::new(
-            user_repository,
-            session_repository,
-            config.password_hashing_scheme(),
-            config.secret().to_string(),
-            config.at_duration_in_seconds().to_signed(),
-            config.rt_duration_in_seconds().to_signed(),
-        )),
     }
 }
+
