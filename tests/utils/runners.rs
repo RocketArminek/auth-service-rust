@@ -16,9 +16,9 @@ use auth_service::application::service::auth_service::AuthService;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
-use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_user_repository,
-};
+use auth_service::infrastructure::permission_repository::PermissionRepository;
+use auth_service::infrastructure::role_repository::RoleRepository;
+use auth_service::infrastructure::user_repository::UserRepository;
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
@@ -49,9 +49,9 @@ where
 
     let pool = create_pool(&config).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
-    let role_repository = create_role_repository(pool.clone());
-    let permission_repository = create_permission_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
+    let role_repository = RoleRepository::new(&pool);
+    let permission_repository = PermissionRepository::new(&pool);
 
     test(DatabaseTestContext::new(
         user_repository,
@@ -111,9 +111,9 @@ where
 
     let pool = create_pool(config.db()).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
-    let role_repository = create_role_repository(pool.clone());
-    let permission_repository = create_permission_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
+    let role_repository = RoleRepository::new(&pool);
+    let permission_repository = PermissionRepository::new(&pool);
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
     let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
@@ -172,8 +172,8 @@ where
 
     let pool = create_pool(config.db()).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
-    let role_repository = create_role_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
+    let role_repository = RoleRepository::new(&pool);
 
     test(CliTestContext::new(
         user_repository,

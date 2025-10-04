@@ -7,18 +7,17 @@ use auth_service::application::service::auth_service::AuthService;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{RepositoryError, RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
-use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_user_repository,
-};
+use auth_service::infrastructure::permission_repository::PermissionRepository;
+use auth_service::infrastructure::repository::RepositoryError;
+use auth_service::infrastructure::role_repository::RoleRepository;
+use auth_service::infrastructure::user_repository::UserRepository;
 use clap::{Parser, Subcommand};
 use std::env;
-use std::sync::Arc;
 use tokio::signal;
 
 #[derive(Parser)]
@@ -92,9 +91,9 @@ async fn main() {
     let db_pool = create_pool(config.db()).await.unwrap();
     db_pool.migrate().await;
 
-    let user_repository = create_user_repository(db_pool.clone());
-    let role_repository = create_role_repository(db_pool.clone());
-    let permission_repository = create_permission_repository(db_pool.clone());
+    let user_repository = UserRepository::new(&db_pool);
+    let role_repository = RoleRepository::new(&db_pool);
+    let permission_repository = PermissionRepository::new(&db_pool);
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
 
@@ -328,25 +327,7 @@ async fn main() {
         }
     }
 }
-// match config.publisher() {
-// MessagingConfiguration::Rabbitmq(config) => {
-// let config = &RabbitmqConfiguration::new(
-// config.rabbitmq_url().to_string(),
-// exchange_name.to_string(),
-// config.rabbitmq_exchange_kind().clone(),
-// config.rabbitmq_exchange_declare_options(),
-// );
-//
-// let mut debug_consumer = create_debug_rabbitmq_consumer(config).await;
-//
-// while let Some(event) = debug_consumer.basic_consume::<UserEvents>().await {
-// println!("Received event: {:?}", event);
-// }
-// }
-// MessagingConfiguration::None => {
-// println!("No message publishing enabled");
-// }
-// }
+
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c().await.unwrap();
@@ -373,8 +354,8 @@ async fn shutdown_signal() {
 
 async fn load_fixtures(
     config: &AppConfiguration,
-    user_repository: &Arc<dyn UserRepository>,
-    role_repository: &Arc<dyn RoleRepository>,
+    user_repository: &UserRepository,
+    role_repository: &RoleRepository,
 ) {
     init_role(config.regular_role_name(), role_repository)
         .await
@@ -398,7 +379,7 @@ async fn load_fixtures(
 
 async fn init_user(
     config: &AppConfiguration,
-    user_repository: &Arc<dyn UserRepository>,
+    user_repository: &UserRepository,
     role: Role,
 ) -> Result<User, RepositoryError> {
     let email = config.super_admin_email().to_string();
@@ -445,7 +426,7 @@ async fn init_user(
 
 async fn init_role(
     role_name: &str,
-    role_repository: &Arc<dyn RoleRepository>,
+    role_repository: &RoleRepository,
 ) -> Result<Role, RepositoryError> {
     let existing_role = role_repository.get_by_name(role_name).await;
 

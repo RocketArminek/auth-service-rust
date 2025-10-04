@@ -1,11 +1,10 @@
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::repository::UserRepository;
 use crate::domain::user::PasswordHandler;
+use crate::infrastructure::user_repository::UserRepository;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::ops::Add;
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -34,7 +33,7 @@ pub struct Token {
 
 #[derive(Clone)]
 pub struct AuthService {
-    user_repository: Arc<dyn UserRepository>,
+    user_repository: UserRepository,
     hashing_scheme: HashingScheme,
     secret: String,
     access_token_duration: i64,
@@ -43,7 +42,7 @@ pub struct AuthService {
 
 impl AuthService {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: UserRepository,
         hashing_scheme: HashingScheme,
         secret: String,
         access_token_duration: i64,

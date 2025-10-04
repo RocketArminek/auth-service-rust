@@ -1,10 +1,8 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::RepositoryError;
-use crate::domain::repository::UserRepository;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::{UserWithPermissionsRow, UserWithRoleRow};
-use async_trait::async_trait;
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{Error, MySql, Pool, query};
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -19,49 +17,7 @@ impl MysqlUserRepository {
         Self { pool }
     }
 
-    fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
-        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> =
-            std::collections::HashMap::new();
-
-        for row in rows {
-            let user_entry = users_map.entry(row.id).or_insert_with(|| {
-                let user = User {
-                    id: row.id,
-                    email: row.email.clone(),
-                    not_hashed_password: "".to_string(),
-                    password: row.password.clone(),
-                    first_name: row.first_name.clone(),
-                    last_name: row.last_name.clone(),
-                    created_at: row.created_at,
-                    avatar_path: row.avatar_path.clone(),
-                    is_verified: row.is_verified,
-                    roles: Vec::new(),
-                };
-                (user, Vec::new())
-            });
-
-            if let Some(role_id) = row.role_id {
-                user_entry.1.push(Role {
-                    id: role_id,
-                    name: row.role_name.unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                });
-            }
-        }
-
-        users_map
-            .into_iter()
-            .map(|(_, (mut user, roles))| {
-                user.roles = roles;
-                user
-            })
-            .collect()
-    }
-}
-
-#[async_trait]
-impl UserRepository for MysqlUserRepository {
-    async fn save(&self, user: &User) -> Result<(), RepositoryError> {
+    pub async fn save(&self, user: &User) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let existing_user = sqlx::query("SELECT id FROM users WHERE id = ?")
@@ -163,7 +119,7 @@ impl UserRepository for MysqlUserRepository {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: &Uuid) -> Result<User, RepositoryError> {
+    pub async fn get_by_id(&self, id: &Uuid) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -231,7 +187,7 @@ impl UserRepository for MysqlUserRepository {
         Ok(user)
     }
 
-    async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError> {
+    pub async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError> {
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
             r#"
             SELECT
@@ -299,7 +255,7 @@ impl UserRepository for MysqlUserRepository {
         Ok(user)
     }
 
-    async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError> {
+    pub async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError> {
         query("DELETE FROM users WHERE email = ?")
             .bind(email)
             .execute(&self.pool)
@@ -308,7 +264,11 @@ impl UserRepository for MysqlUserRepository {
         Ok(())
     }
 
-    async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError> {
+    pub async fn find_all(
+        &self,
+        page: i32,
+        limit: i32,
+    ) -> Result<(Vec<User>, i32), RepositoryError> {
         let offset = (page - 1) * limit;
 
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
@@ -346,7 +306,7 @@ impl UserRepository for MysqlUserRepository {
         Ok((users, total.0))
     }
 
-    async fn get_by_id_with_permissions(
+    pub async fn get_by_id_with_permissions(
         &self,
         id: &Uuid,
     ) -> Result<(User, Vec<Permission>), RepositoryError> {
@@ -441,7 +401,7 @@ impl UserRepository for MysqlUserRepository {
         Ok((user, permissions))
     }
 
-    async fn get_by_email_with_permissions(
+    pub async fn get_by_email_with_permissions(
         &self,
         email: &str,
     ) -> Result<(User, Vec<Permission>), RepositoryError> {
@@ -534,5 +494,44 @@ impl UserRepository for MysqlUserRepository {
             .collect();
 
         Ok((user, permissions))
+    }
+
+    fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
+        let mut users_map: std::collections::HashMap<Uuid, (User, Vec<Role>)> =
+            std::collections::HashMap::new();
+
+        for row in rows {
+            let user_entry = users_map.entry(row.id).or_insert_with(|| {
+                let user = User {
+                    id: row.id,
+                    email: row.email.clone(),
+                    not_hashed_password: "".to_string(),
+                    password: row.password.clone(),
+                    first_name: row.first_name.clone(),
+                    last_name: row.last_name.clone(),
+                    created_at: row.created_at,
+                    avatar_path: row.avatar_path.clone(),
+                    is_verified: row.is_verified,
+                    roles: Vec::new(),
+                };
+                (user, Vec::new())
+            });
+
+            if let Some(role_id) = row.role_id {
+                user_entry.1.push(Role {
+                    id: role_id,
+                    name: row.role_name.unwrap_or_default(),
+                    created_at: row.role_created_at.unwrap_or(row.created_at),
+                });
+            }
+        }
+
+        users_map
+            .into_iter()
+            .map(|(_, (mut user, roles))| {
+                user.roles = roles;
+                user
+            })
+            .collect()
     }
 }

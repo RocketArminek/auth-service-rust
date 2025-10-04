@@ -1,9 +1,7 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::RepositoryError;
-use crate::domain::repository::RoleRepository;
 use crate::domain::role::Role;
 use crate::infrastructure::dto::RoleWithPermissionsRow;
-use async_trait::async_trait;
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{Pool, Sqlite, query_as};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -17,11 +15,8 @@ impl SqliteRoleRepository {
     pub fn new(pool: Pool<Sqlite>) -> Self {
         Self { pool }
     }
-}
 
-#[async_trait]
-impl RoleRepository for SqliteRoleRepository {
-    async fn save(&self, role: &Role) -> Result<(), RepositoryError> {
+    pub async fn save(&self, role: &Role) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let existing_role = sqlx::query_as::<_, Role>("SELECT * FROM roles WHERE id = ?")
@@ -52,7 +47,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError> {
+    pub async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError> {
         let role = query_as::<_, Role>("SELECT * FROM roles WHERE id = ?")
             .bind(id)
             .fetch_one(&self.pool)
@@ -61,7 +56,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(role)
     }
 
-    async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError> {
+    pub async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError> {
         let role = query_as::<_, Role>("SELECT * FROM roles WHERE name = ?")
             .bind(name)
             .fetch_one(&self.pool)
@@ -70,7 +65,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(role)
     }
 
-    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
+    pub async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE id = ?")
@@ -95,7 +90,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(())
     }
 
-    async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError> {
+    pub async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let is_system = sqlx::query_scalar::<_, bool>("SELECT is_system FROM roles WHERE name = ?")
@@ -130,7 +125,7 @@ impl RoleRepository for SqliteRoleRepository {
         }
     }
 
-    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {
+    pub async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError> {
         let offset = (page - 1) * limit;
 
         let roles =
@@ -143,7 +138,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(roles)
     }
 
-    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {
+    pub async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let result = sqlx::query("UPDATE roles SET is_system = TRUE WHERE id = ?")
@@ -163,7 +158,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(())
     }
 
-    async fn add_permission(
+    pub async fn add_permission(
         &self,
         role_id: &Uuid,
         permission_id: &Uuid,
@@ -223,7 +218,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(())
     }
 
-    async fn remove_permission(
+    pub async fn remove_permission(
         &self,
         role_id: &Uuid,
         permission_id: &Uuid,
@@ -268,7 +263,10 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(())
     }
 
-    async fn get_permissions(&self, role_id: &Uuid) -> Result<Vec<Permission>, RepositoryError> {
+    pub async fn get_permissions(
+        &self,
+        role_id: &Uuid,
+    ) -> Result<Vec<Permission>, RepositoryError> {
         let permissions = sqlx::query_as::<_, Permission>(
             "SELECT p.* FROM permissions p
              INNER JOIN role_permissions rp ON p.id = rp.permission_id
@@ -281,7 +279,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(permissions)
     }
 
-    async fn get_permissions_for_roles(
+    pub async fn get_permissions_for_roles(
         &self,
         role_ids: &[Uuid],
     ) -> Result<Vec<Permission>, RepositoryError> {
@@ -290,8 +288,8 @@ impl RoleRepository for SqliteRoleRepository {
         }
 
         let query = format!(
-            "SELECT DISTINCT p.* FROM permissions p 
-             INNER JOIN role_permissions rp ON p.id = rp.permission_id 
+            "SELECT DISTINCT p.* FROM permissions p
+             INNER JOIN role_permissions rp ON p.id = rp.permission_id
              WHERE rp.role_id IN ({})",
             role_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",")
         );
@@ -305,7 +303,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok(permissions)
     }
 
-    async fn get_by_id_with_permissions(
+    pub async fn get_by_id_with_permissions(
         &self,
         role_id: &Uuid,
     ) -> Result<(Role, Vec<Permission>), RepositoryError> {
@@ -354,15 +352,15 @@ impl RoleRepository for SqliteRoleRepository {
         Ok((role, permissions))
     }
 
-    async fn get_by_name_with_permissions(
+    pub async fn get_by_name_with_permissions(
         &self,
         name: &str,
     ) -> Result<(Role, Vec<Permission>), RepositoryError> {
         let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
             r#"
-            SELECT 
+            SELECT
                 r.id, r.name, r.created_at, r.is_system,
-                p.id as permission_id, 
+                p.id as permission_id,
                 p.name as permission_name,
                 p.group_name as permission_group_name,
                 p.description as permission_description,
@@ -403,7 +401,7 @@ impl RoleRepository for SqliteRoleRepository {
         Ok((role, permissions))
     }
 
-    async fn get_all_with_permissions(
+    pub async fn get_all_with_permissions(
         &self,
         page: i32,
         limit: i32,
@@ -412,9 +410,9 @@ impl RoleRepository for SqliteRoleRepository {
 
         let rows = sqlx::query_as::<_, RoleWithPermissionsRow>(
             r#"
-            SELECT 
+            SELECT
                 r.id, r.name, r.created_at, r.is_system,
-                p.id as permission_id, 
+                p.id as permission_id,
                 p.name as permission_name,
                 p.group_name as permission_group_name,
                 p.description as permission_description,

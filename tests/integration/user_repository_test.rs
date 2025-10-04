@@ -1,8 +1,8 @@
 use crate::utils::runners::run_database_test_with_default;
 use auth_service::domain::permission::Permission;
-use auth_service::domain::repository::RepositoryError;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::User;
+use auth_service::infrastructure::repository::RepositoryError;
 use std::collections::HashSet;
 
 #[tokio::test]
