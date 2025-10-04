@@ -1,12 +1,13 @@
 use crate::utils::cli::CommandFactory;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{PermissionRepository, RoleRepository, UserRepository};
+use auth_service::domain::repository::{PermissionRepository, RoleRepository};
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
+use auth_service::infrastructure::user_repository::UserRepository;
 
 pub struct PublisherTestContext {
     pub message_publisher: MessagePublisher,
@@ -26,14 +27,14 @@ impl PublisherTestContext {
 }
 
 pub struct DatabaseTestContext {
-    pub user_repository: Arc<dyn UserRepository>,
+    pub user_repository: UserRepository,
     pub role_repository: Arc<dyn RoleRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
 }
 
 impl DatabaseTestContext {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: UserRepository,
         role_repository: Arc<dyn RoleRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
     ) -> DatabaseTestContext {
@@ -46,7 +47,7 @@ impl DatabaseTestContext {
 }
 
 pub struct AcceptanceTestContext {
-    pub user_repository: Arc<dyn UserRepository>,
+    pub user_repository: UserRepository,
     pub role_repository: Arc<dyn RoleRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub server: TestServer,
@@ -55,7 +56,7 @@ pub struct AcceptanceTestContext {
 
 impl AcceptanceTestContext {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: UserRepository,
         role_repository: Arc<dyn RoleRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         server: TestServer,
@@ -72,14 +73,14 @@ impl AcceptanceTestContext {
 }
 
 pub struct CliTestContext {
-    pub user_repository: Arc<dyn UserRepository>,
+    pub user_repository: UserRepository,
     pub role_repository: Arc<dyn RoleRepository>,
     pub cf: CommandFactory,
 }
 
 impl CliTestContext {
     pub fn new(
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: UserRepository,
         role_repository: Arc<dyn RoleRepository>,
         cf: CommandFactory,
     ) -> Self {

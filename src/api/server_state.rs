@@ -1,13 +1,14 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
-use crate::domain::repository::{PermissionRepository, RoleRepository, UserRepository};
+use crate::domain::repository::{PermissionRepository, RoleRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
+use crate::infrastructure::user_repository::UserRepository;
 
 #[derive(Clone)]
 pub struct ServerState {
     pub config: AppConfiguration,
-    pub user_repository: Arc<dyn UserRepository>,
+    pub user_repository: UserRepository,
     pub role_repository: Arc<dyn RoleRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub message_publisher: MessagePublisher,
@@ -17,7 +18,7 @@ pub struct ServerState {
 impl ServerState {
     pub fn new(
         config: AppConfiguration,
-        user_repository: Arc<dyn UserRepository>,
+        user_repository: UserRepository,
         role_repository: Arc<dyn RoleRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         message_publisher: MessagePublisher,

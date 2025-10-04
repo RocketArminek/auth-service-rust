@@ -17,11 +17,12 @@ use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_user_repository,
+    create_permission_repository, create_role_repository,
 };
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
+use auth_service::infrastructure::user_repository::UserRepository;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};
@@ -49,7 +50,7 @@ where
 
     let pool = create_pool(&config).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
     let role_repository = create_role_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
@@ -111,7 +112,7 @@ where
 
     let pool = create_pool(config.db()).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
     let role_repository = create_role_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
@@ -172,7 +173,7 @@ where
 
     let pool = create_pool(config.db()).await.unwrap();
     pool.migrate().await;
-    let user_repository = create_user_repository(pool.clone());
+    let user_repository = UserRepository::new(&pool);
     let role_repository = create_role_repository(pool.clone());
 
     test(CliTestContext::new(

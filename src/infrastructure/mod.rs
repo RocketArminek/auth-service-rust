@@ -11,3 +11,4 @@ pub mod sqlite_permission_repository;
 pub mod sqlite_role_repository;
 pub mod sqlite_user_repository;
 pub mod utils;
+pub mod user_repository;
