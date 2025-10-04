@@ -15,7 +15,7 @@ sqlite = []
 mysql = []
 
 [dependencies]
-axum = "0.8.4"
+axum = "0.8.6"
 tokio = { version = "1.47.1", features = ["signal", "rt-multi-thread", "net"] }
 tracing-subscriber = { version = "0.3.20", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
@@ -36,7 +36,6 @@ jsonwebtoken = "9.3.1"
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 lapin = "4.0.0-rc.1"
 futures-lite = "2.6.1"
-async-trait = "0.1.89"
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
