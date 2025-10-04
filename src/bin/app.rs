@@ -13,7 +13,7 @@ use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
-use auth_service::infrastructure::repository::create_permission_repository;
+use auth_service::infrastructure::permission_repository::PermissionRepository;
 use auth_service::infrastructure::role_repository::RoleRepository;
 use auth_service::infrastructure::user_repository::UserRepository;
 use clap::{Parser, Subcommand};
@@ -93,7 +93,7 @@ async fn main() {
 
     let user_repository = UserRepository::new(&db_pool);
     let role_repository = RoleRepository::new(&db_pool);
-    let permission_repository = create_permission_repository(db_pool.clone());
+    let permission_repository = PermissionRepository::new(&db_pool);
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
 

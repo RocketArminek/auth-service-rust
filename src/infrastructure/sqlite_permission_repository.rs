@@ -1,7 +1,5 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::PermissionRepository;
 use crate::domain::repository::RepositoryError;
-use async_trait::async_trait;
 use sqlx::{Pool, Sqlite, query_as};
 use uuid::Uuid;
 
@@ -14,11 +12,8 @@ impl SqlitePermissionRepository {
     pub fn new(pool: Pool<Sqlite>) -> Self {
         Self { pool }
     }
-}
 
-#[async_trait]
-impl PermissionRepository for SqlitePermissionRepository {
-    async fn save(&self, permission: &Permission) -> Result<(), RepositoryError> {
+    pub async fn save(&self, permission: &Permission) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let existing_permission =
@@ -32,27 +27,27 @@ impl PermissionRepository for SqlitePermissionRepository {
                 sqlx::query(
                     "UPDATE permissions SET name = ?, group_name = ?, description = ?, is_system = ?, created_at = ? WHERE id = ?"
                 )
-                .bind(&permission.name)
-                .bind(&permission.group_name)
-                .bind(&permission.description)
-                .bind(permission.is_system)
-                .bind(permission.created_at)
-                .bind(permission.id)
-                .execute(&mut *tx)
-                .await?;
+                    .bind(&permission.name)
+                    .bind(&permission.group_name)
+                    .bind(&permission.description)
+                    .bind(permission.is_system)
+                    .bind(permission.created_at)
+                    .bind(permission.id)
+                    .execute(&mut *tx)
+                    .await?;
             }
             None => {
                 sqlx::query(
                     "INSERT INTO permissions (id, name, group_name, description, is_system, created_at) VALUES (?, ?, ?, ?, ?, ?)"
                 )
-                .bind(permission.id)
-                .bind(&permission.name)
-                .bind(&permission.group_name)
-                .bind(&permission.description)
-                .bind(permission.is_system)
-                .bind(permission.created_at)
-                .execute(&mut *tx)
-                .await?;
+                    .bind(permission.id)
+                    .bind(&permission.name)
+                    .bind(&permission.group_name)
+                    .bind(&permission.description)
+                    .bind(permission.is_system)
+                    .bind(permission.created_at)
+                    .execute(&mut *tx)
+                    .await?;
             }
         }
 
@@ -60,7 +55,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: &Uuid) -> Result<Permission, RepositoryError> {
+    pub async fn get_by_id(&self, id: &Uuid) -> Result<Permission, RepositoryError> {
         let permission = query_as::<_, Permission>("SELECT * FROM permissions WHERE id = ?")
             .bind(id)
             .fetch_one(&self.pool)
@@ -69,7 +64,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(permission)
     }
 
-    async fn get_by_name(
+    pub async fn get_by_name(
         &self,
         name: &str,
         group_name: &str,
@@ -85,7 +80,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(permission)
     }
 
-    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError> {
+    pub async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Permission>, RepositoryError> {
         let offset = (page - 1) * limit;
         let permissions = query_as::<_, Permission>(
             "SELECT * FROM permissions ORDER BY created_at DESC LIMIT ? OFFSET ?",
@@ -98,7 +93,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(permissions)
     }
 
-    async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError> {
+    pub async fn get_by_group(&self, group_name: &str) -> Result<Vec<Permission>, RepositoryError> {
         let permissions = query_as::<_, Permission>(
             "SELECT * FROM permissions WHERE group_name = ? ORDER BY created_at DESC",
         )
@@ -109,7 +104,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         Ok(permissions)
     }
 
-    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
+    pub async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let is_system =
@@ -145,7 +140,7 @@ impl PermissionRepository for SqlitePermissionRepository {
         }
     }
 
-    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {
+    pub async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await?;
 
         let result = sqlx::query("UPDATE permissions SET is_system = TRUE WHERE id = ?")
