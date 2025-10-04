@@ -3,11 +3,11 @@ use auth_service::domain::event::UserEvents;
 use auth_service::domain::repository::{PermissionRepository, RoleRepository};
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
+use auth_service::infrastructure::user_repository::UserRepository;
 use axum_test::TestServer;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
-use auth_service::infrastructure::user_repository::UserRepository;
 
 pub struct PublisherTestContext {
     pub message_publisher: MessagePublisher,

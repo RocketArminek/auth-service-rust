@@ -1,6 +1,4 @@
-use crate::domain::repository::{
-    PermissionRepository, RepositoryError, RoleRepository,
-};
+use crate::domain::repository::{PermissionRepository, RepositoryError, RoleRepository};
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_permission_repository::MysqlPermissionRepository;
 use crate::infrastructure::mysql_role_repository::MysqlRoleRepository;

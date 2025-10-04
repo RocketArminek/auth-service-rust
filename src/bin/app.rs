@@ -16,11 +16,11 @@ use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository,
 };
+use auth_service::infrastructure::user_repository::UserRepository;
 use clap::{Parser, Subcommand};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
-use auth_service::infrastructure::user_repository::UserRepository;
 
 #[derive(Parser)]
 #[command(author, version, about)]

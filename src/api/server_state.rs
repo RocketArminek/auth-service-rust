@@ -2,8 +2,8 @@ use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
 use crate::domain::repository::{PermissionRepository, RoleRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
-use std::sync::Arc;
 use crate::infrastructure::user_repository::UserRepository;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct ServerState {

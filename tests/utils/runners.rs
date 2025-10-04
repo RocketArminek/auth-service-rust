@@ -19,10 +19,10 @@ use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
     create_permission_repository, create_role_repository,
 };
+use auth_service::infrastructure::user_repository::UserRepository;
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
-use auth_service::infrastructure::user_repository::UserRepository;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};

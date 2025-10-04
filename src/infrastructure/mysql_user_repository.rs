@@ -40,16 +40,16 @@ impl MysqlUserRepository {
                     WHERE id = ?
                     "#,
                 )
-                    .bind(&user.email)
-                    .bind(&user.password)
-                    .bind(user.created_at)
-                    .bind(&user.first_name)
-                    .bind(&user.last_name)
-                    .bind(&user.avatar_path)
-                    .bind(user.is_verified)
-                    .bind(user.id)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(user.is_verified)
+                .bind(user.id)
+                .execute(&mut *tx)
+                .await?;
             }
             None => {
                 sqlx::query(
@@ -61,16 +61,16 @@ impl MysqlUserRepository {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     "#,
                 )
-                    .bind(user.id)
-                    .bind(&user.email)
-                    .bind(&user.password)
-                    .bind(user.created_at)
-                    .bind(&user.first_name)
-                    .bind(&user.last_name)
-                    .bind(&user.avatar_path)
-                    .bind(user.is_verified)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(user.id)
+                .bind(&user.email)
+                .bind(&user.password)
+                .bind(user.created_at)
+                .bind(&user.first_name)
+                .bind(&user.last_name)
+                .bind(&user.avatar_path)
+                .bind(user.is_verified)
+                .execute(&mut *tx)
+                .await?;
             }
         }
 
@@ -107,10 +107,10 @@ impl MysqlUserRepository {
                 VALUES (?, ?)
                 "#,
                 )
-                    .bind(user.id)
-                    .bind(role.id)
-                    .execute(&mut *tx)
-                    .await?;
+                .bind(user.id)
+                .bind(role.id)
+                .execute(&mut *tx)
+                .await?;
             }
         }
 
@@ -140,15 +140,15 @@ impl MysqlUserRepository {
             WHERE u.id = ?
             "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -208,15 +208,15 @@ impl MysqlUserRepository {
             WHERE u.email = ?
             "#,
         )
-            .bind(email)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with email: {}", email))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -264,7 +264,11 @@ impl MysqlUserRepository {
         Ok(())
     }
 
-    pub async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError> {
+    pub async fn find_all(
+        &self,
+        page: i32,
+        limit: i32,
+    ) -> Result<(Vec<User>, i32), RepositoryError> {
         let offset = (page - 1) * limit;
 
         let rows = sqlx::query_as::<_, UserWithRoleRow>(
@@ -288,10 +292,10 @@ impl MysqlUserRepository {
             LIMIT ? OFFSET ?
             "#,
         )
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await?;
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
 
         let total: (i32,) = sqlx::query_as("SELECT COUNT(DISTINCT id) FROM users")
             .fetch_one(&self.pool)
@@ -334,15 +338,15 @@ impl MysqlUserRepository {
             WHERE u.id = ?
             "#,
         )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with id: {}", id))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with id: {}", id))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(
@@ -429,15 +433,15 @@ impl MysqlUserRepository {
             WHERE u.email = ?
             "#,
         )
-            .bind(email)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| match e {
-                Error::RowNotFound => {
-                    RepositoryError::NotFound(format!("User not found with email: {}", email))
-                }
-                _ => RepositoryError::Database(e),
-            })?;
+        .bind(email)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| match e {
+            Error::RowNotFound => {
+                RepositoryError::NotFound(format!("User not found with email: {}", email))
+            }
+            _ => RepositoryError::Database(e),
+        })?;
 
         if rows.is_empty() {
             return Err(RepositoryError::NotFound(format!(

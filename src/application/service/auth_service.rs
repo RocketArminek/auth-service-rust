@@ -1,10 +1,10 @@
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
 use crate::domain::user::PasswordHandler;
+use crate::infrastructure::user_repository::UserRepository;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::ops::Add;
-use crate::infrastructure::user_repository::UserRepository;
 
 #[derive(Debug)]
 pub enum AuthError {

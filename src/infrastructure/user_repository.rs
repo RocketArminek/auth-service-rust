@@ -1,15 +1,15 @@
-use uuid::Uuid;
 use crate::domain::permission::Permission;
-use crate::domain::repository::{RepositoryError};
+use crate::domain::repository::RepositoryError;
 use crate::domain::user::User;
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub enum UserRepository {
     Mysql(MysqlUserRepository),
-    Sqlite(SqliteUserRepository)
+    Sqlite(SqliteUserRepository),
 }
 
 impl UserRepository {
@@ -33,28 +33,32 @@ impl UserRepository {
             UserRepository::Sqlite(repo) => repo.get_by_id(id).await,
         }
     }
-    
+
     pub async fn get_by_email(&self, email: &str) -> Result<User, RepositoryError> {
         match self {
             UserRepository::Mysql(repo) => repo.get_by_email(email).await,
             UserRepository::Sqlite(repo) => repo.get_by_email(email).await,
         }
     }
-    
+
     pub async fn delete_by_email(&self, email: &str) -> Result<(), RepositoryError> {
         match self {
             UserRepository::Mysql(repo) => repo.delete_by_email(email).await,
             UserRepository::Sqlite(repo) => repo.delete_by_email(email).await,
         }
     }
-    
-    pub async fn find_all(&self, page: i32, limit: i32) -> Result<(Vec<User>, i32), RepositoryError> {
+
+    pub async fn find_all(
+        &self,
+        page: i32,
+        limit: i32,
+    ) -> Result<(Vec<User>, i32), RepositoryError> {
         match self {
             UserRepository::Mysql(repo) => repo.find_all(page, limit).await,
             UserRepository::Sqlite(repo) => repo.find_all(page, limit).await,
         }
     }
-    
+
     pub async fn get_by_id_with_permissions(
         &self,
         id: &Uuid,
