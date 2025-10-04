@@ -1,8 +1,8 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::RepositoryError;
 use crate::domain::user::User;
 use crate::infrastructure::database::DatabasePool;
 use crate::infrastructure::mysql_user_repository::MysqlUserRepository;
+use crate::infrastructure::repository::RepositoryError;
 use crate::infrastructure::sqlite_user_repository::SqliteUserRepository;
 use uuid::Uuid;
 

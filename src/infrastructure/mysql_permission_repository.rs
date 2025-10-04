@@ -1,5 +1,5 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::RepositoryError;
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{MySql, Pool, query_as};
 use uuid::Uuid;
 

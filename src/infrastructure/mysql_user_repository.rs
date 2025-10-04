@@ -1,8 +1,8 @@
 use crate::domain::permission::Permission;
-use crate::domain::repository::RepositoryError;
 use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::{UserWithPermissionsRow, UserWithRoleRow};
+use crate::infrastructure::repository::RepositoryError;
 use sqlx::{Error, MySql, Pool, query};
 use std::collections::HashSet;
 use uuid::Uuid;

@@ -1,5 +1,5 @@
 use crate::api::dto::MessageResponse;
-use crate::domain::repository::RepositoryError;
+use crate::infrastructure::repository::RepositoryError;
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
