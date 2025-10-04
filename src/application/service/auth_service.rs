@@ -1,11 +1,11 @@
+use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::repository::{UserRepository};
+use crate::domain::repository::UserRepository;
+use crate::domain::user::PasswordHandler;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::ops::Add;
 use std::sync::Arc;
-use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
-use crate::domain::user::PasswordHandler;
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -156,7 +156,7 @@ impl AuthService {
             &at_claims,
             &EncodingKey::from_secret(secret.as_bytes()),
         )
-            .map_err(|_| AuthError::TokenEncodingFailed)?;
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         let rt_exp = now.add(Duration::seconds(rt_duration));
         let rt_claims = Claims::new(
@@ -171,7 +171,7 @@ impl AuthService {
             &rt_claims,
             &EncodingKey::from_secret(secret.as_bytes()),
         )
-            .map_err(|_| AuthError::TokenEncodingFailed)?;
+        .map_err(|_| AuthError::TokenEncodingFailed)?;
 
         Ok(TokenPair {
             access_token: Token {
@@ -196,10 +196,10 @@ impl AuthService {
             &DecodingKey::from_secret(secret.as_bytes()),
             &Validation::default(),
         )
-            .map_err(|e| match e.kind() {
-                jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-                _ => AuthError::InvalidToken,
-            })?;
+        .map_err(|e| match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
+            _ => AuthError::InvalidToken,
+        })?;
 
         if decoded.claims.token_type != expected_type {
             return Err(AuthError::InvalidTokenType);

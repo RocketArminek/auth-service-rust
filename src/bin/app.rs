@@ -3,12 +3,11 @@ use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
+use auth_service::application::service::auth_service::AuthService;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{
-    RepositoryError, RoleRepository, UserRepository,
-};
+use auth_service::domain::repository::{RepositoryError, RoleRepository, UserRepository};
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use auth_service::infrastructure::database::create_pool;
@@ -21,7 +20,6 @@ use clap::{Parser, Subcommand};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
-use auth_service::application::service::auth_service::AuthService;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -113,7 +111,6 @@ async fn main() {
 
     match &cli.command {
         Some(Commands::Start) | None => {
-
             let port = config.app().port();
             let host = config.app().host();
             let addr = format!("{}:{}", host, port);

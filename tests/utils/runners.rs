@@ -12,17 +12,16 @@ use crate::utils::server::create_test_server;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
+use auth_service::application::service::auth_service::AuthService;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository,
-    create_user_repository,
+    create_permission_repository, create_role_repository, create_user_repository,
 };
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
-use auth_service::application::service::auth_service::AuthService;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};

@@ -9,10 +9,10 @@ use crate::domain::event::UserEvents;
 use crate::domain::jwt::UserDTO;
 use crate::domain::repository::RepositoryError;
 use crate::domain::user::{PasswordHandler, User};
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Json};
 use uuid::Uuid;
 
 #[utoipa::path(post, path = "/v1/restricted/users",

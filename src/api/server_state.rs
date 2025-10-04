@@ -1,8 +1,6 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
-use crate::domain::repository::{
-    PermissionRepository, RoleRepository, UserRepository,
-};
+use crate::domain::repository::{PermissionRepository, RoleRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
 
