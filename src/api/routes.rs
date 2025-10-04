@@ -10,7 +10,6 @@ use crate::api::middleware::acl_mw::{restricted_acl, verified_acl};
 use crate::api::middleware::security_mw::{restrict_methods, security_headers};
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
-use crate::domain::session::Session;
 use axum::routing::{patch, post, put};
 use axum::{Router, middleware, routing::get};
 use tower::ServiceBuilder;
@@ -147,8 +146,6 @@ pub async fn open_api_docs() {
             VerifyUserRequest,
             ResetPasswordRequest,
             ChangePasswordRequest,
-            Session,
-            SessionListResponse,
             CreateRoleRequest,
             RoleResponse,
             RoleListResponse,

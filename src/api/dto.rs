@@ -1,7 +1,6 @@
 use crate::domain::jwt::UserDTO;
 use crate::domain::permission::Permission;
 use crate::domain::role::Role;
-use crate::domain::session::Session;
 use crate::domain::user::User;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -88,15 +87,6 @@ pub struct UserListResponse {
 pub struct Pagination {
     pub page: Option<i32>,
     pub limit: Option<i32>,
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct SessionListResponse {
-    pub items: Vec<Session>,
-    pub total: i32,
-    pub page: i32,
-    pub limit: i32,
-    pub pages: i32,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

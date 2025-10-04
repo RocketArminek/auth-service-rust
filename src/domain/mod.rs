@@ -6,5 +6,4 @@ pub mod permission;
 pub mod policy;
 pub mod repository;
 pub mod role;
-pub mod session;
 pub mod user;
