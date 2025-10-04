@@ -14,7 +14,7 @@ pub struct ServerState {
     pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub message_publisher: MessagePublisher,
-    pub auth_service: Arc<dyn AuthService>,
+    pub auth_service: AuthService,
 }
 
 impl ServerState {
@@ -25,7 +25,7 @@ impl ServerState {
         session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         message_publisher: MessagePublisher,
-        auth_service: Arc<dyn AuthService>,
+        auth_service: AuthService,
     ) -> Self {
         ServerState {
             config,
@@ -44,7 +44,7 @@ pub trait SecretAware {
 }
 
 pub trait AuthServiceAware {
-    fn get_auth_service(&self) -> Arc<dyn AuthService>;
+    fn get_auth_service(&self) -> &AuthService;
 }
 
 impl SecretAware for ServerState {
@@ -54,7 +54,7 @@ impl SecretAware for ServerState {
 }
 
 impl AuthServiceAware for ServerState {
-    fn get_auth_service(&self) -> Arc<dyn AuthService> {
-        self.auth_service.clone()
+    fn get_auth_service(&self) -> &AuthService {
+        &self.auth_service
     }
 }

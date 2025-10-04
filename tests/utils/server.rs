@@ -16,7 +16,7 @@ pub async fn create_test_server(
     session_repository: Arc<dyn SessionRepository>,
     permission_repository: Arc<dyn PermissionRepository>,
     message_publisher: MessagePublisher,
-    auth_service: Arc<dyn AuthService>,
+    auth_service: AuthService,
 ) -> TestServer {
     let config = config.app().clone();
 

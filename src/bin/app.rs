@@ -3,7 +3,6 @@ use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::app::{AppConfiguration, EnvNames as AppEnvNames};
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
-use auth_service::application::service::auth_service::{create_auth_service};
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
@@ -25,6 +24,7 @@ use std::env;
 use std::sync::Arc;
 use tokio::signal;
 use tokio::time::sleep;
+use auth_service::application::service::auth_service::AuthService;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -104,10 +104,12 @@ async fn main() {
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
 
-    let auth_service = create_auth_service(
-        config.app(),
+    let auth_service = AuthService::new(
         user_repository.clone(),
-        session_repository.clone(),
+        config.app().password_hashing_scheme(),
+        config.app().secret(),
+        config.app().at_duration_in_seconds().to_signed(),
+        config.app().rt_duration_in_seconds().to_signed(),
     );
 
     load_fixtures(config.app(), &user_repository, &role_repository).await;

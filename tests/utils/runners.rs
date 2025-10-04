@@ -12,7 +12,6 @@ use crate::utils::server::create_test_server;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
-use auth_service::application::service::auth_service::create_auth_service;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
@@ -23,6 +22,7 @@ use auth_service::infrastructure::repository::{
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
 use uuid::Uuid;
+use auth_service::application::service::auth_service::AuthService;
 
 const NONE_CONFIGURATOR: fn(&mut ConfigurationBuilder) = |_| {};
 const NONE_MESSAGE_PUBLISHER_CONFIGURATOR: fn(&mut MessagingConfigurationBuilder) = |_| {};
@@ -122,10 +122,12 @@ where
     let message_publisher = MessagePublisher::new(config.messaging()).await;
     let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
 
-    let auth_service = create_auth_service(
-        config.app(),
+    let auth_service = AuthService::new(
         user_repository.clone(),
-        session_repository.clone(),
+        config.app().password_hashing_scheme(),
+        config.app().secret(),
+        config.app().at_duration_in_seconds().to_signed(),
+        config.app().rt_duration_in_seconds().to_signed(),
     );
 
     let server = create_test_server(
