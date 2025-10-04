@@ -12,13 +12,12 @@ use crate::utils::server::create_test_server;
 use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
-use auth_service::application::service::auth_service::create_auth_service;
+use auth_service::application::service::auth_service::AuthService;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_session_repository,
-    create_user_repository,
+    create_permission_repository, create_role_repository, create_user_repository,
 };
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
@@ -52,13 +51,11 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
-    let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
     test(DatabaseTestContext::new(
         user_repository,
         role_repository,
-        session_repository,
         permission_repository,
     ))
     .await;
@@ -116,23 +113,23 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
-    let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
     let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
 
-    let auth_service = create_auth_service(
-        config.app(),
+    let auth_service = AuthService::new(
         user_repository.clone(),
-        session_repository.clone(),
+        config.app().password_hashing_scheme(),
+        config.app().secret(),
+        config.app().at_duration_in_seconds().to_signed(),
+        config.app().rt_duration_in_seconds().to_signed(),
     );
 
     let server = create_test_server(
         &config,
         user_repository.clone(),
         role_repository.clone(),
-        session_repository.clone(),
         permission_repository.clone(),
         message_publisher,
         auth_service,
@@ -142,7 +139,6 @@ where
     test(AcceptanceTestContext::new(
         user_repository,
         role_repository,
-        session_repository,
         permission_repository,
         server,
         consumer,

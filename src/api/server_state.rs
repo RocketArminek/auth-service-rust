@@ -1,8 +1,6 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
-use crate::domain::repository::{
-    PermissionRepository, RoleRepository, SessionRepository, UserRepository,
-};
+use crate::domain::repository::{PermissionRepository, RoleRepository, UserRepository};
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
 
@@ -11,10 +9,9 @@ pub struct ServerState {
     pub config: AppConfiguration,
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
-    pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub message_publisher: MessagePublisher,
-    pub auth_service: Arc<dyn AuthService>,
+    pub auth_service: AuthService,
 }
 
 impl ServerState {
@@ -22,16 +19,14 @@ impl ServerState {
         config: AppConfiguration,
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
-        session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         message_publisher: MessagePublisher,
-        auth_service: Arc<dyn AuthService>,
+        auth_service: AuthService,
     ) -> Self {
         ServerState {
             config,
             user_repository,
             role_repository,
-            session_repository,
             permission_repository,
             message_publisher,
             auth_service,
@@ -44,7 +39,7 @@ pub trait SecretAware {
 }
 
 pub trait AuthServiceAware {
-    fn get_auth_service(&self) -> Arc<dyn AuthService>;
+    fn get_auth_service(&self) -> &AuthService;
 }
 
 impl SecretAware for ServerState {
@@ -54,7 +49,7 @@ impl SecretAware for ServerState {
 }
 
 impl AuthServiceAware for ServerState {
-    fn get_auth_service(&self) -> Arc<dyn AuthService> {
-        self.auth_service.clone()
+    fn get_auth_service(&self) -> &AuthService {
+        &self.auth_service
     }
 }

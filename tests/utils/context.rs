@@ -1,8 +1,6 @@
 use crate::utils::cli::CommandFactory;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::repository::{
-    PermissionRepository, RoleRepository, SessionRepository, UserRepository,
-};
+use auth_service::domain::repository::{PermissionRepository, RoleRepository, UserRepository};
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use axum_test::TestServer;
@@ -30,7 +28,6 @@ impl PublisherTestContext {
 pub struct DatabaseTestContext {
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
-    pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
 }
 
@@ -38,13 +35,11 @@ impl DatabaseTestContext {
     pub fn new(
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
-        session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
     ) -> DatabaseTestContext {
         DatabaseTestContext {
             user_repository,
             role_repository,
-            session_repository,
             permission_repository,
         }
     }
@@ -53,7 +48,6 @@ impl DatabaseTestContext {
 pub struct AcceptanceTestContext {
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
-    pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub server: TestServer,
     pub tester: MessagingTester,
@@ -63,7 +57,6 @@ impl AcceptanceTestContext {
     pub fn new(
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
-        session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         server: TestServer,
         tester: MessagingTester,
@@ -71,7 +64,6 @@ impl AcceptanceTestContext {
         AcceptanceTestContext {
             user_repository,
             role_repository,
-            session_repository,
             permission_repository,
             server,
             tester,

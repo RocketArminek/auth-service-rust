@@ -1,26 +1,136 @@
-use crate::application::configuration::app::AppConfiguration;
-use crate::application::service::stateful_auth_service::StatefulAuthService;
-use crate::application::service::stateless_auth_service::StatelessAuthService;
+use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
 use crate::domain::jwt::{Claims, TokenType, UserDTO};
-use crate::domain::repository::{SessionRepository, UserRepository};
-use async_trait::async_trait;
+use crate::domain::repository::UserRepository;
+use crate::domain::user::PasswordHandler;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use std::fmt::Display;
 use std::ops::Add;
 use std::sync::Arc;
 
-#[async_trait]
-pub trait AuthService: Send + Sync {
-    async fn login(
+#[derive(Debug)]
+pub enum AuthError {
+    InvalidCredentials,
+    UserNotFound,
+    TokenExpired,
+    InvalidToken,
+    InvalidTokenType,
+    InternalError(String),
+    TokenEncodingFailed,
+    SessionNotFound,
+    AuthStrategyNotSupported,
+}
+
+#[derive(Debug, Clone)]
+pub struct TokenPair {
+    pub access_token: Token,
+    pub refresh_token: Token,
+}
+
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub value: String,
+    pub expires_at: usize,
+}
+
+#[derive(Clone)]
+pub struct AuthService {
+    user_repository: Arc<dyn UserRepository>,
+    hashing_scheme: HashingScheme,
+    secret: String,
+    access_token_duration: i64,
+    refresh_token_duration: i64,
+}
+
+impl AuthService {
+    pub fn new(
+        user_repository: Arc<dyn UserRepository>,
+        hashing_scheme: HashingScheme,
+        secret: String,
+        access_token_duration: i64,
+        refresh_token_duration: i64,
+    ) -> Self {
+        Self {
+            user_repository,
+            hashing_scheme,
+            secret,
+            access_token_duration,
+            refresh_token_duration,
+        }
+    }
+
+    pub async fn login(
         &self,
         email: String,
         password: String,
-    ) -> Result<(TokenPair, UserDTO), AuthError>;
-    async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError>;
-    async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError>;
-    async fn logout(&self, _access_token: String) -> Result<(), AuthError> {
-        Err(AuthError::AuthStrategyNotSupported)
+    ) -> Result<(TokenPair, UserDTO), AuthError> {
+        let (mut user, permissions) = self
+            .user_repository
+            .get_by_email_with_permissions(&email)
+            .await
+            .map_err(|_| AuthError::UserNotFound)?;
+
+        if !user.verify_password(
+            &SchemeAwareHasher::with_scheme(self.hashing_scheme),
+            &password,
+        ) {
+            return Err(AuthError::InvalidCredentials);
+        }
+
+        if SchemeAwareHasher::with_scheme(self.hashing_scheme).is_password_outdated(&user.password)
+        {
+            let new_password =
+                SchemeAwareHasher::with_scheme(self.hashing_scheme).hash_password(&password);
+            match new_password {
+                Ok(new_password) => {
+                    user.set_password(new_password);
+                    match self.user_repository.save(&user).await {
+                        Ok(_) => {
+                            tracing::debug!("Password updated for {}({})", &user.email, &user.id)
+                        }
+                        Err(e) => tracing::error!("Could not update password hash {:?}", e),
+                    }
+                }
+                Err(e) => tracing::error!("Could not update password hash {:?}", e),
+            }
+        }
+
+        let user_dto = UserDTO::from((user, permissions));
+
+        Ok((
+            self.generate_token_pair(
+                user_dto.clone(),
+                self.access_token_duration,
+                self.refresh_token_duration,
+                &self.secret,
+                None,
+            )?,
+            user_dto,
+        ))
+    }
+
+    pub async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError> {
+        let claims = self.validate_token(&access_token, &self.secret, TokenType::Access)?;
+
+        Ok(claims.user)
+    }
+
+    pub async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
+        let claims = self.validate_token(&refresh_token, &self.secret, TokenType::Refresh)?;
+
+        Ok((
+            self.generate_token_pair(
+                claims.user.clone(),
+                self.access_token_duration,
+                self.refresh_token_duration,
+                &self.secret,
+                None,
+            )?,
+            claims.user,
+        ))
+    }
+
+    pub async fn logout(&self, _token: String) -> Result<(), AuthError> {
+        Ok(())
     }
 
     fn generate_token_pair(
@@ -96,88 +206,5 @@ pub trait AuthService: Send + Sync {
         }
 
         Ok(decoded.claims)
-    }
-}
-
-#[derive(Debug)]
-pub enum AuthError {
-    InvalidCredentials,
-    UserNotFound,
-    TokenExpired,
-    InvalidToken,
-    InvalidTokenType,
-    InternalError(String),
-    TokenEncodingFailed,
-    SessionNotFound,
-    AuthStrategyNotSupported,
-}
-
-#[derive(Debug, Clone)]
-pub struct TokenPair {
-    pub access_token: Token,
-    pub refresh_token: Token,
-}
-
-#[derive(Debug, Clone)]
-pub struct Token {
-    pub value: String,
-    pub expires_at: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum AuthStrategy {
-    Stateless,
-    #[default]
-    Stateful,
-}
-
-impl Display for AuthStrategy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AuthStrategy::Stateless => write!(f, "stateless"),
-            AuthStrategy::Stateful => write!(f, "stateful"),
-        }
-    }
-}
-
-impl From<AuthStrategy> for String {
-    fn from(val: AuthStrategy) -> Self {
-        val.to_string()
-    }
-}
-
-impl TryFrom<String> for AuthStrategy {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "stateless" => Ok(AuthStrategy::Stateless),
-            "stateful" => Ok(AuthStrategy::Stateful),
-            _ => Err(format!("Unrecognized auth strategy: {}", value)),
-        }
-    }
-}
-
-pub fn create_auth_service(
-    config: &AppConfiguration,
-    user_repository: Arc<dyn UserRepository>,
-    session_repository: Arc<dyn SessionRepository>,
-) -> Arc<dyn AuthService> {
-    match config.auth_strategy() {
-        AuthStrategy::Stateless => Arc::new(StatelessAuthService::new(
-            user_repository,
-            config.password_hashing_scheme(),
-            config.secret().to_string(),
-            config.at_duration_in_seconds().to_signed(),
-            config.rt_duration_in_seconds().to_signed(),
-        )),
-        AuthStrategy::Stateful => Arc::new(StatefulAuthService::new(
-            user_repository,
-            session_repository,
-            config.password_hashing_scheme(),
-            config.secret().to_string(),
-            config.at_duration_in_seconds().to_signed(),
-            config.rt_duration_in_seconds().to_signed(),
-        )),
     }
 }

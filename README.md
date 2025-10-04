@@ -134,11 +134,6 @@ SQLITE_PATH=./database.sqlite
 
 #### Authentication Configuration
 ```env
-# Auth strategy
-# stateless -> all actions are performed based on decoded token. No session.
-# stateful -> all actions are checking state in DB. There is also a session correlated with token.
-AUTH_STRATEGY=stateless
-
 # Password hashing scheme (bcrypt, bcrypt_low, argon2)
 # Be mindful this hits the performance of the service
 PASSWORD_HASHING_SCHEME=bcrypt_low

@@ -139,9 +139,6 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@127.0.0.1:3306/auth_service_test"
             service: "mysql:9.4"
-        strategy:
-          - "stateful"
-          - "stateless"
         rabbitmq:
           - version: "4"
     services:
@@ -170,7 +167,6 @@ jobs:
     env:
       DATABASE_ENGINE: ${{ matrix.db.engine }}
       DATABASE_URL: ${{ matrix.db.url }}
-      AUTH_STRATEGY: ${{ matrix.strategy }}
       RABBITMQ_URL: amqp://127.0.0.1:5672
       RABBITMQ_EXCHANGE_AUTO_DELETE: true
       RABBITMQ_EXCHANGE_DURABLE: false
@@ -204,9 +200,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        strategy:
-          - "stateful"
-          - "stateless"
         db:
           - engine: "sqlite"
             url: "sqlite://test.db"
@@ -248,7 +241,6 @@ jobs:
         env:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
-          AUTH_STRATEGY: ${{ matrix.strategy }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -279,9 +271,6 @@ jobs:
           - engine: "mysql"
             url: "mysql://root:toor@mysql:3306/auth_service_test"
             service: "mysql:9.4"
-        strategy:
-          - "stateful"
-          - "stateless"
         rabbitmq:
           - version: "4"
     services:
@@ -317,7 +306,6 @@ jobs:
         env:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
-          AUTH_STRATEGY: ${{ matrix.strategy }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
           SECRET: secret
           RABBITMQ_URL: amqp://rabbit:5672
@@ -338,7 +326,7 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: false
-          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ matrix.strategy }}-${{ github.run_id }}
+          artifact_name: zap-scan-${{ matrix.db.engine }}-${{ github.run_id }}
 
   publish-server-image:
     runs-on: ubuntu-22.04
