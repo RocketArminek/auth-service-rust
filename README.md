@@ -17,9 +17,9 @@ A high-performance, event-driven authentication and authorization middleware for
 
 - **Authentication & Authorization**
   - JWT-based authentication with access/refresh token pattern
-  - Role-based access control (RBAC)
+  - Roles management
+  - Permission management
   - Configurable password hashing (Argon2, Bcrypt)
-  - Email verification flow
   - Password reset capabilities
 
 - **Technical Features**
