@@ -1,49 +1,9 @@
 use crate::domain::permission::Permission;
-use crate::domain::role::Role;
 use async_trait::async_trait;
 use sqlx::Error as SqlxError;
 use std::error::Error;
 use std::fmt;
 use uuid::Uuid;
-
-#[async_trait]
-pub trait RoleRepository: Send + Sync {
-    async fn save(&self, role: &Role) -> Result<(), RepositoryError>;
-    async fn get_by_id(&self, id: &Uuid) -> Result<Role, RepositoryError>;
-    async fn get_by_id_with_permissions(
-        &self,
-        role_id: &Uuid,
-    ) -> Result<(Role, Vec<Permission>), RepositoryError>;
-    async fn get_by_name(&self, name: &str) -> Result<Role, RepositoryError>;
-    async fn get_by_name_with_permissions(
-        &self,
-        name: &str,
-    ) -> Result<(Role, Vec<Permission>), RepositoryError>;
-    async fn get_all(&self, page: i32, limit: i32) -> Result<Vec<Role>, RepositoryError>;
-    async fn get_all_with_permissions(
-        &self,
-        page: i32,
-        limit: i32,
-    ) -> Result<Vec<(Role, Vec<Permission>)>, RepositoryError>;
-    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
-    async fn delete_by_name(&self, name: &str) -> Result<(), RepositoryError>;
-    async fn mark_as_system(&self, id: &Uuid) -> Result<(), RepositoryError>;
-    async fn add_permission(
-        &self,
-        role_id: &Uuid,
-        permission_id: &Uuid,
-    ) -> Result<(), RepositoryError>;
-    async fn remove_permission(
-        &self,
-        role_id: &Uuid,
-        permission_id: &Uuid,
-    ) -> Result<(), RepositoryError>;
-    async fn get_permissions(&self, role_id: &Uuid) -> Result<Vec<Permission>, RepositoryError>;
-    async fn get_permissions_for_roles(
-        &self,
-        role_ids: &[Uuid],
-    ) -> Result<Vec<Permission>, RepositoryError>;
-}
 
 #[async_trait]
 pub trait PermissionRepository: Send + Sync {
