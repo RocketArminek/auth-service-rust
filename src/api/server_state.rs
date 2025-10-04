@@ -1,7 +1,7 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
 use crate::domain::repository::{
-    PermissionRepository, RoleRepository, SessionRepository, UserRepository,
+    PermissionRepository, RoleRepository, UserRepository,
 };
 use crate::infrastructure::message_publisher::MessagePublisher;
 use std::sync::Arc;
@@ -11,7 +11,6 @@ pub struct ServerState {
     pub config: AppConfiguration,
     pub user_repository: Arc<dyn UserRepository>,
     pub role_repository: Arc<dyn RoleRepository>,
-    pub session_repository: Arc<dyn SessionRepository>,
     pub permission_repository: Arc<dyn PermissionRepository>,
     pub message_publisher: MessagePublisher,
     pub auth_service: AuthService,
@@ -22,7 +21,6 @@ impl ServerState {
         config: AppConfiguration,
         user_repository: Arc<dyn UserRepository>,
         role_repository: Arc<dyn RoleRepository>,
-        session_repository: Arc<dyn SessionRepository>,
         permission_repository: Arc<dyn PermissionRepository>,
         message_publisher: MessagePublisher,
         auth_service: AuthService,
@@ -31,7 +29,6 @@ impl ServerState {
             config,
             user_repository,
             role_repository,
-            session_repository,
             permission_repository,
             message_publisher,
             auth_service,

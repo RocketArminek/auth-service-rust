@@ -1,6 +1,5 @@
 use crate::domain::permission::Permission;
 use crate::domain::role::Role;
-use crate::domain::session::Session;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use sqlx::Error as SqlxError;
@@ -62,22 +61,6 @@ pub trait RoleRepository: Send + Sync {
         &self,
         role_ids: &[Uuid],
     ) -> Result<Vec<Permission>, RepositoryError>;
-}
-
-#[async_trait]
-pub trait SessionRepository: Send + Sync {
-    async fn save(&self, session: &Session) -> Result<(), RepositoryError>;
-    async fn get_by_id(&self, id: &Uuid) -> Result<Session, RepositoryError>;
-    async fn get_by_user_id(&self, user_id: &Uuid) -> Result<Vec<Session>, RepositoryError>;
-    async fn get_all(&self, page: i32, limit: i32) -> Result<(Vec<Session>, i32), RepositoryError>;
-    async fn delete(&self, id: &Uuid) -> Result<(), RepositoryError>;
-    async fn delete_all_by_user_id(&self, user_id: &Uuid) -> Result<(), RepositoryError>;
-    async fn get_session_with_user(&self, id: &Uuid) -> Result<(Session, User), RepositoryError>;
-    async fn delete_expired(&self) -> Result<(), RepositoryError>;
-    async fn get_session_with_user_and_permissions(
-        &self,
-        id: &Uuid,
-    ) -> Result<(Session, User, Vec<Permission>), RepositoryError>;
 }
 
 #[async_trait]

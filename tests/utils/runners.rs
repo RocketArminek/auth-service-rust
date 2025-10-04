@@ -16,7 +16,7 @@ use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_session_repository,
+    create_permission_repository, create_role_repository,
     create_user_repository,
 };
 use dotenvy::{dotenv, from_filename};
@@ -52,13 +52,11 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
-    let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
     test(DatabaseTestContext::new(
         user_repository,
         role_repository,
-        session_repository,
         permission_repository,
     ))
     .await;
@@ -116,7 +114,6 @@ where
     pool.migrate().await;
     let user_repository = create_user_repository(pool.clone());
     let role_repository = create_role_repository(pool.clone());
-    let session_repository = create_session_repository(pool.clone());
     let permission_repository = create_permission_repository(pool.clone());
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
@@ -134,7 +131,6 @@ where
         &config,
         user_repository.clone(),
         role_repository.clone(),
-        session_repository.clone(),
         permission_repository.clone(),
         message_publisher,
         auth_service,
@@ -144,7 +140,6 @@ where
     test(AcceptanceTestContext::new(
         user_repository,
         role_repository,
-        session_repository,
         permission_repository,
         server,
         consumer,

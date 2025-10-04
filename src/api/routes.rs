@@ -1,6 +1,5 @@
 use crate::api::controller::admin_permissions_controller::*;
 use crate::api::controller::admin_roles_controller::*;
-use crate::api::controller::admin_session_controller::*;
 use crate::api::controller::admin_users_controller::*;
 use crate::api::controller::auth_controller::*;
 use crate::api::controller::user_controller::*;
@@ -12,7 +11,7 @@ use crate::api::middleware::security_mw::{restrict_methods, security_headers};
 use crate::api::server_state::ServerState;
 use crate::domain::jwt::UserDTO;
 use crate::domain::session::Session;
-use axum::routing::{delete, patch, post, put};
+use axum::routing::{patch, post, put};
 use axum::{Router, middleware, routing::get};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -52,17 +51,8 @@ pub fn routes(state: ServerState) -> Router {
                     get(get_user).delete(delete_user).put(update_user),
                 )
                 .route(
-                    "/v1/restricted/users/{user_id}/sessions",
-                    delete(delete_all_user_sessions),
-                )
-                .route(
                     "/v1/restricted/users/{id}/roles",
                     patch(assign_role_to_user).delete(remove_role_from_user),
-                )
-                .route("/v1/restricted/sessions", get(list_sessions))
-                .route(
-                    "/v1/restricted/sessions/{id}",
-                    get(get_session).delete(delete_session),
                 )
                 .route("/v1/restricted/roles", get(list_roles).post(create_role))
                 .route(
@@ -129,10 +119,6 @@ pub async fn open_api_docs() {
         request_password_reset,
         reset_password,
         logout,
-        delete_all_user_sessions,
-        list_sessions,
-        get_session,
-        delete_session,
         create_role,
         list_roles,
         get_role,

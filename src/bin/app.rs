@@ -7,7 +7,7 @@ use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::repository::{
-    RepositoryError, RoleRepository, SessionRepository, UserRepository,
+    RepositoryError, RoleRepository, UserRepository,
 };
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
@@ -15,15 +15,12 @@ use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::repository::{
-    create_permission_repository, create_role_repository, create_session_repository,
-    create_user_repository,
+    create_permission_repository, create_role_repository, create_user_repository,
 };
-use chrono::Duration;
 use clap::{Parser, Subcommand};
 use std::env;
 use std::sync::Arc;
 use tokio::signal;
-use tokio::time::sleep;
 use auth_service::application::service::auth_service::AuthService;
 
 #[derive(Parser)]
@@ -99,7 +96,6 @@ async fn main() {
 
     let user_repository = create_user_repository(db_pool.clone());
     let role_repository = create_role_repository(db_pool.clone());
-    let session_repository = create_session_repository(db_pool.clone());
     let permission_repository = create_permission_repository(db_pool.clone());
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
@@ -128,7 +124,6 @@ async fn main() {
                 config,
                 user_repository,
                 role_repository,
-                session_repository,
                 permission_repository,
                 message_publisher,
                 auth_service,
@@ -518,30 +513,4 @@ fn debug_config(config: &Configuration) {
             }
         }
     }
-}
-
-pub fn spawn_cleanup_expired_session_job(
-    session_repository: Arc<dyn SessionRepository>,
-    cleanup_interval_in_minutes: u64,
-) {
-    tokio::spawn(async move {
-        tracing::info!(
-            "Cleanup expired session job started with interval {} minutes",
-            cleanup_interval_in_minutes
-        );
-
-        loop {
-            sleep(
-                Duration::minutes(cleanup_interval_in_minutes as i64)
-                    .to_std()
-                    .unwrap(),
-            )
-            .await;
-
-            match session_repository.delete_expired().await {
-                Ok(_) => tracing::debug!("Expired sessions cleaned up successfully"),
-                Err(e) => tracing::error!("Failed to clean up expired sessions: {:?}", e),
-            }
-        }
-    });
 }
