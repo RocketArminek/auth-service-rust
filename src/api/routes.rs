@@ -31,8 +31,7 @@ pub fn routes(state: ServerState) -> Router {
         .route("/v1/password/reset", post(request_password_reset))
         .merge(
             Router::new()
-                .route("/v1/me", put(update_profile))
-                .route("/v1/authenticate", get(authenticate))
+                .route("/v1/me", put(update_profile).get(get_profile))
                 .layer(
                     ServiceBuilder::new()
                         .layer(middleware::from_fn_with_state(state.clone(), verified_acl))
@@ -109,9 +108,9 @@ pub async fn open_api_docs() {
         get_user,
         delete_user,
         login,
-        authenticate,
         refresh,
         update_profile,
+        get_profile,
         update_user,
         verify,
         resend_verification,

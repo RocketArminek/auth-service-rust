@@ -1,11 +1,9 @@
 use crate::api::dto::{LoginRequest, LoginResponse, MessageResponse};
-use crate::api::extractor::auth_extractor::{BearerToken, LoggedInUser};
+use crate::api::extractor::auth_extractor::BearerToken;
 use crate::api::response::auth_response::IntoAuthResponse;
 use crate::api::server_state::ServerState;
-use crate::domain::jwt::UserDTO;
 use axum::Json;
-use axum::extract::{Request, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode};
+use axum::extract::State;
 use axum::response::IntoResponse;
 
 #[utoipa::path(post, path = "/v1/login",
@@ -26,75 +24,6 @@ pub async fn login(
         .login(request.email.clone(), request.password.clone())
         .await
         .into_auth_response()
-}
-
-#[utoipa::path(get, path = "/v1/authenticate",
-    tag="auth",
-    responses(
-        (status = 200, description = "Token verified", content_type = "application/json", body = UserDTO),
-        (status = 403, description = "Forbidden", content_type = "application/json", body = MessageResponse),
-        (status = 401, description = "Unauthorized", content_type = "application/json", body = MessageResponse),
-    )
-)]
-pub async fn authenticate(LoggedInUser(user): LoggedInUser, request: Request) -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    let user_id = user.id;
-    let user_roles = user.roles.join(",");
-
-    let original_host = request
-        .headers()
-        .get("X-Forwarded-Host")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("UNKNOWN");
-
-    let original_method = request
-        .headers()
-        .get("X-Forwarded-Method")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("UNKNOWN");
-
-    let original_uri = request
-        .headers()
-        .get("X-Forwarded-Uri")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("UNKNOWN");
-
-    headers.insert(
-        "X-User-Id",
-        HeaderValue::from_str(&user_id.to_string()).unwrap_or(HeaderValue::from_static("")),
-    );
-    headers.insert(
-        "X-User-Roles",
-        HeaderValue::from_str(user_roles.as_str()).unwrap_or(HeaderValue::from_static("")),
-    );
-
-    let mut permission_strings: Vec<String> = user
-        .permissions
-        .iter()
-        .flat_map(|(group, perms)| perms.iter().map(move |p| format!("{}:{}", group, p)))
-        .collect();
-
-    if !permission_strings.is_empty() {
-        permission_strings.sort();
-
-        headers.insert(
-            "X-User-Permissions",
-            HeaderValue::from_str(&permission_strings.join(","))
-                .unwrap_or(HeaderValue::from_static("")),
-        );
-    }
-
-    tracing::info!(
-        "Authenticating request: host={} method={}, uri={}, user_id={}, roles={}, permissions={}",
-        original_host,
-        original_method,
-        original_uri,
-        user_id,
-        user_roles,
-        permission_strings.join(",")
-    );
-
-    (StatusCode::OK, headers, Json(user)).into_response()
 }
 
 #[utoipa::path(post, path = "/v1/refresh",

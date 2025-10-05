@@ -89,6 +89,52 @@ async fn it_updates_user_information() {
 }
 
 #[tokio::test]
+async fn it_returns_user_information() {
+    run_integration_test_with_default(|c| async move {
+        let mut user = User::now_with_email_and_password(
+            String::from("user@test.com"),
+            String::from("User#pass1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow")),
+            Some(true),
+        )
+        .unwrap();
+        user.hash_password(&SchemeAwareHasher::default()).unwrap();
+
+        let role = Role::now("USER".to_string()).unwrap();
+        c.role_repository.save(&role).await.unwrap();
+        user.add_role(role.clone());
+        c.user_repository.save(&user).await.unwrap();
+
+        let response = c
+            .server
+            .post("/v1/login")
+            .json(&json!({
+                "email": "user@test.com",
+                "password": "User#pass1",
+            }))
+            .await;
+        let body = response.json::<LoginResponse>();
+
+        let response = c
+            .server
+            .get("/v1/me")
+            .add_header(
+                HeaderName::try_from("Authorization").unwrap(),
+                HeaderValue::try_from(format!("Bearer {}", body.access_token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+
+        let body = response.json::<UserDTO>();
+        assert_eq!(body.first_name.unwrap(), "Jon");
+        assert_eq!(body.last_name.unwrap(), "Snow");
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn it_produces_user_account_verification_requested() {
     run_integration_test_with_default(|mut c| async move {
         let role = Role::now("user".to_string()).unwrap();

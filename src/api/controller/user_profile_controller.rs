@@ -351,3 +351,21 @@ pub async fn update_profile(
         }
     }
 }
+
+#[utoipa::path(get, path = "/v1/me",
+    tag="user",
+    responses(
+        (status = 200, description = "User updated", content_type = "application/json", body = UserDTO),
+        (status = 404, description = "User not found", content_type = "application/json", body = MessageResponse)
+    )
+)]
+pub async fn get_profile(
+    State(state): State<ServerState>,
+    LoggedInUser(user): LoggedInUser,
+) -> impl IntoResponse {
+    let user = state.user_repository.get_by_id(&user.id).await;
+    match user {
+        Ok(user) => (StatusCode::OK, Json(UserDTO::from(user))).into_response(),
+        Err(e) => e.into_response(),
+    }
+}
