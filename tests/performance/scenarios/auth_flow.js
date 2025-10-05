@@ -58,7 +58,7 @@ export default function (data) {
         const body = JSON.parse(loginResponse.body);
         const accessToken = body.accessToken.value;
 
-        const authenticateResponse = http.get(`${BASE_URL}/v1/authenticate`, {
+        const authenticateResponse = http.get(`${BASE_URL}/v1/me`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
             },
