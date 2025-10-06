@@ -13,7 +13,7 @@ pub enum TokenType {
     Password,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub exp: usize,
     pub user: UserDTO,
