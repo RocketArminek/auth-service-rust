@@ -222,7 +222,27 @@ impl MysqlUserRepository {
     ) -> Result<(Vec<User>, i32), RepositoryError> {
         let offset = (page - 1) * limit;
 
-        let rows = sqlx::query_as::<_, UserWithRoleRow>(
+        let user_ids: Vec<Uuid> = sqlx::query_scalar(
+            r#"
+            SELECT id FROM users
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            "#,
+        )
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await?;
+
+        if user_ids.is_empty() {
+            let total: (i32,) = sqlx::query_as("SELECT COUNT(*) FROM users")
+                .fetch_one(&self.pool)
+                .await?;
+            return Ok((Vec::new(), total.0));
+        }
+
+        let placeholders = user_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query = format!(
             r#"
             SELECT
                 u.id,
@@ -239,16 +259,20 @@ impl MysqlUserRepository {
             FROM users u
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id IN ({})
             ORDER BY u.created_at DESC
-            LIMIT ? OFFSET ?
             "#,
-        )
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(&self.pool)
-        .await?;
+            placeholders
+        );
 
-        let total: (i32,) = sqlx::query_as("SELECT COUNT(DISTINCT id) FROM users")
+        let mut q = sqlx::query_as::<_, UserWithRoleRow>(&query);
+        for user_id in &user_ids {
+            q = q.bind(user_id);
+        }
+
+        let rows = q.fetch_all(&self.pool).await?;
+
+        let total: (i32,) = sqlx::query_as("SELECT COUNT(*) FROM users")
             .fetch_one(&self.pool)
             .await?;
 

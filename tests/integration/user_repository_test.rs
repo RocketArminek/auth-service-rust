@@ -698,3 +698,170 @@ async fn it_can_get_user_with_complex_overlapping_permissions() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn it_paginates_users_correctly_regardless_of_roles() {
+    run_database_test_with_default(|c| async move {
+        // Create roles
+        let role1 = Role::now("Admin".to_string()).unwrap();
+        let role2 = Role::now("User".to_string()).unwrap();
+        let role3 = Role::now("Moderator".to_string()).unwrap();
+        
+        c.role_repository.save(&role1).await.unwrap();
+        c.role_repository.save(&role2).await.unwrap();
+        c.role_repository.save(&role3).await.unwrap();
+
+        // Create 5 users with different number of roles
+        // This test verifies that pagination counts USERS, not JOINED ROWS
+        
+        // User 1: 3 roles (would produce 3 rows in a LEFT JOIN)
+        let mut user1 = User::now_with_email_and_password(
+            "user1@test.com".to_string(),
+            "Password1!".to_string(),
+            Some("User".to_string()),
+            Some("One".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user1.roles = vec![role1.clone(), role2.clone(), role3.clone()];
+        c.user_repository.save(&user1).await.unwrap();
+        
+        // User 2: 2 roles (would produce 2 rows in a LEFT JOIN)
+        let mut user2 = User::now_with_email_and_password(
+            "user2@test.com".to_string(),
+            "Password1!".to_string(),
+            Some("User".to_string()),
+            Some("Two".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user2.roles = vec![role1.clone(), role2.clone()];
+        c.user_repository.save(&user2).await.unwrap();
+        
+        // User 3: 1 role (would produce 1 row in a LEFT JOIN)
+        let mut user3 = User::now_with_email_and_password(
+            "user3@test.com".to_string(),
+            "Password1!".to_string(),
+            Some("User".to_string()),
+            Some("Three".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user3.roles = vec![role1.clone()];
+        c.user_repository.save(&user3).await.unwrap();
+        
+        // User 4: 0 roles (would produce 1 row with NULL role in a LEFT JOIN)
+        let user4 = User::now_with_email_and_password(
+            "user4@test.com".to_string(),
+            "Password1!".to_string(),
+            Some("User".to_string()),
+            Some("Four".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        c.user_repository.save(&user4).await.unwrap();
+        
+        // User 5: 3 roles (would produce 3 rows in a LEFT JOIN)
+        let mut user5 = User::now_with_email_and_password(
+            "user5@test.com".to_string(),
+            "Password1!".to_string(),
+            Some("User".to_string()),
+            Some("Five".to_string()),
+            Some(true),
+        )
+        .unwrap();
+        user5.roles = vec![role1.clone(), role2.clone(), role3.clone()];
+        c.user_repository.save(&user5).await.unwrap();
+
+        // Total joined rows if pagination was applied incorrectly: 3+2+1+1+3 = 10 rows
+        // If we LIMIT 3 on joined rows, we'd only get user1 (3 rows)
+        // With correct pagination, LIMIT 3 should return 3 USERS
+
+        // Test pagination - page 1 should have exactly 3 users
+        let (page1_users, total) = c.user_repository.find_all(1, 3).await.unwrap();
+        
+        // Critical test: We should get exactly 3 users, not 1 user
+        assert_eq!(
+            page1_users.len(),
+            3,
+            "Page 1 should return exactly 3 USERS. If this returns 1, pagination is counting joined rows instead of users."
+        );
+        
+        // Verify total count
+        assert_eq!(total, 5, "Total user count should be 5");
+        
+        // Collect emails for easier debugging
+        let page1_emails: Vec<&str> = page1_users.iter().map(|u| u.email.as_str()).collect();
+        println!("Page 1 users: {:?}", page1_emails);
+        
+        // Verify each user has their correct roles attached
+        for user in &page1_users {
+            match user.email.as_str() {
+                "user1@test.com" => assert_eq!(user.roles.len(), 3, "User 1 should have 3 roles"),
+                "user2@test.com" => assert_eq!(user.roles.len(), 2, "User 2 should have 2 roles"),
+                "user3@test.com" => assert_eq!(user.roles.len(), 1, "User 3 should have 1 role"),
+                "user4@test.com" => assert_eq!(user.roles.len(), 0, "User 4 should have 0 roles"),
+                "user5@test.com" => assert_eq!(user.roles.len(), 3, "User 5 should have 3 roles"),
+                _ => panic!("Unexpected user email: {}", user.email),
+            }
+        }
+
+        // Test pagination - page 2 should have exactly 2 users (the remaining ones)
+        let (page2_users, _) = c.user_repository.find_all(2, 3).await.unwrap();
+        
+        assert_eq!(
+            page2_users.len(),
+            2,
+            "Page 2 should return exactly 2 users (the remaining ones)"
+        );
+        
+        let page2_emails: Vec<&str> = page2_users.iter().map(|u| u.email.as_str()).collect();
+        println!("Page 2 users: {:?}", page2_emails);
+        
+        // Verify roles are correctly attached
+        for user in &page2_users {
+            match user.email.as_str() {
+                "user1@test.com" => assert_eq!(user.roles.len(), 3, "User 1 should have 3 roles"),
+                "user2@test.com" => assert_eq!(user.roles.len(), 2, "User 2 should have 2 roles"),
+                "user3@test.com" => assert_eq!(user.roles.len(), 1, "User 3 should have 1 role"),
+                "user4@test.com" => assert_eq!(user.roles.len(), 0, "User 4 should have 0 roles"),
+                "user5@test.com" => assert_eq!(user.roles.len(), 3, "User 5 should have 3 roles"),
+                _ => panic!("Unexpected user email: {}", user.email),
+            }
+        }
+        
+        // Verify no overlap between pages
+        let all_page1_emails: HashSet<String> = page1_users.iter().map(|u| u.email.clone()).collect();
+        let all_page2_emails: HashSet<String> = page2_users.iter().map(|u| u.email.clone()).collect();
+        assert_eq!(
+            all_page1_emails.intersection(&all_page2_emails).count(),
+            0,
+            "Pages should not overlap"
+        );
+        
+        // Test edge case: Empty page
+        let (page3_users, _) = c.user_repository.find_all(3, 3).await.unwrap();
+        assert_eq!(page3_users.len(), 0, "Page 3 should be empty");
+        
+        // Test with different page sizes
+        let (all_users, _) = c.user_repository.find_all(1, 10).await.unwrap();
+        assert_eq!(
+            all_users.len(),
+            5,
+            "Requesting 10 users should return all 5 users"
+        );
+        
+        // Verify all users have correct roles attached
+        let total_roles: usize = all_users.iter().map(|u| u.roles.len()).sum();
+        assert_eq!(
+            total_roles,
+            9, // 3+2+1+0+3
+            "Total role count across all users should be 9"
+        );
+        
+        // Verify we got all 5 unique users
+        let all_emails: HashSet<String> = all_users.iter().map(|u| u.email.clone()).collect();
+        assert_eq!(all_emails.len(), 5, "Should have 5 unique users");
+    })
+    .await;
+}
