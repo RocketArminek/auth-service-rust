@@ -1,5 +1,4 @@
 use crate::domain::permission::Permission;
-use crate::domain::role::Role;
 use crate::domain::user::User;
 use crate::infrastructure::dto::{UserWithPermissionsRow, UserWithRoleRow};
 use crate::infrastructure::repository::RepositoryError;
@@ -157,32 +156,8 @@ impl SqliteUserRepository {
             )));
         }
 
-        let first_row = &rows[0];
-        let mut user = User {
-            id: first_row.id,
-            email: first_row.email.clone(),
-            not_hashed_password: "".to_string(),
-            password: first_row.password.clone(),
-            first_name: first_row.first_name.clone(),
-            last_name: first_row.last_name.clone(),
-            created_at: first_row.created_at,
-            avatar_path: first_row.avatar_path.clone(),
-            is_verified: first_row.is_verified,
-            roles: Vec::new(),
-        };
-
-        let roles = rows
-            .iter()
-            .filter_map(|row| {
-                row.role_id.map(|role_id| Role {
-                    id: role_id,
-                    name: row.role_name.clone().unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                })
-            })
-            .collect();
-
-        user.roles = roles;
+        let mut user = User::from(&rows[0]);
+        user.roles = rows.iter().filter_map(|row| row.extract_role()).collect();
 
         Ok(user)
     }
@@ -225,32 +200,8 @@ impl SqliteUserRepository {
             )));
         }
 
-        let first_row = &rows[0];
-        let mut user = User {
-            id: first_row.id,
-            email: first_row.email.clone(),
-            not_hashed_password: "".to_string(),
-            password: first_row.password.clone(),
-            first_name: first_row.first_name.clone(),
-            last_name: first_row.last_name.clone(),
-            created_at: first_row.created_at,
-            avatar_path: first_row.avatar_path.clone(),
-            is_verified: first_row.is_verified,
-            roles: Vec::new(),
-        };
-
-        let roles = rows
-            .iter()
-            .filter_map(|row| {
-                row.role_id.map(|role_id| Role {
-                    id: role_id,
-                    name: row.role_name.clone().unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                })
-            })
-            .collect();
-
-        user.roles = roles;
+        let mut user = User::from(&rows[0]);
+        user.roles = rows.iter().filter_map(|row| row.extract_role()).collect();
 
         Ok(user)
     }
@@ -355,45 +306,12 @@ impl SqliteUserRepository {
             )));
         }
 
-        let first_row = &rows[0];
-        let mut user = User {
-            id: first_row.id,
-            email: first_row.email.clone(),
-            not_hashed_password: "".to_string(),
-            password: first_row.password.clone(),
-            first_name: first_row.first_name.clone(),
-            last_name: first_row.last_name.clone(),
-            created_at: first_row.created_at,
-            avatar_path: first_row.avatar_path.clone(),
-            is_verified: first_row.is_verified,
-            roles: Vec::new(),
-        };
-
-        let roles = rows
-            .iter()
-            .filter_map(|row| {
-                row.role_id.map(|role_id| Role {
-                    id: role_id,
-                    name: row.role_name.clone().unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                })
-            })
-            .collect();
-
-        user.roles = roles;
+        let mut user = User::from(&rows[0]);
+        user.roles = rows.iter().filter_map(|row| row.extract_role()).collect();
 
         let permissions: Vec<Permission> = rows
             .iter()
-            .filter_map(|row| {
-                row.permission_id.map(|permission_id| Permission {
-                    id: permission_id,
-                    name: row.permission_name.clone().unwrap_or_default(),
-                    group_name: row.permission_group_name.clone().unwrap_or_default(),
-                    description: row.permission_description.clone(),
-                    created_at: row.permission_created_at.unwrap_or(row.created_at),
-                    is_system: row.permission_is_system.unwrap_or(false),
-                })
-            })
+            .filter_map(|row| row.extract_permission())
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
@@ -450,45 +368,12 @@ impl SqliteUserRepository {
             )));
         }
 
-        let first_row = &rows[0];
-        let mut user = User {
-            id: first_row.id,
-            email: first_row.email.clone(),
-            not_hashed_password: "".to_string(),
-            password: first_row.password.clone(),
-            first_name: first_row.first_name.clone(),
-            last_name: first_row.last_name.clone(),
-            created_at: first_row.created_at,
-            avatar_path: first_row.avatar_path.clone(),
-            is_verified: first_row.is_verified,
-            roles: Vec::new(),
-        };
-
-        let roles = rows
-            .iter()
-            .filter_map(|row| {
-                row.role_id.map(|role_id| Role {
-                    id: role_id,
-                    name: row.role_name.clone().unwrap_or_default(),
-                    created_at: row.role_created_at.unwrap_or(row.created_at),
-                })
-            })
-            .collect();
-
-        user.roles = roles;
+        let mut user = User::from(&rows[0]);
+        user.roles = rows.iter().filter_map(|row| row.extract_role()).collect();
 
         let permissions = rows
             .iter()
-            .filter_map(|row| {
-                row.permission_id.map(|permission_id| Permission {
-                    id: permission_id,
-                    name: row.permission_name.clone().unwrap_or_default(),
-                    group_name: row.permission_group_name.clone().unwrap_or_default(),
-                    description: row.permission_description.clone(),
-                    created_at: row.permission_created_at.unwrap_or(row.created_at),
-                    is_system: row.permission_is_system.unwrap_or(false),
-                })
-            })
+            .filter_map(|row| row.extract_permission())
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
@@ -497,44 +382,18 @@ impl SqliteUserRepository {
     }
 
     fn group_user_rows(&self, rows: Vec<UserWithRoleRow>) -> Vec<User> {
-        let mut users_map: HashMap<Uuid, (User, Vec<Role>)> = HashMap::new();
+        let mut users_map: HashMap<Uuid, User> = HashMap::new();
 
         for row in rows {
-            let user_entry = users_map.entry(row.id).or_insert_with(|| {
-                let user = User {
-                    id: row.id,
-                    email: row.email.clone(),
-                    not_hashed_password: "".to_string(),
-                    password: row.password.clone(),
-                    first_name: row.first_name.clone(),
-                    last_name: row.last_name.clone(),
-                    created_at: row.created_at,
-                    avatar_path: row.avatar_path.clone(),
-                    is_verified: row.is_verified,
-                    roles: Vec::new(),
-                };
-                (user, Vec::new())
-            });
+            let user = users_map.entry(row.id).or_insert_with(|| User::from(&row));
 
-            if let Some(role_id) = row.role_id {
-                if let Some(role_name) = &row.role_name {
-                    if !user_entry.1.iter().any(|r| r.id == role_id) {
-                        user_entry.1.push(Role {
-                            id: role_id,
-                            name: role_name.clone(),
-                            created_at: row.role_created_at.unwrap_or(row.created_at),
-                        });
-                    }
+            if let Some(role) = row.extract_role() {
+                if !user.roles.iter().any(|r| r.id == role.id) {
+                    user.roles.push(role);
                 }
             }
         }
 
-        users_map
-            .into_iter()
-            .map(|(_, (mut user, roles))| {
-                user.roles = roles;
-                user
-            })
-            .collect()
+        users_map.into_values().collect()
     }
 }
