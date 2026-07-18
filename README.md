@@ -38,42 +38,17 @@ A high-performance, event-driven authentication and authorization middleware for
 - RabbitMQ 4.x (optional - for event-driven features)
 - Docker & Docker Compose (optional)
 
-## Examples
-
-### Basic Example
-The repository includes a basic example demonstrating integration with a web application using Traefik as a reverse proxy. The example showcases:
-
-- User registration and authentication
-- Role-based access control
-- Forward authentication with Traefik
-- Event-driven architecture
-
-To run the basic example:
-
-1. Navigate to the example directory:
-
-```bash
-cd examples/basic
-```
-2. Start the example with Docker Compose:
-
-```bash
-docker compose up -d --build
-```
-
-Take a look at the [example README](examples/basic/README.md) for more details.
-
 ## Quick Start
 
 1. Clone the repository:
 ```bash
 git clone git@github.com:RocketArminek/auth-service-rust.git
-cd auth-service
+cd auth-service-rust
 ```
 
-2. Copy the example environment file:
+2. Copy the environment scheme to a local file:
 ```bash
-cp .env.example .env
+cp .env .env.local
 ```
 
 3. Start with Docker Compose:
