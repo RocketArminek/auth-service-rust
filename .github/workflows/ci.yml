@@ -14,6 +14,16 @@ on:
       - ".github/workflows/ci.yml"
     branches:
       - "main"
+  pull_request:
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+      - "Dockerfile"
+      - "tests/**"
+      - "migrations/**"
+      - ".github/workflows/ci.yml"
+    branches:
+      - "main"
 
 permissions:
   contents: read
@@ -25,6 +35,7 @@ env:
 
 jobs:
   dist-cache:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     name: "Prepare production docker image"
     timeout-minutes: 120
