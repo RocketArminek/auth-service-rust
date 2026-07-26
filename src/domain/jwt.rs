@@ -18,16 +18,14 @@ pub struct Claims {
     pub exp: usize,
     pub user: UserDTO,
     pub token_type: TokenType,
-    pub session_id: Option<Uuid>,
 }
 
 impl Claims {
-    pub fn new(exp: usize, user: UserDTO, token_type: TokenType, session_id: Option<Uuid>) -> Self {
+    pub fn new(exp: usize, user: UserDTO, token_type: TokenType) -> Self {
         Self {
             exp,
             user,
             token_type,
-            session_id,
         }
     }
 }

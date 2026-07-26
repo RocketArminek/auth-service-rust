@@ -1,5 +1,6 @@
 use crate::application::configuration::app::AppConfiguration;
 use crate::application::service::auth_service::AuthService;
+use crate::application::service::token_service::TokenService;
 use crate::infrastructure::message_publisher::MessagePublisher;
 use crate::infrastructure::permission_repository::PermissionRepository;
 use crate::infrastructure::role_repository::RoleRepository;
@@ -13,6 +14,7 @@ pub struct ServerState {
     pub permission_repository: PermissionRepository,
     pub message_publisher: MessagePublisher,
     pub auth_service: AuthService,
+    pub token_service: TokenService,
 }
 
 impl ServerState {
@@ -23,6 +25,7 @@ impl ServerState {
         permission_repository: PermissionRepository,
         message_publisher: MessagePublisher,
         auth_service: AuthService,
+        token_service: TokenService,
     ) -> Self {
         ServerState {
             config,
@@ -31,21 +34,22 @@ impl ServerState {
             permission_repository,
             message_publisher,
             auth_service,
+            token_service,
         }
     }
 }
 
-pub trait SecretAware {
-    fn get_secret(&self) -> String;
+pub trait TokenServiceAware {
+    fn get_token_service(&self) -> &TokenService;
 }
 
 pub trait AuthServiceAware {
     fn get_auth_service(&self) -> &AuthService;
 }
 
-impl SecretAware for ServerState {
-    fn get_secret(&self) -> String {
-        self.config.secret().to_string()
+impl TokenServiceAware for ServerState {
+    fn get_token_service(&self) -> &TokenService {
+        &self.token_service
     }
 }
 

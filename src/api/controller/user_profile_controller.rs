@@ -2,19 +2,17 @@ use crate::api::dto::{
     ChangePasswordRequest, MessageResponse, UpdateUserRequest, VerifyUserRequest,
 };
 use crate::api::extractor::auth_extractor::{LoggedInUser, PasswordToken};
-use crate::api::server_state::{SecretAware, ServerState};
+use crate::api::server_state::ServerState;
+use crate::application::service::token_service::{TokenError, Verification};
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::event::UserEvents::PasswordReset;
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::domain::jwt::UserDTO;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, encode};
-use std::ops::Add;
 
 #[utoipa::path(patch, path = "/v1/me/verification",
     request_body = VerifyUserRequest,
@@ -55,53 +53,45 @@ pub async fn verify(
                     .into_response();
             }
 
-            let decoded = jsonwebtoken::decode::<Claims>(
-                &request.token,
-                &DecodingKey::from_secret(state.get_secret().as_ref()),
-                &Validation::default(),
-            );
+            match state.token_service.validate::<Verification>(&request.token) {
+                Ok(_) => {
+                    user.verify();
+                    match state.user_repository.save(&user).await {
+                        Ok(_) => {
+                            let user_dto = UserDTO::from(user);
 
-            match decoded {
-                Ok(t) => match t.claims.token_type {
-                    TokenType::Verification => {
-                        user.verify();
-                        match state.user_repository.save(&user).await {
-                            Ok(_) => {
-                                let user_dto = UserDTO::from(user);
+                            let result = state
+                                .message_publisher
+                                .publish(&UserEvents::Verified {
+                                    user: user_dto.clone(),
+                                })
+                                .await;
 
-                                let result = state
-                                    .message_publisher
-                                    .publish(&UserEvents::Verified {
-                                        user: user_dto.clone(),
-                                    })
-                                    .await;
-
-                                if result.is_err() {
-                                    tracing::error!(
-                                        "Error publishing user verified event: {:?}",
-                                        result
-                                    );
-                                }
-
-                                (StatusCode::OK, Json(user_dto)).into_response()
+                            if result.is_err() {
+                                tracing::error!(
+                                    "Error publishing user verified event: {:?}",
+                                    result
+                                );
                             }
-                            Err(e) => {
-                                tracing::error!("Failed to verify user: {:?}", e);
-                                e.into_response()
-                            }
+
+                            (StatusCode::OK, Json(user_dto)).into_response()
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to verify user: {:?}", e);
+                            e.into_response()
                         }
                     }
-                    _ => {
-                        tracing::debug!("Invalid token type!");
-                        (
-                            StatusCode::BAD_REQUEST,
-                            Json(MessageResponse {
-                                message: "Invalid token type!".to_string(),
-                            }),
-                        )
-                            .into_response()
-                    }
-                },
+                }
+                Err(TokenError::WrongKind) => {
+                    tracing::debug!("Invalid token type!");
+                    (
+                        StatusCode::BAD_REQUEST,
+                        Json(MessageResponse {
+                            message: "Invalid token type!".to_string(),
+                        }),
+                    )
+                        .into_response()
+                }
                 Err(_) => {
                     tracing::debug!("Verification token is invalid!");
                     (
@@ -159,26 +149,11 @@ pub async fn resend_verification(
             }
 
             let user_dto = UserDTO::from(user);
-            let now = Utc::now();
-            let vr_duration = Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let vr_exp = now.add(vr_duration);
-
-            let vr_body = Claims::new(
-                vr_exp.timestamp() as usize,
-                user_dto.clone(),
-                TokenType::Verification,
-                None,
-            );
-
-            let token = encode(
-                &Header::default(),
-                &vr_body,
-                &EncodingKey::from_secret(state.get_secret().as_ref()),
-            );
+            let token = state.token_service.issue::<Verification>(user_dto.clone());
 
             match token {
                 Ok(token) => {
+                    let token = token.value;
                     let verification_requested = UserEvents::VerificationRequested {
                         user: user_dto,
                         token: token.clone(),

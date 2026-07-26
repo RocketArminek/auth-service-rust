@@ -4,6 +4,7 @@ use auth_service::application::configuration::app::{AppConfiguration, EnvNames a
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::AuthService;
+use auth_service::application::service::token_service::TokenService;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
@@ -97,12 +98,11 @@ async fn main() {
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
 
+    let token_service = TokenService::from_config(config.app());
     let auth_service = AuthService::new(
         user_repository.clone(),
         config.app().password_hashing_scheme(),
-        config.app().secret(),
-        config.app().at_duration_in_seconds().to_signed(),
-        config.app().rt_duration_in_seconds().to_signed(),
+        token_service.clone(),
     );
 
     load_fixtures(config.app(), &user_repository, &role_repository).await;
@@ -123,6 +123,7 @@ async fn main() {
                 permission_repository,
                 message_publisher,
                 auth_service,
+                token_service,
             );
 
             match listener {

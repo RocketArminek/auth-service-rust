@@ -1,14 +1,15 @@
+use crate::utils::jwt::{decode_claims, forge_token};
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use auth_service::api::dto::{LoginResponse, MessageResponse};
 use auth_service::application::configuration::dto::DurationInSeconds;
+use auth_service::application::service::token_service::Access;
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
-use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
+use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode, header};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde_json::json;
 use std::ops::{Add, Sub};
 
@@ -130,16 +131,11 @@ async fn it_issues_access_token_for_not_verified_user() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(!body.access_token.value.is_empty());
 
-            let token = decode::<Claims>(
-                &body.access_token.value,
-                &DecodingKey::from_secret("secret".as_ref()),
-                &Validation::default(),
-            )
-            .unwrap();
+            let claims = decode_claims("secret", &body.access_token.value);
 
-            assert_eq!(token.claims.user.id, user.id);
-            assert_eq!(token.claims.user.email, user.email);
-            assert_eq!(token.claims.exp, exp.timestamp() as usize);
+            assert_eq!(claims.user.id, user.id);
+            assert_eq!(claims.user.email, user.email);
+            assert_eq!(claims.exp, exp.timestamp() as usize);
         },
     )
     .await;
@@ -186,15 +182,10 @@ async fn it_issues_refresh_token() {
             assert_eq!(body.refresh_token.expires_at, exp.timestamp() as usize);
             assert!(!body.refresh_token.value.is_empty());
 
-            let token = decode::<Claims>(
-                &body.refresh_token.value,
-                &DecodingKey::from_secret(secret.as_ref()),
-                &Validation::default(),
-            )
-            .unwrap();
+            let claims = decode_claims(secret, &body.refresh_token.value);
 
-            assert_eq!(token.claims.user.id, user.id);
-            assert_eq!(token.claims.exp, exp.timestamp() as usize);
+            assert_eq!(claims.user.id, user.id);
+            assert_eq!(claims.exp, exp.timestamp() as usize);
         },
     )
     .await;
@@ -477,16 +468,11 @@ async fn it_refreshes_token() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(!body.access_token.value.is_empty());
 
-            let token = decode::<Claims>(
-                &body.access_token.value,
-                &DecodingKey::from_secret(secret.as_ref()),
-                &Validation::default(),
-            )
-            .unwrap();
+            let claims = decode_claims(secret, &body.access_token.value);
 
-            assert_eq!(token.claims.user.id, user.id);
-            assert_eq!(token.claims.user.email, user.email);
-            assert_eq!(token.claims.exp, exp.timestamp() as usize);
+            assert_eq!(claims.user.id, user.id);
+            assert_eq!(claims.user.email, user.email);
+            assert_eq!(claims.exp, exp.timestamp() as usize);
         },
     )
     .await;
@@ -630,18 +616,8 @@ async fn it_returns_unauthorized_when_token_is_expired() {
             let now = Utc::now();
             let exp = now.sub(Duration::days(2));
 
-            let claims = Claims::new(
-                exp.timestamp() as usize,
-                UserDTO::from(user),
-                TokenType::Access,
-                None,
-            );
-            let token = encode(
-                &Header::default(),
-                &claims,
-                &EncodingKey::from_secret(secret.as_ref()),
-            )
-            .unwrap();
+            let token =
+                forge_token::<Access>(secret, UserDTO::from(user), exp.timestamp() as usize);
 
             let response = c
                 .server
@@ -732,14 +708,9 @@ async fn it_includes_permissions_in_jwt_token() {
             assert_eq!(response.status_code(), StatusCode::OK);
             let body = response.json::<LoginResponse>();
 
-            let token = decode::<Claims>(
-                &body.access_token.value,
-                &DecodingKey::from_secret(secret.as_ref()),
-                &Validation::default(),
-            )
-            .unwrap();
+            let claims = decode_claims(secret, &body.access_token.value);
 
-            let permissions = &token.claims.user.permissions;
+            let permissions = &claims.user.permissions;
             assert_eq!(permissions.len(), 2);
 
             let group1_permissions = permissions.get("test_group1").unwrap();

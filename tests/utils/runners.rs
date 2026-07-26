@@ -13,6 +13,7 @@ use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::AuthService;
+use auth_service::application::service::token_service::TokenService;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
@@ -121,9 +122,7 @@ where
     let auth_service = AuthService::new(
         user_repository.clone(),
         config.app().password_hashing_scheme(),
-        config.app().secret(),
-        config.app().at_duration_in_seconds().to_signed(),
-        config.app().rt_duration_in_seconds().to_signed(),
+        TokenService::from_config(config.app()),
     );
 
     let server = create_test_server(
