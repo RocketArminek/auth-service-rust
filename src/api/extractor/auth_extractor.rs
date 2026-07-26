@@ -1,8 +1,8 @@
 use crate::api::dto::MessageResponse;
-use crate::api::server_state::{AuthServiceAware, SecretAware};
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::api::server_state::{AuthServiceAware, TokenServiceAware};
+use crate::application::service::token_service::{PasswordReset, TokenError};
+use crate::domain::jwt::UserDTO;
 use axum::{Json, extract::FromRequestParts, http::StatusCode, http::header, http::request::Parts};
-use jsonwebtoken::{DecodingKey, Validation};
 
 #[derive(Debug, Clone)]
 pub struct BearerToken(pub String);
@@ -49,7 +49,7 @@ where
 
 impl<S> FromRequestParts<S> for LoggedInUser
 where
-    S: SecretAware + AuthServiceAware + Send + Sync,
+    S: AuthServiceAware + Send + Sync,
 {
     type Rejection = (StatusCode, Json<MessageResponse>);
 
@@ -66,69 +66,32 @@ where
 
 impl<S> FromRequestParts<S> for PasswordToken
 where
-    S: SecretAware + Send + Sync,
+    S: TokenServiceAware + Send + Sync,
 {
     type Rejection = (StatusCode, Json<MessageResponse>);
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let BearerToken(token) = BearerToken::from_request_parts(parts, state).await?;
-        let decoded = jsonwebtoken::decode::<Claims>(
-            &token,
-            &DecodingKey::from_secret(state.get_secret().as_ref()),
-            &Validation::default(),
-        );
 
-        match decoded {
-            Ok(decoded_token) => {
-                tracing::debug!("Decoded token: {:?}", decoded_token.claims);
-                match decoded_token.claims.token_type {
-                    TokenType::Password => Ok(PasswordToken(decoded_token.claims.user)),
-                    _ => Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Invalid token type"),
-                        }),
-                    )),
-                }
+        match state.get_token_service().validate::<PasswordReset>(&token) {
+            Ok(claims) => Ok(PasswordToken(claims.into_user())),
+            Err(error) => {
+                tracing::debug!("Password token rejected: {:?}", error);
+                let message = match error {
+                    TokenError::WrongKind => "Invalid token type",
+                    TokenError::Expired => "Expired token",
+                    TokenError::InvalidSignature => "Invalid signature",
+                    TokenError::Malformed => "Invalid token",
+                    _ => "Unknown error",
+                };
+
+                Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(MessageResponse {
+                        message: String::from(message),
+                    }),
+                ))
             }
-            Err(error) => match error.kind() {
-                jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                    tracing::debug!("Invalid token: {:?}", error);
-                    Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Invalid token"),
-                        }),
-                    ))
-                }
-                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                    tracing::debug!("Invalid signature: {:?}", error);
-                    Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Invalid signature"),
-                        }),
-                    ))
-                }
-                jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                    tracing::debug!("Expired token: {:?}", error);
-                    Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Expired token"),
-                        }),
-                    ))
-                }
-                _ => {
-                    tracing::warn!("Unknown error: {:?}", error);
-                    Err((
-                        StatusCode::UNAUTHORIZED,
-                        Json(MessageResponse {
-                            message: String::from("Unknown error"),
-                        }),
-                    ))
-                }
-            },
         }
     }
 }

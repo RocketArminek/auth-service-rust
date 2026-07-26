@@ -1,12 +1,13 @@
+use crate::utils::jwt::forge_token;
 use crate::utils::runners::run_integration_test_with_default;
+use auth_service::application::service::token_service::PasswordReset;
 use auth_service::domain::crypto::SchemeAwareHasher;
 use auth_service::domain::event::UserEvents;
-use auth_service::domain::jwt::{Claims, TokenType, UserDTO};
+use auth_service::domain::jwt::UserDTO;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{EncodingKey, Header, encode};
 use serde_json::json;
 use std::ops::Add;
 
@@ -47,24 +48,9 @@ async fn it_can_reset_password() {
         c.user_repository.save(&user).await.unwrap();
 
         let user_dto = UserDTO::from(user);
-        let now = Utc::now();
-
-        let rp_duration = Duration::new(10, 0).unwrap_or_default();
-        let rp_exp = now.add(rp_duration);
-
-        let rp_body = Claims::new(
-            rp_exp.timestamp() as usize,
-            user_dto.clone(),
-            TokenType::Password,
-            None,
-        );
-
-        let token = encode(
-            &Header::default(),
-            &rp_body,
-            &EncodingKey::from_secret("secret".as_bytes()),
-        )
-        .unwrap();
+        let rp_exp = Utc::now().add(Duration::new(10, 0).unwrap_or_default());
+        let token =
+            forge_token::<PasswordReset>("secret", user_dto.clone(), rp_exp.timestamp() as usize);
 
         let new_password = String::from("User#pass1New");
         let response = c

@@ -1,10 +1,10 @@
+use crate::application::service::token_service::{
+    Access, Refresh, TokenError, TokenPair, TokenService,
+};
 use crate::domain::crypto::{Hasher, HashingScheme, SchemeAwareHasher};
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::domain::jwt::UserDTO;
 use crate::domain::user::PasswordHandler;
 use crate::infrastructure::user_repository::UserRepository;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use std::ops::Add;
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -19,41 +19,34 @@ pub enum AuthError {
     AuthStrategyNotSupported,
 }
 
-#[derive(Debug, Clone)]
-pub struct TokenPair {
-    pub access_token: Token,
-    pub refresh_token: Token,
-}
-
-#[derive(Debug, Clone)]
-pub struct Token {
-    pub value: String,
-    pub expires_at: usize,
+impl From<TokenError> for AuthError {
+    fn from(error: TokenError) -> Self {
+        match error {
+            TokenError::Expired => AuthError::TokenExpired,
+            TokenError::WrongKind => AuthError::InvalidTokenType,
+            TokenError::EncodingFailed => AuthError::TokenEncodingFailed,
+            _ => AuthError::InvalidToken,
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct AuthService {
     user_repository: UserRepository,
     hashing_scheme: HashingScheme,
-    secret: String,
-    access_token_duration: i64,
-    refresh_token_duration: i64,
+    token_service: TokenService,
 }
 
 impl AuthService {
     pub fn new(
         user_repository: UserRepository,
         hashing_scheme: HashingScheme,
-        secret: String,
-        access_token_duration: i64,
-        refresh_token_duration: i64,
+        token_service: TokenService,
     ) -> Self {
         Self {
             user_repository,
             hashing_scheme,
-            secret,
-            access_token_duration,
-            refresh_token_duration,
+            token_service,
         }
     }
 
@@ -95,115 +88,23 @@ impl AuthService {
 
         let user_dto = UserDTO::from((user, permissions));
 
-        Ok((
-            self.generate_token_pair(
-                user_dto.clone(),
-                self.access_token_duration,
-                self.refresh_token_duration,
-                &self.secret,
-                None,
-            )?,
-            user_dto,
-        ))
+        Ok((self.token_service.issue_pair(user_dto.clone())?, user_dto))
     }
 
     pub async fn authenticate(&self, access_token: String) -> Result<UserDTO, AuthError> {
-        let claims = self.validate_token(&access_token, &self.secret, TokenType::Access)?;
+        let claims = self.token_service.validate::<Access>(&access_token)?;
 
-        Ok(claims.user)
+        Ok(claims.into_user())
     }
 
     pub async fn refresh(&self, refresh_token: String) -> Result<(TokenPair, UserDTO), AuthError> {
-        let claims = self.validate_token(&refresh_token, &self.secret, TokenType::Refresh)?;
+        let claims = self.token_service.validate::<Refresh>(&refresh_token)?;
+        let user = claims.into_user();
 
-        Ok((
-            self.generate_token_pair(
-                claims.user.clone(),
-                self.access_token_duration,
-                self.refresh_token_duration,
-                &self.secret,
-                None,
-            )?,
-            claims.user,
-        ))
+        Ok((self.token_service.issue_pair(user.clone())?, user))
     }
 
     pub async fn logout(&self, _token: String) -> Result<(), AuthError> {
         Ok(())
-    }
-
-    fn generate_token_pair(
-        &self,
-        user: UserDTO,
-        at_duration: i64,
-        rt_duration: i64,
-        secret: &str,
-        session_id: Option<uuid::Uuid>,
-    ) -> Result<TokenPair, AuthError> {
-        let now = Utc::now();
-
-        let at_exp = now.add(Duration::seconds(at_duration));
-        let at_claims = Claims::new(
-            at_exp.timestamp() as usize,
-            user.clone(),
-            TokenType::Access,
-            session_id,
-        );
-
-        let access_token = encode(
-            &Header::default(),
-            &at_claims,
-            &EncodingKey::from_secret(secret.as_bytes()),
-        )
-        .map_err(|_| AuthError::TokenEncodingFailed)?;
-
-        let rt_exp = now.add(Duration::seconds(rt_duration));
-        let rt_claims = Claims::new(
-            rt_exp.timestamp() as usize,
-            user,
-            TokenType::Refresh,
-            session_id,
-        );
-
-        let refresh_token = encode(
-            &Header::default(),
-            &rt_claims,
-            &EncodingKey::from_secret(secret.as_bytes()),
-        )
-        .map_err(|_| AuthError::TokenEncodingFailed)?;
-
-        Ok(TokenPair {
-            access_token: Token {
-                value: access_token,
-                expires_at: at_exp.timestamp() as usize,
-            },
-            refresh_token: Token {
-                value: refresh_token,
-                expires_at: rt_exp.timestamp() as usize,
-            },
-        })
-    }
-
-    fn validate_token(
-        &self,
-        token: &str,
-        secret: &str,
-        expected_type: TokenType,
-    ) -> Result<Claims, AuthError> {
-        let decoded = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(secret.as_bytes()),
-            &Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-            _ => AuthError::InvalidToken,
-        })?;
-
-        if decoded.claims.token_type != expected_type {
-            return Err(AuthError::InvalidTokenType);
-        }
-
-        Ok(decoded.claims)
     }
 }

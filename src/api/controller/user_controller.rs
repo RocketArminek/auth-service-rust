@@ -1,18 +1,16 @@
 use crate::api::dto::{CreateUserRequest, CreatedResponse, MessageResponse, ResetPasswordRequest};
-use crate::api::server_state::{SecretAware, ServerState};
+use crate::api::server_state::ServerState;
+use crate::application::service::token_service::{PasswordReset, Verification};
 use crate::domain::crypto::SchemeAwareHasher;
 use crate::domain::error::UserError;
 use crate::domain::event::UserEvents;
 use crate::domain::event::UserEvents::PasswordResetRequested;
-use crate::domain::jwt::{Claims, TokenType, UserDTO};
+use crate::domain::jwt::UserDTO;
 use crate::domain::user::{PasswordHandler, User};
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{EncodingKey, Header, encode};
-use std::ops::Add;
 use std::string::ToString;
 
 #[utoipa::path(post, path = "/v1/users",
@@ -95,26 +93,10 @@ pub async fn register(
                     let mut events = vec![&user_created];
 
                     if !user_dto.is_verified {
-                        let now = Utc::now();
-                        let vr_duration =
-                            Duration::new(state.config.vr_duration_in_seconds().to_signed(), 0)
-                                .unwrap_or_default();
-                        let vr_exp = now.add(vr_duration);
-
-                        let vr_body = Claims::new(
-                            vr_exp.timestamp() as usize,
-                            user_dto.clone(),
-                            TokenType::Verification,
-                            None,
-                        );
-
-                        let token = encode(
-                            &Header::default(),
-                            &vr_body,
-                            &EncodingKey::from_secret(state.get_secret().as_ref()),
-                        );
+                        let token = state.token_service.issue::<Verification>(user_dto.clone());
 
                         if let Ok(token) = token {
+                            let token = token.value;
                             let verification_requested = UserEvents::VerificationRequested {
                                 user: user_dto,
                                 token: token.clone(),
@@ -206,26 +188,11 @@ pub async fn request_password_reset(
     match user {
         Ok(user) => {
             let user_dto = UserDTO::from(user);
-            let now = Utc::now();
-            let rp_duration = Duration::new(state.config.rp_duration_in_seconds().to_signed(), 0)
-                .unwrap_or_default();
-            let rp_exp = now.add(rp_duration);
-
-            let rp_body = Claims::new(
-                rp_exp.timestamp() as usize,
-                user_dto.clone(),
-                TokenType::Password,
-                None,
-            );
-
-            let token = encode(
-                &Header::default(),
-                &rp_body,
-                &EncodingKey::from_secret(state.get_secret().as_ref()),
-            );
+            let token = state.token_service.issue::<PasswordReset>(user_dto.clone());
 
             match token {
                 Ok(token) => {
+                    let token = token.value;
                     let password_reset_requested = PasswordResetRequested {
                         user: user_dto,
                         token: token.clone(),

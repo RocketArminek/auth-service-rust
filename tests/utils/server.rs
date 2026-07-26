@@ -2,6 +2,7 @@ use auth_service::api::routes::routes;
 use auth_service::api::server_state::ServerState;
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::service::auth_service::AuthService;
+use auth_service::application::service::token_service::TokenService;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::permission_repository::PermissionRepository;
 use auth_service::infrastructure::role_repository::RoleRepository;
@@ -17,6 +18,7 @@ pub async fn create_test_server(
     auth_service: AuthService,
 ) -> TestServer {
     let config = config.app().clone();
+    let token_service = TokenService::from_config(&config);
 
     let state = ServerState::new(
         config,
@@ -25,6 +27,7 @@ pub async fn create_test_server(
         permission_repository,
         message_publisher,
         auth_service,
+        token_service,
     );
 
     TestServer::new(routes(state)).unwrap()
