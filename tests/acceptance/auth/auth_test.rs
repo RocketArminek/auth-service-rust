@@ -2,9 +2,11 @@ use crate::utils::jwt::{decode_claims, forge_token};
 use crate::utils::runners::{run_integration_test, run_integration_test_with_default};
 use auth_service::api::dto::{LoginResponse, MessageResponse};
 use auth_service::application::configuration::dto::DurationInSeconds;
-use auth_service::application::service::token_service::Access;
+use auth_service::application::service::keystore::KeyMaterial;
+use auth_service::application::service::token_service::{Access, TokenService};
 use auth_service::domain::crypto::{HashingScheme, SchemeAwareHasher};
 use auth_service::domain::jwt::UserDTO;
+use auth_service::domain::keystore::{KeyAlgorithm, SigningKey};
 use auth_service::domain::permission::Permission;
 use auth_service::domain::role::Role;
 use auth_service::domain::user::{PasswordHandler, User};
@@ -131,7 +133,7 @@ async fn it_issues_access_token_for_not_verified_user() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(!body.access_token.value.is_empty());
 
-            let claims = decode_claims("secret", &body.access_token.value);
+            let claims = decode_claims(&c.token_service, &body.access_token.value);
 
             assert_eq!(claims.user.id, user.id);
             assert_eq!(claims.user.email, user.email);
@@ -144,11 +146,9 @@ async fn it_issues_access_token_for_not_verified_user() {
 #[tokio::test]
 async fn it_issues_refresh_token() {
     let rt_duration = 300;
-    let secret = "secret";
     run_integration_test(
         |c| {
             c.app.rt_duration_in_seconds(DurationInSeconds(rt_duration));
-            c.app.secret(secret.to_string());
         },
         |c| async move {
             let email = String::from("jon@snow.test");
@@ -182,7 +182,7 @@ async fn it_issues_refresh_token() {
             assert_eq!(body.refresh_token.expires_at, exp.timestamp() as usize);
             assert!(!body.refresh_token.value.is_empty());
 
-            let claims = decode_claims(secret, &body.refresh_token.value);
+            let claims = decode_claims(&c.token_service, &body.refresh_token.value);
 
             assert_eq!(claims.user.id, user.id);
             assert_eq!(claims.exp, exp.timestamp() as usize);
@@ -416,11 +416,9 @@ async fn it_does_not_authenticate_token_by_using_refresh_token() {
 
 #[tokio::test]
 async fn it_refreshes_token() {
-    let secret = "secret";
     let at_duration = 60;
     run_integration_test(
         |c| {
-            c.app.secret(secret.to_string());
             c.app.at_duration_in_seconds(DurationInSeconds(at_duration));
         },
         |c| async move {
@@ -468,7 +466,7 @@ async fn it_refreshes_token() {
             assert_eq!(body.access_token.expires_at, exp.timestamp() as usize);
             assert!(!body.access_token.value.is_empty());
 
-            let claims = decode_claims(secret, &body.access_token.value);
+            let claims = decode_claims(&c.token_service, &body.access_token.value);
 
             assert_eq!(claims.user.id, user.id);
             assert_eq!(claims.user.email, user.email);
@@ -594,12 +592,46 @@ async fn it_returns_unauthorized_when_token_is_invalid() {
 }
 
 #[tokio::test]
+async fn it_rejects_token_signed_with_unknown_key() {
+    run_integration_test_with_default(|c| async move {
+        let user = User::now_with_email_and_password(
+            String::from("jon@snow.test"),
+            String::from("Iknow#othing1"),
+            Some(String::from("Jon")),
+            Some(String::from("Snow")),
+            Some(true),
+        )
+        .unwrap();
+
+        let foreign_key = SigningKey::generate(KeyAlgorithm::EdDSA).unwrap();
+        let key_material = KeyMaterial {
+            active: foreign_key.clone(),
+            verifiers: vec![foreign_key.verifying_key()],
+        };
+        let foreign_token_service =
+            TokenService::new(&key_material, 300, 300, 300, 300).unwrap();
+
+        let token = foreign_token_service
+            .issue::<Access>(UserDTO::from(user))
+            .unwrap();
+
+        let response = c
+            .server
+            .get("/v1/me")
+            .add_header(
+                header::AUTHORIZATION,
+                HeaderValue::try_from(format!("Bearer {}", token.value)).unwrap(),
+            )
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn it_returns_unauthorized_when_token_is_expired() {
-    let secret = "secret";
-    run_integration_test(
-        |c| {
-            c.app.secret(secret.to_string());
-        },
+    run_integration_test_with_default(
         |c| async move {
             let email = String::from("jon@snow.test");
             let mut user = User::now_with_email_and_password(
@@ -616,8 +648,11 @@ async fn it_returns_unauthorized_when_token_is_expired() {
             let now = Utc::now();
             let exp = now.sub(Duration::days(2));
 
-            let token =
-                forge_token::<Access>(secret, UserDTO::from(user), exp.timestamp() as usize);
+            let token = forge_token::<Access>(
+                &c.token_service,
+                UserDTO::from(user),
+                exp.timestamp() as usize,
+            );
 
             let response = c
                 .server
@@ -639,11 +674,7 @@ async fn it_returns_unauthorized_when_token_is_expired() {
 
 #[tokio::test]
 async fn it_includes_permissions_in_jwt_token() {
-    let secret = "secret";
-    run_integration_test(
-        |c| {
-            c.app.secret(secret.to_string());
-        },
+    run_integration_test_with_default(
         |c| async move {
             let role = Role::now("TEST_ROLE".to_string()).unwrap();
             c.role_repository.save(&role).await.unwrap();
@@ -708,7 +739,7 @@ async fn it_includes_permissions_in_jwt_token() {
             assert_eq!(response.status_code(), StatusCode::OK);
             let body = response.json::<LoginResponse>();
 
-            let claims = decode_claims(secret, &body.access_token.value);
+            let claims = decode_claims(&c.token_service, &body.access_token.value);
 
             let permissions = &claims.user.permissions;
             assert_eq!(permissions.len(), 2);

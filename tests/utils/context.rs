@@ -1,9 +1,11 @@
 use crate::utils::cli::CommandFactory;
+use auth_service::application::service::token_service::TokenService;
 use auth_service::domain::event::UserEvents;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::permission_repository::PermissionRepository;
 use auth_service::infrastructure::role_repository::RoleRepository;
+use auth_service::infrastructure::signing_key_repository::SigningKeyRepository;
 use auth_service::infrastructure::user_repository::UserRepository;
 use axum_test::TestServer;
 use std::time::Duration;
@@ -30,6 +32,7 @@ pub struct DatabaseTestContext {
     pub user_repository: UserRepository,
     pub role_repository: RoleRepository,
     pub permission_repository: PermissionRepository,
+    pub signing_key_repository: SigningKeyRepository,
 }
 
 impl DatabaseTestContext {
@@ -37,11 +40,13 @@ impl DatabaseTestContext {
         user_repository: UserRepository,
         role_repository: RoleRepository,
         permission_repository: PermissionRepository,
+        signing_key_repository: SigningKeyRepository,
     ) -> DatabaseTestContext {
         DatabaseTestContext {
             user_repository,
             role_repository,
             permission_repository,
+            signing_key_repository,
         }
     }
 }
@@ -52,6 +57,7 @@ pub struct AcceptanceTestContext {
     pub permission_repository: PermissionRepository,
     pub server: TestServer,
     pub tester: MessagingTester,
+    pub token_service: TokenService,
 }
 
 impl AcceptanceTestContext {
@@ -61,6 +67,7 @@ impl AcceptanceTestContext {
         permission_repository: PermissionRepository,
         server: TestServer,
         tester: MessagingTester,
+        token_service: TokenService,
     ) -> Self {
         AcceptanceTestContext {
             user_repository,
@@ -68,6 +75,7 @@ impl AcceptanceTestContext {
             permission_repository,
             server,
             tester,
+            token_service,
         }
     }
 }

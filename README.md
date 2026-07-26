@@ -113,8 +113,12 @@ SQLITE_PATH=./database.sqlite
 # Be mindful this hits the performance of the service
 PASSWORD_HASHING_SCHEME=bcrypt_low
 
-# JWT secret key for token signing
-SECRET=your-secret-key
+# Key encryption key sealing private signing keys at rest (base64, 32 bytes)
+# Generate with: openssl rand -base64 32
+KEY_ENCRYPTION_KEY=your-base64-32-byte-key
+
+# Algorithm for newly generated signing keys (default: EdDSA)
+SIGNING_KEY_ALGORITHM=EdDSA
 
 # Access token duration in seconds (default: 5 minutes)
 AT_DURATION_IN_SECONDS=300

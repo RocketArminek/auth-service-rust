@@ -214,8 +214,11 @@ async fn it_verifies_user_account_base_on_token() {
 
         let user_dto = UserDTO::from(user);
         let vr_exp = Utc::now().add(Duration::new(10, 0).unwrap_or_default());
-        let token =
-            forge_token::<Verification>("secret", user_dto.clone(), vr_exp.timestamp() as usize);
+        let token = forge_token::<Verification>(
+            &c.token_service,
+            user_dto.clone(),
+            vr_exp.timestamp() as usize,
+        );
 
         let response = c
             .server

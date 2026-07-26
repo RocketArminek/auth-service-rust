@@ -49,8 +49,11 @@ async fn it_can_reset_password() {
 
         let user_dto = UserDTO::from(user);
         let rp_exp = Utc::now().add(Duration::new(10, 0).unwrap_or_default());
-        let token =
-            forge_token::<PasswordReset>("secret", user_dto.clone(), rp_exp.timestamp() as usize);
+        let token = forge_token::<PasswordReset>(
+            &c.token_service,
+            user_dto.clone(),
+            rp_exp.timestamp() as usize,
+        );
 
         let new_password = String::from("User#pass1New");
         let response = c

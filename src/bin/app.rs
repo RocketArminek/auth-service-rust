@@ -4,8 +4,10 @@ use auth_service::application::configuration::app::{AppConfiguration, EnvNames a
 use auth_service::application::configuration::composed::Configuration;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::AuthService;
+use auth_service::application::service::keystore::initialize_keystore;
 use auth_service::application::service::token_service::TokenService;
 use auth_service::domain::crypto::SchemeAwareHasher;
+use auth_service::domain::keystore::KeyEncryptionKey;
 use auth_service::domain::error::UserError;
 use auth_service::domain::event::UserEvents;
 use auth_service::domain::role::Role;
@@ -16,6 +18,7 @@ use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::permission_repository::PermissionRepository;
 use auth_service::infrastructure::repository::RepositoryError;
 use auth_service::infrastructure::role_repository::RoleRepository;
+use auth_service::infrastructure::signing_key_repository::SigningKeyRepository;
 use auth_service::infrastructure::user_repository::UserRepository;
 use clap::{Parser, Subcommand};
 use std::env;
@@ -98,7 +101,19 @@ async fn main() {
 
     let message_publisher = MessagePublisher::new(config.messaging()).await;
 
-    let token_service = TokenService::from_config(config.app());
+    let signing_key_repository = SigningKeyRepository::new(&db_pool);
+    let kek = KeyEncryptionKey::from_base64(&config.app().key_encryption_key())
+        .unwrap_or_else(|e| panic!("Invalid KEY_ENCRYPTION_KEY: {}", e));
+    let key_material = initialize_keystore(
+        &signing_key_repository,
+        &kek,
+        config.app().signing_key_algorithm(),
+    )
+    .await
+    .unwrap_or_else(|e| panic!("Failed to initialize keystore: {}", e));
+
+    let token_service = TokenService::from_config(config.app(), &key_material)
+        .unwrap_or_else(|e| panic!("Failed to build token service: {:?}", e));
     let auth_service = AuthService::new(
         user_repository.clone(),
         config.app().password_hashing_scheme(),
@@ -484,7 +499,7 @@ fn debug_config(config: &Configuration) {
             AppEnvNames::ADMIN_PASSWORD => {
                 tracing::debug!(message, env = name, value = "****");
             }
-            AppEnvNames::SECRET => {
+            AppEnvNames::KEY_ENCRYPTION_KEY => {
                 tracing::debug!(message, env = name, value = "****");
             }
             _ => {

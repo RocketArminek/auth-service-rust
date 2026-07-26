@@ -13,12 +13,15 @@ use auth_service::application::configuration::composed::ConfigurationBuilder;
 use auth_service::application::configuration::database::DatabaseConfigurationBuilder;
 use auth_service::application::configuration::messaging::MessagingConfigurationBuilder;
 use auth_service::application::service::auth_service::AuthService;
+use auth_service::application::service::keystore::initialize_keystore;
 use auth_service::application::service::token_service::TokenService;
+use auth_service::domain::keystore::KeyEncryptionKey;
 use auth_service::infrastructure::database::create_pool;
 use auth_service::infrastructure::message_consumer::MessageConsumer;
 use auth_service::infrastructure::message_publisher::MessagePublisher;
 use auth_service::infrastructure::permission_repository::PermissionRepository;
 use auth_service::infrastructure::role_repository::RoleRepository;
+use auth_service::infrastructure::signing_key_repository::SigningKeyRepository;
 use auth_service::infrastructure::user_repository::UserRepository;
 use dotenvy::{dotenv, from_filename};
 use std::future::Future;
@@ -53,11 +56,13 @@ where
     let user_repository = UserRepository::new(&pool);
     let role_repository = RoleRepository::new(&pool);
     let permission_repository = PermissionRepository::new(&pool);
+    let signing_key_repository = SigningKeyRepository::new(&pool);
 
     test(DatabaseTestContext::new(
         user_repository,
         role_repository,
         permission_repository,
+        signing_key_repository,
     ))
     .await;
 
@@ -119,10 +124,21 @@ where
     let message_publisher = MessagePublisher::new(config.messaging()).await;
     let consumer = MessagingTester::new(MessageConsumer::new(config.messaging()).await);
 
+    let signing_key_repository = SigningKeyRepository::new(&pool);
+    let kek = KeyEncryptionKey::from_base64(&config.app().key_encryption_key()).unwrap();
+    let key_material = initialize_keystore(
+        &signing_key_repository,
+        &kek,
+        config.app().signing_key_algorithm(),
+    )
+    .await
+    .unwrap();
+    let token_service = TokenService::from_config(config.app(), &key_material).unwrap();
+
     let auth_service = AuthService::new(
         user_repository.clone(),
         config.app().password_hashing_scheme(),
-        TokenService::from_config(config.app()),
+        token_service.clone(),
     );
 
     let server = create_test_server(
@@ -132,6 +148,7 @@ where
         permission_repository.clone(),
         message_publisher,
         auth_service,
+        token_service.clone(),
     )
     .await;
 
@@ -141,6 +158,7 @@ where
         permission_repository,
         server,
         consumer,
+        token_service,
     ))
     .await;
 

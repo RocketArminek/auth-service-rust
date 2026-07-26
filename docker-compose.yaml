@@ -21,7 +21,7 @@ services:
       DATABASE_URL: mysql://root:toor@mysql:3306/auth_dev
 #      DATABASE_URL: sqlite://auth_dev.db
       PASSWORD_HASHING_SCHEME: 'bcrypt_low'
-      SECRET: "secret"
+      KEY_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
       RABBITMQ_URL: amqp://rabbit:5672
       VERIFICATION_REQUIRED: false
       MESSAGE_PUBLISHER_ENGINE: rabbitmq

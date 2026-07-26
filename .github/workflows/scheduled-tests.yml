@@ -60,7 +60,7 @@ jobs:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
-          SECRET: secret
+          KEY_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
           MESSAGE_PUBLISHER_ENGINE: rabbitmq
@@ -125,7 +125,7 @@ jobs:
           DATABASE_ENGINE: ${{ matrix.db.engine }}
           DATABASE_URL: ${{ matrix.db.url }}
           PASSWORD_HASHING_SCHEME: bcrypt_low
-          SECRET: secret
+          KEY_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
           RABBITMQ_URL: amqp://rabbit:5672
           VERIFICATION_REQUIRED: false
           MESSAGE_PUBLISHER_ENGINE: rabbitmq
