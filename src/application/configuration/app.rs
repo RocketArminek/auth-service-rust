@@ -1,5 +1,6 @@
 use crate::application::configuration::dto::DurationInSeconds;
 use crate::domain::crypto::HashingScheme;
+use crate::domain::keystore::KeyAlgorithm;
 use lazy_regex::Regex;
 use std::collections::HashMap;
 use std::env;
@@ -7,7 +8,8 @@ use std::str::FromStr;
 use tracing::Level;
 
 pub struct AppConfigurationBuilder {
-    pub secret: Option<String>,
+    pub key_encryption_key: Option<String>,
+    pub signing_key_algorithm: Option<KeyAlgorithm>,
     pub super_admin_email: Option<String>,
     pub super_admin_password: Option<String>,
     pub regular_role_name: Option<String>,
@@ -28,7 +30,8 @@ pub struct AppConfigurationBuilder {
 impl AppConfigurationBuilder {
     pub fn new() -> Self {
         AppConfigurationBuilder {
-            secret: None,
+            key_encryption_key: None,
+            signing_key_algorithm: None,
             super_admin_email: None,
             super_admin_password: None,
             regular_role_name: None,
@@ -104,8 +107,13 @@ impl AppConfigurationBuilder {
         self
     }
 
-    pub fn secret(&mut self, value: String) -> &mut Self {
-        self.secret = Some(value);
+    pub fn key_encryption_key(&mut self, value: String) -> &mut Self {
+        self.key_encryption_key = Some(value);
+        self
+    }
+
+    pub fn signing_key_algorithm(&mut self, value: KeyAlgorithm) -> &mut Self {
+        self.signing_key_algorithm = Some(value);
         self
     }
 
@@ -155,7 +163,10 @@ impl AppConfigurationBuilder {
         self.cleanup_interval_in_minutes = env::var(EnvNames::CLEANUP_INTERVAL_IN_MINUTES)
             .map(|v| v.parse::<u64>().unwrap())
             .ok();
-        self.secret = env::var(EnvNames::SECRET).ok();
+        self.key_encryption_key = env::var(EnvNames::KEY_ENCRYPTION_KEY).ok();
+        self.signing_key_algorithm = env::var(EnvNames::SIGNING_KEY_ALGORITHM)
+            .map(|v| KeyAlgorithm::try_from(v.as_str()).unwrap())
+            .ok();
         self.port = env::var(EnvNames::PORT).ok();
         self.host = env::var(EnvNames::HOST).ok();
         self.log_level = env::var(EnvNames::LOG_LEVEL)
@@ -213,7 +224,11 @@ impl AppConfigurationBuilder {
         };
 
         let server_config = ServerConfig {
-            secret: self.secret.clone().unwrap_or("secret".to_string()),
+            key_encryption_key: self
+                .key_encryption_key
+                .clone()
+                .expect("KEY_ENCRYPTION_KEY environment variable must be set"),
+            signing_key_algorithm: self.signing_key_algorithm.unwrap_or(KeyAlgorithm::EdDSA),
             port: self.port.clone().unwrap_or("8080".to_string()),
             host: self.host.clone().unwrap_or("0.0.0.0".to_string()),
             log_level: self.log_level.unwrap_or(Level::INFO),
@@ -244,7 +259,8 @@ pub struct AppConfiguration {
     vr_duration_in_seconds: DurationInSeconds,
     rp_duration_in_seconds: DurationInSeconds,
     cleanup_interval_in_minutes: u64,
-    secret: String,
+    key_encryption_key: String,
+    signing_key_algorithm: KeyAlgorithm,
     port: String,
     host: String,
     log_level: Level,
@@ -270,7 +286,8 @@ impl AppConfiguration {
             vr_duration_in_seconds: auth.vr_duration_in_seconds,
             rp_duration_in_seconds: auth.rp_duration_in_seconds,
             cleanup_interval_in_minutes: server.cleanup_interval_in_minutes,
-            secret: server.secret,
+            key_encryption_key: server.key_encryption_key,
+            signing_key_algorithm: server.signing_key_algorithm,
             port: server.port,
             host: server.host,
             log_level: server.log_level,
@@ -317,8 +334,12 @@ impl AppConfiguration {
         self.cleanup_interval_in_minutes
     }
 
-    pub fn secret(&self) -> String {
-        self.secret.clone()
+    pub fn key_encryption_key(&self) -> String {
+        self.key_encryption_key.clone()
+    }
+
+    pub fn signing_key_algorithm(&self) -> KeyAlgorithm {
+        self.signing_key_algorithm
     }
 
     pub fn restricted_role_pattern(&self) -> Regex {
@@ -388,7 +409,14 @@ impl AppConfiguration {
             EnvNames::CLEANUP_INTERVAL_IN_MINUTES.to_owned(),
             self.cleanup_interval_in_minutes.to_string(),
         );
-        envs.insert(EnvNames::SECRET.to_owned(), self.secret.clone());
+        envs.insert(
+            EnvNames::KEY_ENCRYPTION_KEY.to_owned(),
+            self.key_encryption_key.clone(),
+        );
+        envs.insert(
+            EnvNames::SIGNING_KEY_ALGORITHM.to_owned(),
+            self.signing_key_algorithm.as_str().to_owned(),
+        );
         envs.insert(EnvNames::PORT.to_owned(), self.port.to_owned());
         envs.insert(EnvNames::HOST.to_owned(), self.host.to_owned());
         envs.insert(EnvNames::LOG_LEVEL.to_owned(), self.log_level.to_string());
@@ -411,7 +439,8 @@ impl EnvNames {
     pub const VR_DURATION_IN_SECONDS: &'static str = "VR_DURATION_IN_SECONDS";
     pub const RP_DURATION_IN_SECONDS: &'static str = "RP_DURATION_IN_SECONDS";
     pub const CLEANUP_INTERVAL_IN_MINUTES: &'static str = "CLEANUP_INTERVAL_IN_MINUTES";
-    pub const SECRET: &'static str = "SECRET";
+    pub const KEY_ENCRYPTION_KEY: &'static str = "KEY_ENCRYPTION_KEY";
+    pub const SIGNING_KEY_ALGORITHM: &'static str = "SIGNING_KEY_ALGORITHM";
     pub const PORT: &'static str = "PORT";
     pub const HOST: &'static str = "HOST";
     pub const LOG_LEVEL: &'static str = "LOG_LEVEL";
@@ -438,7 +467,8 @@ pub struct RoleConfig {
 }
 
 pub struct ServerConfig {
-    pub secret: String,
+    pub key_encryption_key: String,
+    pub signing_key_algorithm: KeyAlgorithm,
     pub port: String,
     pub host: String,
     pub log_level: Level,

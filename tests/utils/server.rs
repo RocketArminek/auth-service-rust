@@ -16,9 +16,9 @@ pub async fn create_test_server(
     permission_repository: PermissionRepository,
     message_publisher: MessagePublisher,
     auth_service: AuthService,
+    token_service: TokenService,
 ) -> TestServer {
     let config = config.app().clone();
-    let token_service = TokenService::from_config(&config);
 
     let state = ServerState::new(
         config,

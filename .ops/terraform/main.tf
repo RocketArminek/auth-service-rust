@@ -55,9 +55,9 @@ module "app_demo" {
       secret_key  = "password"
     },
     {
-      name        = "SECRET"
+      name        = "KEY_ENCRYPTION_KEY"
       secret_name = local.app_name
-      secret_key  = "secret"
+      secret_key  = "key_encryption_key"
     }
   ]
   envs_from_value = [
@@ -174,20 +174,19 @@ resource "kubernetes_manifest" "mysql_user_grant_demo" {
   }
 }
 
-resource "random_password" "secret_demo" {
-  length = 24
-  special = true
+resource "random_bytes" "key_encryption_key_demo" {
+  length = 32
 }
 
 resource "kubernetes_secret" "app_demo" {
-  depends_on = [random_password.secret_demo]
+  depends_on = [random_bytes.key_encryption_key_demo]
   metadata {
     name = local.app_name
     namespace = local.namespace
   }
 
   data = {
-    secret = random_password.secret_demo.result
+    key_encryption_key = random_bytes.key_encryption_key_demo.base64
   }
 }
 
